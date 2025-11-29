@@ -215,20 +215,31 @@ final class HomeViewModel {
     }
     
     /// 입금 처리
-    func submitDeposit() {
+    /// - Parameters:
+    ///   - isPassiveIncome: 패시브인컴 여부 (배당금, 이자, 월세 등)
+    ///   - depositType: 입금 유형 이름 (기록용)
+    func submitDeposit(isPassiveIncome: Bool = false, depositType: String = "") {
         guard let context = modelContext, let scenario = activeScenario else { return }
         
         // 입금 날짜 기준 연월
         let yearMonth = MonthlyUpdate.yearMonth(from: depositDate)
         
         if let existingUpdate = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) {
-            existingUpdate.depositAmount += depositAmount
+            // 기존 기록 업데이트
+            if isPassiveIncome {
+                existingUpdate.passiveIncome += depositAmount
+            } else {
+                existingUpdate.depositAmount += depositAmount
+            }
+            existingUpdate.totalAssets += depositAmount
             existingUpdate.depositDate = depositDate
             existingUpdate.recordedAt = Date()
         } else {
+            // 새 기록 생성
             let newUpdate = MonthlyUpdate(
                 yearMonth: yearMonth,
-                depositAmount: depositAmount,
+                depositAmount: isPassiveIncome ? 0 : depositAmount,
+                passiveIncome: isPassiveIncome ? depositAmount : 0,
                 totalAssets: scenario.currentNetAssets + depositAmount,
                 assetTypes: Array(selectedAssetTypes),
                 depositDate: depositDate

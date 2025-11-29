@@ -133,18 +133,7 @@ struct HomeView: View {
     // MARK: - Safety Score Tab Content
     
     private var safetyScoreTabContent: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: ExitSpacing.lg) {
-                SafetyScoreCard(
-                    totalScore: viewModel.totalSafetyScore,
-                    scoreChange: viewModel.safetyScoreChangeText,
-                    details: viewModel.safetyScoreDetails,
-                    alwaysExpanded: true
-                )
-                .padding(.horizontal, ExitSpacing.md)
-            }
-            .padding(.vertical, ExitSpacing.lg)
-        }
+        SafetyScoreTabView(viewModel: viewModel)
     }
     
     // MARK: - Scenario Settings Card
