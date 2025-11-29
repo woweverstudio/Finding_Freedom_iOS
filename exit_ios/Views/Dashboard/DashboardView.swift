@@ -64,8 +64,8 @@ struct DashboardView: View {
             if let result = viewModel.retirementResult {
                 if result.monthsToRetirement == 0 {
                     Text("이미 은퇴 가능합니다! 🎉")
-                        .font(.Exit.title)
-                        .foregroundStyle(Color.Exit.accent)
+                        .font(.Exit.title2)
+                        .foregroundStyle(Color.Exit.primaryText)
                 } else {
                     VStack(spacing: ExitSpacing.sm) {
                         Text("회사 탈출까지")
@@ -161,42 +161,68 @@ struct DashboardView: View {
                     .background(Color.Exit.divider)
                 
                 // 설명 텍스트
-                VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                    HStack(spacing: 0) {
-                        Text("매월 ")
-                            .foregroundStyle(Color.Exit.secondaryText)
-                        Text(ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
-                            .foregroundStyle(Color.Exit.accent)
-                            .fontWeight(.semibold)
-                        Text("의 현금흐름을 만들기 위해")
-                            .foregroundStyle(Color.Exit.secondaryText)
+                if result.monthsToRetirement <= 0 {
+                    VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                        HStack(spacing: 0) {
+                            Text("매월 ")
+                                .foregroundStyle(Color.Exit.secondaryText)
+                            Text(ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
+                                .foregroundStyle(Color.Exit.accent)
+                                .fontWeight(.semibold)
+                            Text("의 현금흐름을 만들기 위해")
+                                .foregroundStyle(Color.Exit.secondaryText)
+                        }
+                        .font(.Exit.subheadline)
+                        
+                        HStack(spacing: 0) {
+                            Text("연복리 수익률 ")
+                                .foregroundStyle(Color.Exit.secondaryText)
+                            Text(String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                                .foregroundStyle(Color.Exit.accent)
+                                .fontWeight(.semibold)
+                            Text("로 투자해야 합니다.")
+                                .foregroundStyle(Color.Exit.secondaryText)
+                        }
+                        .font(.Exit.subheadline)
+                        
                     }
-                    .font(.Exit.subheadline)
-                    
-                    HStack(spacing: 0) {
-                        Text("매월 ")
-                            .foregroundStyle(Color.Exit.secondaryText)
-                        Text(ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
-                            .foregroundStyle(Color.Exit.accent)
-                            .fontWeight(.semibold)
-                        Text("씩 연복리 ")
-                            .foregroundStyle(Color.Exit.secondaryText)
-                        Text(String(format: "%.1f%%", scenario.preRetirementReturnRate))
-                            .foregroundStyle(Color.Exit.accent)
-                            .fontWeight(.semibold)
-                        Text("로 투자하면")
-                            .foregroundStyle(Color.Exit.secondaryText)
-                    }
-                    .font(.Exit.subheadline)
-                    
-                    HStack(spacing: 0) {
-                        Text(result.dDayString)
-//                            .font(.Exit.title3)
-                            .foregroundStyle(Color.Exit.accent)
-                            .fontWeight(.bold)
-                        Text(" 남았습니다.")
-                            .font(.Exit.subheadline)
-                            .foregroundStyle(Color.Exit.secondaryText)
+                } else {
+                    VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                        HStack(spacing: 0) {
+                            Text("매월 ")
+                                .foregroundStyle(Color.Exit.secondaryText)
+                            Text(ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
+                                .foregroundStyle(Color.Exit.accent)
+                                .fontWeight(.semibold)
+                            Text("의 현금흐름을 만들기 위해")
+                                .foregroundStyle(Color.Exit.secondaryText)
+                        }
+                        .font(.Exit.subheadline)
+                        
+                        HStack(spacing: 0) {
+                            Text("매월 ")
+                                .foregroundStyle(Color.Exit.secondaryText)
+                            Text(ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
+                                .foregroundStyle(Color.Exit.accent)
+                                .fontWeight(.semibold)
+                            Text("씩 연복리 ")
+                                .foregroundStyle(Color.Exit.secondaryText)
+                            Text(String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                                .foregroundStyle(Color.Exit.accent)
+                                .fontWeight(.semibold)
+                            Text("로 투자하면")
+                                .foregroundStyle(Color.Exit.secondaryText)
+                        }
+                        .font(.Exit.subheadline)
+                        
+                        HStack(spacing: 0) {
+                            Text(result.dDayString)
+                                .foregroundStyle(Color.Exit.accent)
+                                .fontWeight(.bold)
+                            Text(" 남았습니다.")
+                                .font(.Exit.subheadline)
+                                .foregroundStyle(Color.Exit.secondaryText)
+                        }
                     }
                 }
             }
