@@ -48,7 +48,8 @@ struct DashboardView: View {
         VStack(spacing: ExitSpacing.md) {
             dDayMainTitle
         }
-        .padding(ExitSpacing.xl)
+        .padding(.vertical, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: ExitRadius.xl)
@@ -66,13 +67,13 @@ struct DashboardView: View {
                         .font(.Exit.title)
                         .foregroundStyle(Color.Exit.accent)
                 } else {
-                    VStack(spacing: ExitSpacing.xs) {
+                    VStack(spacing: ExitSpacing.sm) {
                         Text("회사 탈출까지")
                             .font(.Exit.body)
                             .foregroundStyle(Color.Exit.secondaryText)
                         
                         Text(result.dDayString)
-                            .font(.Exit.title)
+                            .font(.Exit.title2)
                             .foregroundStyle(Color.Exit.accent)
                             .fontWeight(.heavy)
                         
@@ -95,7 +96,7 @@ struct DashboardView: View {
         VStack(spacing: ExitSpacing.lg) {
             // 진행률 링 차트 + 토글 버튼
             if let scenario = viewModel.activeScenario, let result = viewModel.retirementResult {
-                ZStack(alignment: .bottomTrailing) {
+                ZStack(alignment: .bottom) {
                     ProgressRingView(
                         progress: viewModel.progressValue,
                         currentAmount: ExitNumberFormatter.formatToEokManWon(scenario.currentNetAssets),
@@ -105,9 +106,11 @@ struct DashboardView: View {
                     )
                     .frame(width: 200, height: 200)
                     
-                    // 금액 숨김 토글 (우측 하단)
-                    amountVisibilityToggle
-                        .offset(x: 30, y: 10)
+                    HStack {
+                        Spacer()
+                        // 금액 숨김 토글 (우측 하단)
+                        amountVisibilityToggle
+                    }
                 }
             }
             
@@ -129,8 +132,8 @@ struct DashboardView: View {
                 .font(.Exit.caption2)
                 .fontWeight(.medium)
                 .foregroundStyle(hideAmounts ? Color.Exit.accent : Color.Exit.tertiaryText)
-                .padding(.horizontal, ExitSpacing.sm)
-                .padding(.vertical, ExitSpacing.xs)
+                .padding(.horizontal, ExitSpacing.md)
+                .padding(.vertical, ExitSpacing.sm)
                 .background(
                     Capsule()
                         .fill(Color.Exit.cardBackground)
@@ -188,7 +191,7 @@ struct DashboardView: View {
                     
                     HStack(spacing: 0) {
                         Text(result.dDayString)
-                            .font(.Exit.title3)
+//                            .font(.Exit.title3)
                             .foregroundStyle(Color.Exit.accent)
                             .fontWeight(.bold)
                         Text(" 남았습니다.")
@@ -211,7 +214,7 @@ struct DashboardView: View {
             if let scenario = viewModel.activeScenario {
                 // 헤더
                 HStack {
-                    Text("시나리오 설정")
+                    Text("시나리오")
                         .font(.Exit.subheadline)
                         .foregroundStyle(Color.Exit.secondaryText)
                     

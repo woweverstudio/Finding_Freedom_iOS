@@ -62,7 +62,7 @@ struct ProgressRingView: View {
                     .foregroundStyle(Color.Exit.secondaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
-//                    .blur(radius: hideAmounts ? 4 : 0)
+                    .blur(radius: hideAmounts ? 5 : 0)
                 
                 // 퍼센트
                 Text(percentText)
@@ -71,7 +71,7 @@ struct ProgressRingView: View {
                     .fontWeight(.heavy)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                    .blur(radius: hideAmounts ? 5 : 0)
+//                    .blur(radius: hideAmounts ? 5 : 0)
             }
             .padding(.horizontal, ExitSpacing.lg)
             .animation(.easeInOut(duration: 0.2), value: hideAmounts)

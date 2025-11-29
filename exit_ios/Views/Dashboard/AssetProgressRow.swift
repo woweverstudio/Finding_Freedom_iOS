@@ -25,11 +25,11 @@ struct AssetProgressRow: View {
             
             Text(targetAssets)
                 .foregroundStyle(Color.Exit.primaryText)
-//                .blur(radius: isHidden ? 4 : 0)
+                .blur(radius: isHidden ? 5 : 0)
             
             Text("(\(percent))")
                 .foregroundStyle(Color.Exit.secondaryText)
-                .blur(radius: isHidden ? 5 : 0)
+//                .blur(radius: isHidden ? 5 : 0)
         }
         .font(.Exit.title3)
         .lineLimit(1)
