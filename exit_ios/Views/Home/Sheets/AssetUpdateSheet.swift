@@ -68,10 +68,12 @@ struct AssetUpdateSheet: View {
                     .padding(.top, ExitSpacing.lg)
                 }
                 
-                CustomNumberKeyboard(
-                    value: $viewModel.totalAssetsInput,
-                    showNegativeToggle: true
-                )
+                if !showAssetTypes {
+                    CustomNumberKeyboard(
+                        value: $viewModel.totalAssetsInput,
+                        showNegativeToggle: true
+                    )
+                }
                 
                 Button {
                     viewModel.submitAssetUpdate()

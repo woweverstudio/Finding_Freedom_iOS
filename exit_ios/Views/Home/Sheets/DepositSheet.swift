@@ -42,9 +42,11 @@ struct DepositSheet: View {
                     .padding(.top, ExitSpacing.lg)
                 }
                 
-                CustomNumberKeyboard(
-                    value: $viewModel.depositAmount
-                )
+                if !showDatePicker {
+                    CustomNumberKeyboard(
+                        value: $viewModel.depositAmount
+                    )
+                }
                 
                 Button {
                     viewModel.submitDeposit()
@@ -108,6 +110,11 @@ struct DepositSheet: View {
                 .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
                 .padding(.horizontal, ExitSpacing.md)
                 .transition(.opacity.combined(with: .move(edge: .top)))
+                .onChange(of: viewModel.depositDate) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        showDatePicker = false
+                    }
+                }
             }
         }
     }
