@@ -19,7 +19,7 @@ enum OnboardingStep: Int, CaseIterable {
     var title: String {
         switch self {
         case .desiredIncome:
-            return "은퇴 후 희망 월 수입"
+            return "은퇴 후 희망 월 현금흐름"
         case .currentAssets:
             return "현재 순자산"
         case .monthlyInvestment:
@@ -42,19 +42,6 @@ enum OnboardingStep: Int, CaseIterable {
         }
     }
     
-    var hint: String? {
-        switch self {
-        case .desiredIncome:
-            return "2025년 1인 가구 최저생계비 143만원, 3인 가구 300만원"
-        case .currentAssets:
-            return "증여 예정 포함, 실거주 부동산 제외"
-        case .monthlyInvestment:
-            return nil
-        case .assetTypes:
-            return nil
-        }
-    }
-    
     var defaultValue: Double {
         switch self {
         case .desiredIncome:
@@ -72,6 +59,9 @@ enum OnboardingStep: Int, CaseIterable {
 @Observable
 final class OnboardingViewModel {
     // MARK: - State
+    
+    /// 환영 화면 표시 여부
+    var showWelcome: Bool = true
     
     /// 현재 온보딩 단계
     var currentStep: OnboardingStep = .desiredIncome

@@ -19,18 +19,29 @@ struct OnboardingView: View {
             Color.Exit.background
                 .ignoresSafeArea()
             
-            VStack(spacing: 0) {
-                // 진행률 표시
-                progressIndicator
-                
-                // 메인 컨텐츠 (스와이프 비활성화)
-                stepContent(for: viewModel.currentStep)
-                    .animation(.easeInOut(duration: 0.3), value: viewModel.currentStep)
-                
-                // 하단 버튼
-                bottomButton
+            if viewModel.showWelcome {
+                WelcomeView {
+                    withAnimation(.easeInOut(duration: 0.5)) {
+                        viewModel.showWelcome = false
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .leading)))
+            } else {
+                VStack(spacing: 0) {
+                    // 진행률 표시
+                    progressIndicator
+                    
+                    // 메인 컨텐츠 (스와이프 비활성화)
+                    stepContent(for: viewModel.currentStep)
+                        .animation(.easeInOut(duration: 0.3), value: viewModel.currentStep)
+                    
+                    // 하단 버튼
+                    bottomButton
+                }
+                .transition(.opacity.combined(with: .move(edge: .trailing)))
             }
         }
+        .animation(.easeInOut(duration: 0.5), value: viewModel.showWelcome)
     }
     
     // MARK: - Progress Indicator
@@ -74,15 +85,6 @@ struct OnboardingView: View {
                 assetTypeSelection
             } else {
                 amountDisplay(for: step)
-            }
-            
-            // 힌트
-            if let hint = step.hint {
-                Text(hint)
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.tertiaryText)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, ExitSpacing.xl)
             }
             
             Spacer()
