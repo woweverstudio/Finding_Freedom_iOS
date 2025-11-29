@@ -28,15 +28,9 @@ struct RecordSummaryCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            HStack(spacing: ExitSpacing.xs) {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                    .foregroundStyle(color)
-                
-                Text(title)
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-            }
+            Text(title)
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.secondaryText)            
             
             Text(value)
                 .font(.Exit.title3)
@@ -174,9 +168,9 @@ struct DepositHistoryRow: View {
     }
     
     var body: some View {
-        HStack(alignment: .center, spacing: ExitSpacing.md) {
+        HStack(alignment: .top, spacing: ExitSpacing.md) {
             // 월 + 총액 (배경 없음)
-            VStack(spacing: 2) {
+            VStack(spacing: 4) {
                 Text(monthText)
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.Exit.primaryText)
@@ -186,16 +180,12 @@ struct DepositHistoryRow: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.Exit.accent)
             }
-            .frame(width: 52)
+            .frame(width: 64)
             
             // 카테고리별 금액 (FlowLayout 스타일)
             VStack(alignment: .leading, spacing: ExitSpacing.xs) {
                 ForEach(categoryAmounts, id: \.label) { item in
-                    HStack(spacing: 4) {
-                        Image(systemName: item.icon)
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color.Exit.accent)
-                        
+                    HStack(spacing: 6) {
                         Text(item.label)
                             .font(.Exit.caption)
                             .foregroundStyle(Color.Exit.secondaryText)
@@ -235,9 +225,6 @@ struct DepositHistoryRow: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(ExitSpacing.sm)
-        .background(Color.Exit.secondaryCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
     }
 }
 

@@ -198,14 +198,14 @@ struct RecordTabView: View {
                     title: "총 입금액",
                     value: ExitNumberFormatter.formatToEokManWon(yearTotalDeposit),
                     icon: "plus.circle.fill",
-                    color: Color.Exit.accent
+                    color: Color.Exit.primaryText
                 )
                 
                 RecordSummaryCard(
                     title: "총 패시브인컴",
                     value: ExitNumberFormatter.formatToManWon(yearTotalPassiveIncome),
                     icon: "banknote.fill",
-                    color: Color.Exit.accent
+                    color: Color.Exit.primaryText
                 )
             }
             
@@ -214,14 +214,14 @@ struct RecordTabView: View {
                     title: "월 평균 입금",
                     value: ExitNumberFormatter.formatToManWon(yearAverageDeposit),
                     icon: "chart.line.uptrend.xyaxis",
-                    color: Color.Exit.accent.opacity(0.8)
+                    color: Color.Exit.primaryText
                 )
                 
                 RecordSummaryCard(
                     title: "기록된 달",
                     value: "\(filteredUpdates.count)개월",
                     icon: "calendar",
-                    color: filteredUpdates.isEmpty ? Color.Exit.tertiaryText : Color.Exit.accent
+                    color: filteredUpdates.isEmpty ? Color.Exit.tertiaryText : Color.Exit.primaryText
                 )
             }
         }
@@ -303,7 +303,7 @@ struct RecordTabView: View {
                 .padding(.vertical, ExitSpacing.xxl)
             } else {
                 // 입금 기록 리스트
-                VStack(spacing: ExitSpacing.sm) {
+                VStack(spacing: ExitSpacing.md) {
                     ForEach(filteredUpdates.sorted(by: { $0.yearMonth > $1.yearMonth }), id: \.id) { update in
                         DepositHistoryRow(
                             update: update,
@@ -316,6 +316,8 @@ struct RecordTabView: View {
                                 showDeleteConfirmation = true
                             }
                         )
+                        
+                        Divider()
                     }
                 }
             }
