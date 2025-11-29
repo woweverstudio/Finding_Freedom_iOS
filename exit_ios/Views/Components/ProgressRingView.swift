@@ -47,44 +47,34 @@ struct ProgressRingView: View {
             
             // 중앙 텍스트
             VStack(spacing: ExitSpacing.xs) {
-                if hideAmounts {
-                    // 금액 숨김 모드
-                    HiddenAmountDots()
-                    
-                    HStack(spacing: 4) {
-                        Text("/")
-                            .font(.Exit.caption)
-                            .foregroundStyle(Color.Exit.secondaryText)
-                        HiddenAmountDots()
-                    }
-                    
-                    HiddenAmountDots()
-                } else {
-                    // 현재 자산
-                    Text(currentAmount)
-                        .font(.Exit.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.primaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                    
-                    // 목표 자산
-                    Text("/ \(targetAmount)")
-                        .font(.Exit.caption)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                    
-                    // 퍼센트
-                    Text(percentText)
-                        .font(.Exit.title2)
-                        .foregroundStyle(Color.Exit.accent)
-                        .fontWeight(.heavy)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
+                // 현재 자산
+                Text(currentAmount)
+                    .font(.Exit.body)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.Exit.primaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .blur(radius: hideAmounts ? 10 : 0)
+                
+                // 목표 자산
+                Text("/ \(targetAmount)")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .blur(radius: hideAmounts ? 10 : 0)
+                
+                // 퍼센트
+                Text(percentText)
+                    .font(.Exit.title2)
+                    .foregroundStyle(Color.Exit.accent)
+                    .fontWeight(.heavy)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .blur(radius: hideAmounts ? 8 : 0)
             }
             .padding(.horizontal, ExitSpacing.lg)
+            .animation(.easeInOut(duration: 0.2), value: hideAmounts)
         }
         .padding(ExitSpacing.md)
         .onAppear {
@@ -95,24 +85,6 @@ struct ProgressRingView: View {
         .onChange(of: progress) { oldValue, newValue in
             withAnimation(.easeOut(duration: 0.8)) {
                 animatedProgress = newValue
-            }
-        }
-    }
-}
-
-// MARK: - Hidden Amount Dots
-
-/// 금액 숨김용 도트 컴포넌트
-struct HiddenAmountDots: View {
-    var dotCount: Int = 4
-    var dotSize: CGFloat = 8
-    
-    var body: some View {
-        HStack(spacing: 3) {
-            ForEach(0..<dotCount, id: \.self) { _ in
-                Circle()
-                    .fill(Color.Exit.tertiaryText)
-                    .frame(width: dotSize, height: dotSize)
             }
         }
     }
