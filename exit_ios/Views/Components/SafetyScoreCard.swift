@@ -12,6 +12,7 @@ struct SafetyScoreCard: View {
     let totalScore: Int
     let scoreChange: String
     let details: [(title: String, score: Int, maxScore: Int)]
+    var alwaysExpanded: Bool = false
     
     @State private var isExpanded: Bool = false
     @State private var animatedScore: Double = 0
@@ -21,16 +22,18 @@ struct SafetyScoreCard: View {
             // 헤더
             headerSection
             
-            // 확장 시 세부 항목
-            if isExpanded {
+            // 세부 항목 (alwaysExpanded가 true면 항상 표시)
+            if isExpanded || alwaysExpanded {
                 detailsSection
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .exitCard()
         .onTapGesture {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                isExpanded.toggle()
+            if !alwaysExpanded {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    isExpanded.toggle()
+                }
             }
         }
         .onAppear {
@@ -83,9 +86,12 @@ struct SafetyScoreCard: View {
                     )
                     .rotationEffect(.degrees(-90))
                 
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
+                // alwaysExpanded면 chevron 숨김
+                if !alwaysExpanded {
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                }
             }
             .frame(width: 60, height: 60)
         }
@@ -181,18 +187,20 @@ private struct ScoreDetailRow: View {
     ZStack {
         Color.Exit.background.ignoresSafeArea()
         
-        SafetyScoreCard(
-            totalScore: 84,
-            scoreChange: "↑5점",
-            details: [
-                ("목표 충족", 18, 25),
-                ("수익률 안전성", 25, 25),
-                ("자산 다각화", 21, 25),
-                ("자산 성장성", 20, 25)
-            ]
-        )
-        .padding()
+        VStack(spacing: 20) {
+            SafetyScoreCard(
+                totalScore: 84,
+                scoreChange: "↑5점",
+                details: [
+                    ("목표 충족", 18, 25),
+                    ("수익률 안전성", 25, 25),
+                    ("자산 다각화", 21, 25),
+                    ("자산 성장성", 20, 25)
+                ],
+                alwaysExpanded: true
+            )
+            .padding()
+        }
     }
     .preferredColorScheme(.dark)
 }
-

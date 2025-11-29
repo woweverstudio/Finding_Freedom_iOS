@@ -12,6 +12,7 @@ import SwiftData
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = HomeViewModel()
+    @State private var hideAmounts = false
     
     var body: some View {
         ZStack {
@@ -24,7 +25,7 @@ struct HomeView: View {
                     // D-DAY 헤더
                     dDayHeader
                     
-                    // 진행률 링 차트
+                    // 진행률 섹션 (항상 표시)
                     progressSection
                     
                     // 시나리오 탭
@@ -48,7 +49,8 @@ struct HomeView: View {
                     SafetyScoreCard(
                         totalScore: viewModel.totalSafetyScore,
                         scoreChange: viewModel.safetyScoreChangeText,
-                        details: viewModel.safetyScoreDetails
+                        details: viewModel.safetyScoreDetails,
+                        alwaysExpanded: true
                     )
                     .padding(.horizontal, ExitSpacing.md)
                 }
@@ -73,17 +75,8 @@ struct HomeView: View {
     
     private var dDayHeader: some View {
         VStack(spacing: ExitSpacing.md) {
-            Text(viewModel.dDayMainText)
-                .font(.Exit.largeTitle)
-                .foregroundStyle(Color.Exit.primaryText)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .minimumScaleFactor(0.7)
-            
-            Text(viewModel.dDaySubText)
-                .font(.Exit.body)
-                .foregroundStyle(Color.Exit.secondaryText)
-                .multilineTextAlignment(.center)
+            // 메인 타이틀 - 3줄 구성
+            dDayMainTitle
         }
         .padding(ExitSpacing.xl)
         .frame(maxWidth: .infinity)
@@ -95,40 +88,153 @@ struct HomeView: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
+    private var dDayMainTitle: some View {
+        Group {
+            if let result = viewModel.retirementResult {
+                if result.monthsToRetirement == 0 {
+                    Text("이미 은퇴 가능합니다! 🎉")
+                        .font(.Exit.title)
+                        .foregroundStyle(Color.Exit.accent)
+                } else {
+                    VStack(spacing: ExitSpacing.xs) {
+                        Text("회사 탈출까지")
+                            .font(.Exit.body)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                        
+                        Text(result.dDayString)
+                            .font(.Exit.title)
+                            .foregroundStyle(Color.Exit.accent)
+                            .fontWeight(.heavy)
+                        
+                        Text("남았습니다.")
+                            .font(.Exit.body)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                    }
+                }
+            } else {
+                Text("계산 중...")
+                    .font(.Exit.title2)
+                    .foregroundStyle(Color.Exit.secondaryText)
+            }
+        }
+    }
+    
     // MARK: - Progress Section
     
     private var progressSection: some View {
-        VStack(spacing: ExitSpacing.md) {
+        VStack(spacing: ExitSpacing.lg) {
+            // 진행률 링 차트 + 토글 버튼
             if let scenario = viewModel.activeScenario, let result = viewModel.retirementResult {
-                ProgressRingView(
-                    progress: viewModel.progressValue,
-                    currentAmount: ExitNumberFormatter.formatToEokManWon(scenario.currentNetAssets),
-                    targetAmount: ExitNumberFormatter.formatToEokManWon(result.targetAssets),
-                    percentText: ExitNumberFormatter.formatPercentInt(result.progressPercent)
-                )
-                .frame(width: 220, height: 220)
-            } else {
-                ProgressRingView(
-                    progress: 0,
-                    currentAmount: "0만원",
-                    targetAmount: "계산 중...",
-                    percentText: "0%"
-                )
-                .frame(width: 220, height: 220)
+                ZStack(alignment: .bottomTrailing) {
+                    ProgressRingView(
+                        progress: viewModel.progressValue,
+                        currentAmount: ExitNumberFormatter.formatToEokManWon(scenario.currentNetAssets),
+                        targetAmount: ExitNumberFormatter.formatToEokManWon(result.targetAssets),
+                        percentText: ExitNumberFormatter.formatPercentInt(result.progressPercent),
+                        hideAmounts: hideAmounts
+                    )
+                    .frame(width: 200, height: 200)
+                    
+                    // 금액 숨김 토글 (우측 하단)
+                    amountVisibilityToggle
+                        .offset(x: 10, y: 10)
+                }
             }
             
-            // 자세히 보기 버튼
-            Button {
-                // 상세 정보 표시 (추후 구현)
-            } label: {
-                HStack(spacing: ExitSpacing.xs) {
-                    Text("자세히 보기")
-                    Image(systemName: "chevron.down")
+            // 상세 계산 설명
+            detailedCalculationCard
+        }
+        .padding(.horizontal, ExitSpacing.md)
+    }
+    
+    // MARK: - Amount Visibility Toggle
+    
+    private var amountVisibilityToggle: some View {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                hideAmounts.toggle()
+            }
+        } label: {
+            Text(hideAmounts ? "보기" : "숨김")
+                .font(.Exit.caption2)
+                .fontWeight(.medium)
+                .foregroundStyle(hideAmounts ? Color.Exit.accent : Color.Exit.tertiaryText)
+                .padding(.horizontal, ExitSpacing.sm)
+                .padding(.vertical, ExitSpacing.xs)
+                .background(
+                    Capsule()
+                        .fill(Color.Exit.cardBackground)
+                        .overlay(
+                            Capsule()
+                                .stroke(hideAmounts ? Color.Exit.accent : Color.Exit.divider, lineWidth: 1)
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private var detailedCalculationCard: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.md) {
+            if let scenario = viewModel.activeScenario, let result = viewModel.retirementResult {
+                // 현재 자산 / 목표 자산 (1줄 유지, 자동 축소)
+                AssetProgressRow(
+                    currentAssets: ExitNumberFormatter.formatToEokManWon(scenario.currentNetAssets),
+                    targetAssets: ExitNumberFormatter.formatToEokManWon(result.targetAssets),
+                    percent: ExitNumberFormatter.formatPercentInt(result.progressPercent),
+                    isHidden: hideAmounts
+                )
+                
+                Divider()
+                    .background(Color.Exit.divider)
+                
+                // 설명 텍스트
+                VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                    // 첫째 줄
+                    HStack(spacing: 0) {
+                        Text("매월 ")
+                            .foregroundStyle(Color.Exit.secondaryText)
+                        Text(ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
+                            .foregroundStyle(Color.Exit.accent)
+                            .fontWeight(.semibold)
+                        Text("의 현금흐름을 만들기 위해")
+                            .foregroundStyle(Color.Exit.secondaryText)
+                    }
+                    .font(.Exit.subheadline)
+                    
+                    // 둘째 줄
+                    HStack(spacing: 0) {
+                        Text("매월 ")
+                            .foregroundStyle(Color.Exit.secondaryText)
+                        Text(ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
+                            .foregroundStyle(Color.Exit.accent)
+                            .fontWeight(.semibold)
+                        Text("씩 연복리 ")
+                            .foregroundStyle(Color.Exit.secondaryText)
+                        Text(String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                            .foregroundStyle(Color.Exit.accent)
+                            .fontWeight(.semibold)
+                        Text("로 투자하면")
+                            .foregroundStyle(Color.Exit.secondaryText)
+                    }
+                    .font(.Exit.subheadline)
+                    
+                    // 셋째 줄
+                    HStack(spacing: 0) {
+                        Text(result.dDayString)
+                            .font(.Exit.title3)
+                            .foregroundStyle(Color.Exit.accent)
+                            .fontWeight(.bold)
+                        Text(" 남았습니다.")
+                            .font(.Exit.subheadline)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                    }
                 }
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.secondaryText)
             }
         }
+        .padding(ExitSpacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Exit.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
     }
     
     // MARK: - Action Buttons
@@ -160,6 +266,67 @@ struct HomeView: View {
             }
         }
         .padding(.horizontal, ExitSpacing.md)
+    }
+}
+
+// MARK: - Sensitive Text Component
+
+/// 민감한 금액 정보를 가릴 수 있는 텍스트 컴포넌트
+struct SensitiveText: View {
+    let text: String
+    let isHidden: Bool
+    
+    var body: some View {
+        if isHidden {
+            HStack(spacing: 2) {
+                ForEach(0..<4, id: \.self) { _ in
+                    Circle()
+                        .fill(Color.Exit.tertiaryText)
+                        .frame(width: 8, height: 8)
+                }
+            }
+            .padding(.horizontal, 4)
+        } else {
+            Text(text)
+        }
+    }
+}
+
+/// 자산 진행률 표시 행 (자동 축소로 1줄 유지)
+struct AssetProgressRow: View {
+    let currentAssets: String
+    let targetAssets: String
+    let percent: String
+    let isHidden: Bool
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            if isHidden {
+                // 숨김 모드
+                HiddenAmountDots(dotCount: 5, dotSize: 6)
+                Text("/")
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                HiddenAmountDots(dotCount: 5, dotSize: 6)
+                Text("(")
+                    .foregroundStyle(Color.Exit.secondaryText)
+                HiddenAmountDots(dotCount: 3, dotSize: 6)
+                Text(")")
+                    .foregroundStyle(Color.Exit.secondaryText)
+            } else {
+                // 표시 모드
+                Text(currentAssets)
+                    .foregroundStyle(Color.Exit.accent)
+                Text("/")
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                Text(targetAssets)
+                    .foregroundStyle(Color.Exit.primaryText)
+                Text("(\(percent))")
+                    .foregroundStyle(Color.Exit.secondaryText)
+            }
+        }
+        .font(.Exit.title3)
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
     }
 }
 
@@ -424,4 +591,3 @@ struct AssetUpdateSheet: View {
         .modelContainer(for: [UserProfile.self, Scenario.self, MonthlyUpdate.self], inMemory: true)
         .preferredColorScheme(.dark)
 }
-
