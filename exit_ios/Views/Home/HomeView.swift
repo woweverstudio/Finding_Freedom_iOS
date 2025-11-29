@@ -11,7 +11,7 @@ import SwiftData
 /// 탭 종류
 enum HomeTab: String, CaseIterable {
     case home = "홈"
-    case safetyScore = "안전점수"
+    case record = "기록"
 }
 
 /// 홈 화면 (메인 대시보드)
@@ -36,8 +36,8 @@ struct HomeView: View {
                     homeTabContent
                         .tag(HomeTab.home)
                     
-                    safetyScoreTabContent
-                        .tag(HomeTab.safetyScore)
+                    recordTabContent
+                        .tag(HomeTab.record)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 
@@ -55,7 +55,7 @@ struct HomeView: View {
         .onAppear {
             viewModel.configure(with: modelContext)
         }
-        .sheet(isPresented: $viewModel.showDepositSheet) {
+        .fullScreenCover(isPresented: $viewModel.showDepositSheet) {
             DepositSheet(viewModel: viewModel)
         }
         .sheet(isPresented: $viewModel.showAssetUpdateSheet) {
@@ -130,10 +130,10 @@ struct HomeView: View {
         }
     }
     
-    // MARK: - Safety Score Tab Content
+    // MARK: - Record Tab Content
     
-    private var safetyScoreTabContent: some View {
-        SafetyScoreTabView(viewModel: viewModel)
+    private var recordTabContent: some View {
+        RecordTabView(viewModel: viewModel)
     }
     
     // MARK: - Scenario Settings Card

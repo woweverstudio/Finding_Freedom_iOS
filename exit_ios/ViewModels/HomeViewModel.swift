@@ -33,12 +33,6 @@ final class HomeViewModel {
     /// 은퇴 계산 결과
     var retirementResult: RetirementCalculationResult?
     
-    /// 안전 점수 결과
-    var safetyScoreResult: SafetyScoreResult?
-    
-    /// 이전 안전 점수 (변화량 계산용)
-    var previousSafetyScore: Double = 0
-    
     // MARK: - Sheet States
     
     /// 입금 시트 표시
@@ -49,6 +43,9 @@ final class HomeViewModel {
     
     /// 시나리오 설정 시트 표시
     var showScenarioSheet: Bool = false
+    
+    /// 수정할 월 (nil이면 새로 입력, 값이 있으면 해당 월 수정)
+    var editingYearMonth: String? = nil
     
     // MARK: - Input States
     
@@ -107,33 +104,63 @@ final class HomeViewModel {
         (retirementResult?.progressPercent ?? 0) / 100
     }
     
-    /// 안전 점수 총점
-    var totalSafetyScore: Int {
-        Int(safetyScoreResult?.totalScore ?? 0)
-    }
-    
-    /// 안전 점수 변화량 텍스트
-    var safetyScoreChangeText: String {
-        guard let result = safetyScoreResult else { return "" }
-        return ExitNumberFormatter.formatScoreChange(result.scoreChange)
-    }
-    
-    /// 안전 점수 세부 항목
-    var safetyScoreDetails: [(title: String, score: Int, maxScore: Int)] {
-        guard let result = safetyScoreResult else {
-            return [
-                ("목표 충족", 0, 25),
-                ("수익률 안전성", 0, 25),
-                ("자산 다각화", 0, 25),
-                ("자산 성장성", 0, 25)
-            ]
+    /// 총 입금액
+    var totalDepositAmount: Double {
+        monthlyUpdates.reduce(0) { sum, record in
+            let categoryTotal = record.salaryAmount + record.dividendAmount + record.interestAmount + record.rentAmount + record.otherAmount
+            if categoryTotal > 0 {
+                return sum + categoryTotal
+            }
+            return sum + record.depositAmount + record.passiveIncome
         }
-        return [
-            ("목표 충족", Int(result.goalFulfillmentScore), 25),
-            ("수익률 안전성", Int(result.returnSafetyScore), 25),
-            ("자산 다각화", Int(result.diversificationScore), 25),
-            ("자산 성장성", Int(result.growthScore), 25)
-        ]
+    }
+    
+    /// 총 패시브인컴
+    var totalPassiveIncome: Double {
+        monthlyUpdates.reduce(0) { sum, record in
+            let newPassive = record.dividendAmount + record.interestAmount + record.rentAmount
+            if newPassive > 0 {
+                return sum + newPassive
+            }
+            return sum + record.passiveIncome
+        }
+    }
+    
+    /// 최근 6개월 입금 데이터 (차트용)
+    var recentDeposits: [MonthlyUpdate] {
+        Array(monthlyUpdates.prefix(6).reversed())
+    }
+    
+    /// 이번 달 입금액
+    var currentMonthDeposit: Double {
+        let currentYearMonth = MonthlyUpdate.currentYearMonth()
+        guard let record = monthlyUpdates.first(where: { $0.yearMonth == currentYearMonth }) else { return 0 }
+        let categoryTotal = record.salaryAmount + record.dividendAmount + record.interestAmount + record.rentAmount + record.otherAmount
+        if categoryTotal > 0 {
+            return categoryTotal
+        }
+        return record.depositAmount + record.passiveIncome
+    }
+    
+    /// 지난 달 입금액
+    var previousMonthDeposit: Double {
+        let calendar = Calendar.current
+        guard let lastMonth = calendar.date(byAdding: .month, value: -1, to: Date()) else { return 0 }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMM"
+        let yearMonth = formatter.string(from: lastMonth)
+        guard let record = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) else { return 0 }
+        let categoryTotal = record.salaryAmount + record.dividendAmount + record.interestAmount + record.rentAmount + record.otherAmount
+        if categoryTotal > 0 {
+            return categoryTotal
+        }
+        return record.depositAmount + record.passiveIncome
+    }
+    
+    /// 월 평균 입금액
+    var averageMonthlyDeposit: Double {
+        guard !monthlyUpdates.isEmpty else { return 0 }
+        return totalDepositAmount / Double(monthlyUpdates.count)
     }
     
     // MARK: - Initialization
@@ -185,22 +212,6 @@ final class HomeViewModel {
         
         // 은퇴 계산
         retirementResult = RetirementCalculator.calculate(from: scenario)
-        
-        // 안전 점수 계산
-        let currentUpdate = monthlyUpdates.first
-        let previousUpdate = monthlyUpdates.dropFirst().first
-        
-        safetyScoreResult = SafetyScoreCalculator.calculate(
-            monthlyPassiveIncome: currentUpdate?.passiveIncome ?? 0,
-            desiredMonthlyIncome: scenario.desiredMonthlyIncome,
-            currentAssets: currentUpdate?.totalAssets ?? scenario.currentNetAssets,
-            previousAssets: previousUpdate?.totalAssets ?? scenario.currentNetAssets,
-            assetTypeCount: currentUpdate?.assetTypes.count ?? 0,
-            inflationRate: scenario.inflationRate,
-            previousTotalScore: previousSafetyScore
-        )
-        
-        previousSafetyScore = safetyScoreResult?.totalScore ?? 0
     }
     
     // MARK: - Actions
@@ -214,7 +225,7 @@ final class HomeViewModel {
         calculateResults()
     }
     
-    /// 입금 처리
+    /// 입금 처리 (레거시)
     /// - Parameters:
     ///   - isPassiveIncome: 패시브인컴 여부 (배당금, 이자, 월세 등)
     ///   - depositType: 입금 유형 이름 (기록용)
@@ -256,6 +267,80 @@ final class HomeViewModel {
         // 초기화 및 재계산
         depositAmount = 0
         depositDate = Date()
+        loadData()
+        showDepositSheet = false
+    }
+    
+    /// 카테고리별 입금 처리 (신규)
+    /// - Parameters:
+    ///   - yearMonth: 연월 문자열 (yyyyMM)
+    ///   - salaryAmount: 월급/보너스
+    ///   - dividendAmount: 배당금
+    ///   - interestAmount: 이자 수입
+    ///   - rentAmount: 월세/임대료
+    ///   - otherAmount: 기타 입금
+    func submitCategoryDeposit(
+        yearMonth: String,
+        salaryAmount: Double,
+        dividendAmount: Double,
+        interestAmount: Double,
+        rentAmount: Double,
+        otherAmount: Double
+    ) {
+        guard let context = modelContext, let scenario = activeScenario else { return }
+        
+        let newTotalDeposit = salaryAmount + dividendAmount + interestAmount + rentAmount + otherAmount
+        
+        if let existingUpdate = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) {
+            // 기존 기록의 이전 총액 계산
+            let previousTotal = existingUpdate.salaryAmount + existingUpdate.dividendAmount + 
+                               existingUpdate.interestAmount + existingUpdate.rentAmount + existingUpdate.otherAmount
+            
+            // 레거시 필드도 고려 (마이그레이션 안 된 데이터)
+            let legacyTotal = existingUpdate.depositAmount + existingUpdate.passiveIncome
+            let actualPreviousTotal = max(previousTotal, legacyTotal)
+            
+            // 카테고리별 금액 업데이트
+            existingUpdate.salaryAmount = salaryAmount
+            existingUpdate.dividendAmount = dividendAmount
+            existingUpdate.interestAmount = interestAmount
+            existingUpdate.rentAmount = rentAmount
+            existingUpdate.otherAmount = otherAmount
+            
+            // 레거시 필드 동기화
+            existingUpdate.depositAmount = salaryAmount + otherAmount
+            existingUpdate.passiveIncome = dividendAmount + interestAmount + rentAmount
+            
+            // 총 자산 업데이트 (차이만큼 반영)
+            let difference = newTotalDeposit - actualPreviousTotal
+            existingUpdate.totalAssets += difference
+            existingUpdate.recordedAt = Date()
+            
+            // 시나리오 자산 업데이트
+            scenario.currentNetAssets += difference
+        } else {
+            // 새 기록 생성
+            let newUpdate = MonthlyUpdate(
+                yearMonth: yearMonth,
+                salaryAmount: salaryAmount,
+                dividendAmount: dividendAmount,
+                interestAmount: interestAmount,
+                rentAmount: rentAmount,
+                otherAmount: otherAmount,
+                totalAssets: scenario.currentNetAssets + newTotalDeposit,
+                assetTypes: Array(selectedAssetTypes)
+            )
+            context.insert(newUpdate)
+            
+            // 시나리오 자산 업데이트
+            scenario.currentNetAssets += newTotalDeposit
+        }
+        
+        scenario.updatedAt = Date()
+        
+        try? context.save()
+        
+        // 데이터 리로드 및 시트 닫기
         loadData()
         showDepositSheet = false
     }
@@ -345,6 +430,26 @@ final class HomeViewModel {
         ) {
             scenarios.append(newScenario)
         }
+    }
+    
+    // MARK: - Monthly Update Management
+    
+    /// 입금 기록 삭제
+    func deleteMonthlyUpdate(_ update: MonthlyUpdate) {
+        guard let context = modelContext else { return }
+        
+        // 시나리오 자산에서 해당 입금액 차감
+        if let scenario = activeScenario {
+            scenario.currentNetAssets -= (update.depositAmount + update.passiveIncome)
+            scenario.updatedAt = Date()
+        }
+        
+        // 삭제
+        context.delete(update)
+        try? context.save()
+        
+        // 데이터 다시 로드
+        loadData()
     }
 }
 

@@ -7,14 +7,13 @@
 
 import SwiftUI
 
-/// 입금 유형
-enum DepositType: String, CaseIterable, Identifiable {
-    case salary = "월급/보너스"
-    case dividend = "배당금"
-    case interest = "이자 수입"
-    case rent = "월세/임대료"
-    case investmentProfit = "투자 수익"
-    case other = "기타 입금"
+/// 입금 카테고리
+enum DepositCategory: String, CaseIterable, Identifiable {
+    case salary = "월급"
+    case dividend = "배당"
+    case interest = "이자"
+    case rent = "월세"
+    case other = "기타"
     
     var id: String { rawValue }
     
@@ -22,21 +21,19 @@ enum DepositType: String, CaseIterable, Identifiable {
         switch self {
         case .salary: return "briefcase.fill"
         case .dividend: return "chart.line.uptrend.xyaxis"
-        case .interest: return "banknote.fill"
+        case .interest: return "percent"
         case .rent: return "house.fill"
-        case .investmentProfit: return "arrow.up.right.circle.fill"
-        case .other: return "dollarsign.circle.fill"
+        case .other: return "ellipsis.circle.fill"
         }
     }
     
     var description: String {
         switch self {
-        case .salary: return "근로소득, 상여금 등"
-        case .dividend: return "주식/펀드 배당금"
-        case .interest: return "예적금, 채권 이자"
-        case .rent: return "부동산 임대 수입"
-        case .investmentProfit: return "매매 차익, 기타 투자 수익"
-        case .other: return "그 외 기타 수입"
+        case .salary: return "월급/보너스"
+        case .dividend: return "주식 배당"
+        case .interest: return "이자 수입"
+        case .rent: return "임대 수입"
+        case .other: return "기타 수입"
         }
     }
     
@@ -45,24 +42,22 @@ enum DepositType: String, CaseIterable, Identifiable {
         switch self {
         case .salary, .other:
             return false
-        case .dividend, .interest, .rent, .investmentProfit:
+        case .dividend, .interest, .rent:
             return true
         }
     }
-    
-    var accentColor: Color {
-        Color.Exit.accent
-    }
 }
 
-/// 입금 시트 스텝
+/// 입금 시트 스텝 (3단계)
 enum DepositStep: Int, CaseIterable {
-    case selectType = 0
-    case enterAmount = 1
+    case selectMonth = 0
+    case selectCategory = 1
+    case enterAmount = 2
     
     var title: String {
         switch self {
-        case .selectType: return "입금 유형 선택"
+        case .selectMonth: return "입금 월 선택"
+        case .selectCategory: return "자산군 선택"
         case .enterAmount: return "금액 입력"
         }
     }
@@ -73,9 +68,48 @@ struct DepositSheet: View {
     @Bindable var viewModel: HomeViewModel
     @Environment(\.dismiss) private var dismiss
     
-    @State private var currentStep: DepositStep = .selectType
-    @State private var selectedType: DepositType?
-    @State private var showDatePicker = false
+    @State private var currentStep: DepositStep = .selectMonth
+    @State private var selectedYear: Int = Calendar.current.component(.year, from: Date())
+    @State private var selectedMonth: Int = Calendar.current.component(.month, from: Date())
+    @State private var isEditMode: Bool = false
+    
+    // 각 카테고리별 금액
+    @State private var salaryAmount: Double = 0
+    @State private var dividendAmount: Double = 0
+    @State private var interestAmount: Double = 0
+    @State private var rentAmount: Double = 0
+    @State private var otherAmount: Double = 0
+    
+    // 현재 선택된 카테고리
+    @State private var selectedCategory: DepositCategory = .salary
+    
+    private var currentYear: Int {
+        Calendar.current.component(.year, from: Date())
+    }
+    
+    private var currentMonth: Int {
+        Calendar.current.component(.month, from: Date())
+    }
+    
+    /// 선택된 년월의 yearMonth 문자열
+    private var selectedYearMonth: String {
+        String(format: "%04d%02d", selectedYear, selectedMonth)
+    }
+    
+    /// 총 입금액
+    private var totalAmount: Double {
+        salaryAmount + dividendAmount + interestAmount + rentAmount + otherAmount
+    }
+    
+    /// 기존 기록이 있는 월들의 Set
+    private var existingMonthsSet: Set<String> {
+        Set(viewModel.monthlyUpdates.map { $0.yearMonth })
+    }
+    
+    /// 현재 선택된 월에 기존 기록이 있는지
+    private var hasExistingRecord: Bool {
+        existingMonthsSet.contains(selectedYearMonth)
+    }
     
     var body: some View {
         ZStack {
@@ -85,46 +119,98 @@ struct DepositSheet: View {
                 // 헤더
                 sheetHeader
                 
-                // 진행률 표시
-                progressIndicator
+                // 진행률 표시 (수정 모드가 아닐 때만)
+                if !isEditMode || currentStep != .selectCategory {
+                    progressIndicator
+                }
                 
                 // 스텝별 컨텐츠
                 Group {
                     switch currentStep {
-                    case .selectType:
-                        typeSelectionStep
+                    case .selectMonth:
+                        DepositMonthStep(
+                            selectedYear: $selectedYear,
+                            selectedMonth: $selectedMonth,
+                            currentYear: currentYear,
+                            currentMonth: currentMonth,
+                            existingMonths: existingMonthsSet,
+                            hasExistingRecord: hasExistingRecord,
+                            onNext: {
+                                loadExistingRecord()
+                                currentStep = .selectCategory
+                            }
+                        )
+                        
+                    case .selectCategory:
+                        DepositCategoryStep(
+                            selectedYear: selectedYear,
+                            selectedMonth: selectedMonth,
+                            totalAmount: totalAmount,
+                            amountForCategory: amountForCategory,
+                            onSelectCategory: { category in
+                                selectedCategory = category
+                                currentStep = .enterAmount
+                            },
+                            onSave: submitDeposit
+                        )
+                        
                     case .enterAmount:
-                        amountInputStep
+                        DepositAmountStep(
+                            selectedYear: selectedYear,
+                            selectedMonth: selectedMonth,
+                            selectedCategory: selectedCategory,
+                            amount: bindingForSelectedCategory(),
+                            onComplete: {
+                                currentStep = .selectCategory
+                            }
+                        )
                     }
                 }
-                .animation(.easeInOut(duration: 0.3), value: currentStep)
+                .animation(.easeInOut(duration: 0.2), value: currentStep)
             }
         }
         .presentationDetents([.large])
+        .onAppear {
+            setupEditMode()
+        }
+        .onDisappear {
+            // 시트가 닫힐 때 editingYearMonth 초기화
+            viewModel.editingYearMonth = nil
+        }
+    }
+    
+    /// 수정 모드 설정
+    private func setupEditMode() {
+        if let editingYearMonth = viewModel.editingYearMonth,
+           editingYearMonth.count >= 6,
+           let year = Int(String(editingYearMonth.prefix(4))),
+           let month = Int(String(editingYearMonth.suffix(2))) {
+            // 수정 모드로 설정
+            isEditMode = true
+            selectedYear = year
+            selectedMonth = month
+            loadExistingRecord()
+            currentStep = .selectCategory
+        } else {
+            // 새 입력 모드
+            isEditMode = false
+            loadExistingRecord()
+        }
     }
     
     // MARK: - Header
     
     private var sheetHeader: some View {
         HStack {
-            Button {
-                if currentStep == .selectType {
-                    dismiss()
-                } else {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        currentStep = .selectType
-                        showDatePicker = false
-                    }
-                }
-            } label: {
-                Image(systemName: currentStep == .selectType ? "xmark" : "chevron.left")
+            Button(action: goBack) {
+                Image(systemName: shouldShowCloseButton ? "xmark" : "chevron.left")
                     .font(.Exit.body)
                     .foregroundStyle(Color.Exit.secondaryText)
             }
             
             Spacer()
             
-            Text(currentStep.title)
+            Text(headerTitle)
                 .font(.Exit.title3)
                 .foregroundStyle(Color.Exit.primaryText)
             
@@ -137,6 +223,20 @@ struct DepositSheet: View {
         }
         .padding(.horizontal, ExitSpacing.lg)
         .padding(.top, ExitSpacing.lg)
+    }
+    
+    private var shouldShowCloseButton: Bool {
+        if isEditMode {
+            return currentStep == .selectCategory
+        }
+        return currentStep == .selectMonth
+    }
+    
+    private var headerTitle: String {
+        if isEditMode && currentStep == .selectCategory {
+            return "\(String(selectedYear))년 \(selectedMonth)월 수정"
+        }
+        return currentStep.title
     }
     
     // MARK: - Progress Indicator
@@ -154,227 +254,90 @@ struct DepositSheet: View {
         .padding(.top, ExitSpacing.md)
     }
     
-    // MARK: - Step 1: Type Selection
+    // MARK: - Navigation
     
-    private var typeSelectionStep: some View {
-        VStack(spacing: ExitSpacing.lg) {
-            // 안내 텍스트
-            VStack(spacing: ExitSpacing.sm) {
-                Text("어떤 종류의 입금인가요?")
-                    .font(.Exit.title2)
-                    .foregroundStyle(Color.Exit.primaryText)
-                
-                Text("패시브인컴은 안전점수에 반영됩니다")
-                    .font(.Exit.subheadline)
-                    .foregroundStyle(Color.Exit.secondaryText)
+    private func goBack() {
+        switch currentStep {
+        case .selectMonth:
+            dismiss()
+        case .selectCategory:
+            if isEditMode {
+                // 수정 모드에서는 바로 닫기
+                dismiss()
+            } else {
+                currentStep = .selectMonth
             }
-            .padding(.top, ExitSpacing.xl)
-            
-            // 카테고리 그리드
-            ScrollView(showsIndicators: false) {
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: ExitSpacing.md) {
-                    ForEach(DepositType.allCases) { type in
-                        DepositTypeCard(
-                            type: type,
-                            isSelected: selectedType == type
-                        ) {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                selectedType = type
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, ExitSpacing.lg)
-            }
-            
-            Spacer()
-            
-            // 다음 버튼
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    currentStep = .enterAmount
-                }
-            } label: {
-                Text("다음")
-                    .exitPrimaryButton(isEnabled: selectedType != nil)
-            }
-            .disabled(selectedType == nil)
-            .padding(.horizontal, ExitSpacing.md)
-            .padding(.bottom, ExitSpacing.lg)
+        case .enterAmount:
+            currentStep = .selectCategory
         }
     }
     
-    // MARK: - Step 2: Amount Input
+    // MARK: - Data Helpers
     
-    private var amountInputStep: some View {
-        VStack(spacing: ExitSpacing.lg) {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: ExitSpacing.xl) {
-                    // 입금액 표시
-                    VStack(spacing: ExitSpacing.sm) {
-                        Text("입금액")
-                            .font(.Exit.body)
-                            .foregroundStyle(Color.Exit.secondaryText)
-                        
-                        Text(ExitNumberFormatter.formatToWon(viewModel.depositAmount))
-                            .font(.Exit.numberDisplay)
-                            .foregroundStyle(Color.Exit.primaryText)
-                            .contentTransition(.numericText())
-                            .animation(.easeInOut(duration: 0.1), value: viewModel.depositAmount)
-                    }
-                    
-                    // 입금 날짜 선택
-                    depositDateSection
+    /// 기존 기록 불러오기
+    private func loadExistingRecord() {
+        if let existingUpdate = viewModel.monthlyUpdates.first(where: { $0.yearMonth == selectedYearMonth }) {
+            salaryAmount = existingUpdate.salaryAmount
+            dividendAmount = existingUpdate.dividendAmount
+            interestAmount = existingUpdate.interestAmount
+            rentAmount = existingUpdate.rentAmount
+            otherAmount = existingUpdate.otherAmount
+            
+            // 레거시 데이터 마이그레이션
+            if salaryAmount == 0 && dividendAmount == 0 && interestAmount == 0 && rentAmount == 0 && otherAmount == 0 {
+                if existingUpdate.depositAmount > 0 {
+                    salaryAmount = existingUpdate.depositAmount
                 }
-                .padding(.top, ExitSpacing.lg)
+                if existingUpdate.passiveIncome > 0 {
+                    dividendAmount = existingUpdate.passiveIncome
+                }
             }
-            
-            if !showDatePicker {
-                CustomNumberKeyboard(
-                    value: $viewModel.depositAmount
-                )
-                .transition(.scale)
-            }
-            
-            Button {
-                submitDeposit()
-            } label: {
-                Text("입금 완료")
-                    .exitPrimaryButton(isEnabled: viewModel.depositAmount > 0)
-            }
-            .disabled(viewModel.depositAmount <= 0)
-            .padding(.horizontal, ExitSpacing.md)
-            .padding(.bottom, ExitSpacing.lg)
+        } else {
+            salaryAmount = 0
+            dividendAmount = 0
+            interestAmount = 0
+            rentAmount = 0
+            otherAmount = 0
         }
     }
     
-    // MARK: - Deposit Date Section
-    
-    private var depositDateSection: some View {
-        VStack(spacing: ExitSpacing.sm) {
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    showDatePicker.toggle()
-                }
-            } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                        Text("입금 날짜")
-                            .font(.Exit.subheadline)
-                            .foregroundStyle(Color.Exit.secondaryText)
-                        
-                        Text(formattedDate(viewModel.depositDate))
-                            .font(.Exit.body)
-                            .fontWeight(.medium)
-                            .foregroundStyle(Color.Exit.primaryText)
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: "calendar")
-                        .font(.Exit.body)
-                        .foregroundStyle(Color.Exit.accent)
-                }
-                .padding(ExitSpacing.md)
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, ExitSpacing.md)
-            
-            if showDatePicker {
-                DatePicker(
-                    "입금 날짜",
-                    selection: $viewModel.depositDate,
-                    in: ...Date(),
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.graphical)
-                .tint(Color.Exit.accent)
-                .padding(ExitSpacing.md)
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-                .padding(.horizontal, ExitSpacing.md)
-                .transition(.scale)
-                .onChange(of: viewModel.depositDate) {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        showDatePicker = false
-                    }
-                }
-            }
+    /// 카테고리별 금액 반환
+    private func amountForCategory(_ category: DepositCategory) -> Double {
+        switch category {
+        case .salary: return salaryAmount
+        case .dividend: return dividendAmount
+        case .interest: return interestAmount
+        case .rent: return rentAmount
+        case .other: return otherAmount
         }
     }
     
-    // MARK: - Submit
+    /// 선택된 카테고리에 대한 Binding
+    private func bindingForSelectedCategory() -> Binding<Double> {
+        switch selectedCategory {
+        case .salary:
+            return $salaryAmount
+        case .dividend:
+            return $dividendAmount
+        case .interest:
+            return $interestAmount
+        case .rent:
+            return $rentAmount
+        case .other:
+            return $otherAmount
+        }
+    }
     
+    /// 입금 제출
     private func submitDeposit() {
-        guard let type = selectedType else { return }
-        
-        // 패시브인컴인 경우 passiveIncome으로 처리
-        viewModel.submitDeposit(isPassiveIncome: type.isPassiveIncome, depositType: type.rawValue)
-    }
-    
-    // MARK: - Helpers
-    
-    private func formattedDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "yyyy년 M월 d일 (E)"
-        return formatter.string(from: date)
-    }
-}
-
-// MARK: - Deposit Type Card
-
-private struct DepositTypeCard: View {
-    let type: DepositType
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: ExitSpacing.sm) {
-                // 아이콘
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? type.accentColor.opacity(0.2) : Color.Exit.secondaryCardBackground)
-                        .frame(width: 48, height: 48)
-                    
-                    Image(systemName: type.icon)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(isSelected ? type.accentColor : Color.Exit.secondaryText)
-                }
-                
-                // 타이틀
-                Text(type.rawValue)
-                    .font(.Exit.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(isSelected ? Color.Exit.primaryText : Color.Exit.secondaryText)
-                
-                // 설명
-                Text(type.description)
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                
-            }
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 120)
-            .padding(ExitSpacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: ExitRadius.lg)
-                    .fill(Color.Exit.cardBackground)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: ExitRadius.lg)
-                    .stroke(isSelected ? type.accentColor : Color.Exit.divider, lineWidth: isSelected ? 2 : 1)
-            )
-        }
-        .buttonStyle(.plain)
+        viewModel.submitCategoryDeposit(
+            yearMonth: selectedYearMonth,
+            salaryAmount: salaryAmount,
+            dividendAmount: dividendAmount,
+            interestAmount: interestAmount,
+            rentAmount: rentAmount,
+            otherAmount: otherAmount
+        )
     }
 }
 

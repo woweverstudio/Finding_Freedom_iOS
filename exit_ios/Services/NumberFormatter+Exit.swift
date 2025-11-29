@@ -50,6 +50,21 @@ enum ExitNumberFormatter {
         }
     }
     
+    /// 원 단위를 짧은 형식으로 변환 (차트용)
+    /// - Parameter value: 원 단위 금액
+    /// - Returns: 포맷된 문자열 (예: "150만")
+    static func formatToManWonShort(_ value: Double) -> String {
+        let manWon = value / 10_000
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        
+        if let formatted = formatter.string(from: NSNumber(value: manWon)) {
+            return "\(formatted)만"
+        }
+        return "0"
+    }
+    
     /// 축약된 금액 표시 (홈화면용)
     /// - Parameter value: 원 단위 금액
     /// - Returns: 포맷된 문자열 (예: "7,500만원 / 4억 2,750만원")
