@@ -14,8 +14,8 @@ struct BlurredAmountText: View {
     
     var body: some View {
         Text(text)
-            .blur(radius: isHidden ? 8 : 0)
-            .opacity(isHidden ? 0.6 : 1)
+            .blur(radius: isHidden ? 2 : 0)
+            .opacity(isHidden ? 0.8 : 1)
             .animation(.easeInOut(duration: 0.2), value: isHidden)
     }
 }

@@ -18,18 +18,18 @@ struct AssetProgressRow: View {
         HStack(spacing: 4) {
             Text(currentAssets)
                 .foregroundStyle(Color.Exit.accent)
-                .blur(radius: isHidden ? 10 : 0)
+                .blur(radius: isHidden ? 5 : 0)
             
             Text("/")
                 .foregroundStyle(Color.Exit.tertiaryText)
             
             Text(targetAssets)
                 .foregroundStyle(Color.Exit.primaryText)
-                .blur(radius: isHidden ? 10 : 0)
+//                .blur(radius: isHidden ? 4 : 0)
             
             Text("(\(percent))")
                 .foregroundStyle(Color.Exit.secondaryText)
-                .blur(radius: isHidden ? 8 : 0)
+                .blur(radius: isHidden ? 5 : 0)
         }
         .font(.Exit.title3)
         .lineLimit(1)

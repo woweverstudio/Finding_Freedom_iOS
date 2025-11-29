@@ -170,16 +170,10 @@ struct MonthCell: View {
     
     var body: some View {
         Button(action: onTap) {
-            ZStack {
+            VStack(spacing: 4) {
                 Text("\(month)월")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundStyle(textColor)
-                
-                // 기록 표시 점
-                Circle()
-                    .fill(hasRecord ? Color.Exit.accent : Color.clear)
-                    .frame(width: 6, height: 6)
-                    .offset(x: 0, y: 24)
+                    .foregroundStyle(hasRecord ? Color.Exit.accent : Color.Exit.primaryText)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 80)

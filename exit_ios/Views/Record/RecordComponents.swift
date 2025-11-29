@@ -152,16 +152,6 @@ struct DepositHistoryRow: View {
             items.append(("ellipsis.circle.fill", "기타", update.otherAmount))
         }
         
-        // 레거시 데이터 지원
-        if items.isEmpty {
-            if update.depositAmount > 0 {
-                items.append(("plus.circle.fill", "입금", update.depositAmount))
-            }
-            if update.passiveIncome > 0 {
-                items.append(("banknote.fill", "패시브", update.passiveIncome))
-            }
-        }
-        
         return items
     }
     
@@ -221,15 +211,15 @@ struct DepositHistoryRow: View {
             Spacer()
             
             // 버튼 영역 (세로 정렬)
-            VStack(spacing: ExitSpacing.xs) {
+            VStack(spacing: ExitSpacing.sm) {
                 // 수정 버튼
                 Button(action: onEdit) {
                     Image(systemName: "pencil")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Color.Exit.secondaryText)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 60, height: 28)
                         .background(Color.Exit.secondaryCardBackground)
-                        .clipShape(Circle())
+                        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
                 }
                 .buttonStyle(.plain)
                 
@@ -238,15 +228,15 @@ struct DepositHistoryRow: View {
                     Image(systemName: "trash")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Color.Exit.warning)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 60, height: 28)
                         .background(Color.Exit.warning.opacity(0.1))
-                        .clipShape(Circle())
+                        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(ExitSpacing.md)
-        .background(Color.Exit.cardBackground)
+        .padding(ExitSpacing.sm)
+        .background(Color.Exit.secondaryCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
     }
 }

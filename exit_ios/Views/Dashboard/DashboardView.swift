@@ -107,7 +107,7 @@ struct DashboardView: View {
                     
                     // 금액 숨김 토글 (우측 하단)
                     amountVisibilityToggle
-                        .offset(x: 10, y: 10)
+                        .offset(x: 30, y: 10)
                 }
             }
             
