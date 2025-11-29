@@ -74,6 +74,11 @@ struct MainTabView: View {
                 Spacer()
                 floatingActionButtons
             }
+            
+            // 입금 완료 후 자산 업데이트 확인 다이얼로그
+            if viewModel.showAssetUpdateConfirm {
+                assetUpdateConfirmOverlay
+            }
         }
         .onAppear {
             viewModel.configure(with: modelContext)
@@ -127,11 +132,10 @@ struct MainTabView: View {
         HStack(spacing: ExitSpacing.md) {
             // 자산 변동 업데이트 (좌측)
             Button {
-                if let lastUpdate = viewModel.monthlyUpdates.first {
-                    viewModel.totalAssetsInput = lastUpdate.totalAssets
-                    viewModel.selectedAssetTypes = Set(lastUpdate.assetTypes)
-                } else if let scenario = viewModel.activeScenario {
-                    viewModel.totalAssetsInput = scenario.currentNetAssets
+                // 현재 Asset 값으로 초기화
+                viewModel.totalAssetsInput = viewModel.currentAssetAmount
+                if let asset = viewModel.currentAsset {
+                    viewModel.selectedAssetTypes = Set(asset.assetTypes)
                 }
                 viewModel.showAssetUpdateSheet = true
             } label: {
@@ -187,6 +191,115 @@ struct MainTabView: View {
             .allowsHitTesting(false)
         )
     }
+    
+    // MARK: - Asset Update Confirm Overlay
+    
+    private var assetUpdateConfirmOverlay: some View {
+        ZStack {
+            // 딤 배경
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.3)) {
+                        viewModel.showAssetUpdateConfirm = false
+                    }
+                }
+            
+            // 다이얼로그
+            VStack(spacing: ExitSpacing.lg) {
+                // 아이콘
+                ZStack {
+                    Circle()
+                        .fill(Color.Exit.accent.opacity(0.2))
+                        .frame(width: 64, height: 64)
+                    
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundStyle(Color.Exit.accent)
+                }
+                
+                // 타이틀
+                Text("입금 기록 완료!")
+                    .font(.Exit.title3)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.Exit.primaryText)
+                
+                // 메시지
+                VStack(spacing: ExitSpacing.xs) {
+                    Text("자산도 함께 업데이트할까요?")
+                        .font(.Exit.body)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                    
+                    HStack(spacing: ExitSpacing.xs) {
+                        Text("현재 기록된 자산:")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.tertiaryText)
+                        Text(ExitNumberFormatter.formatToEokManWon(viewModel.currentAssetAmount))
+                            .font(.Exit.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.Exit.accent)
+                    }
+                    
+                    if let asset = viewModel.currentAsset {
+                        Text("(\(viewModel.lastAssetUpdateText) 기준)")
+                            .font(.Exit.caption2)
+                            .foregroundStyle(Color.Exit.tertiaryText)
+                    }
+                }
+                
+                // 버튼
+                HStack(spacing: ExitSpacing.sm) {
+                    // 나중에 버튼
+                    Button {
+                        withAnimation(.spring(response: 0.3)) {
+                            viewModel.showAssetUpdateConfirm = false
+                        }
+                    } label: {
+                        Text("나중에")
+                            .font(.Exit.body)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(Color.Exit.secondaryCardBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+                    }
+                    .buttonStyle(.plain)
+                    
+                    // 자산 업데이트 버튼
+                    Button {
+                        withAnimation(.spring(response: 0.3)) {
+                            viewModel.showAssetUpdateConfirm = false
+                        }
+                        // 약간의 딜레이 후 자산 업데이트 시트 표시
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            viewModel.totalAssetsInput = viewModel.currentAssetAmount
+                            if let asset = viewModel.currentAsset {
+                                viewModel.selectedAssetTypes = Set(asset.assetTypes)
+                            }
+                            viewModel.showAssetUpdateSheet = true
+                        }
+                    } label: {
+                        Text("자산 업데이트")
+                            .font(.Exit.body)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(LinearGradient.exitAccent)
+                            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(ExitSpacing.lg)
+            .background(Color.Exit.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.xl))
+            .padding(.horizontal, ExitSpacing.xl)
+            .transition(.scale.combined(with: .opacity))
+        }
+        .transition(.opacity)
+    }
 }
 
 #Preview {
@@ -194,6 +307,8 @@ struct MainTabView: View {
         .modelContainer(for: [
             UserProfile.self,
             Scenario.self,
-            MonthlyUpdate.self
+            MonthlyUpdate.self,
+            Asset.self,
+            AssetSnapshot.self
         ], inMemory: true)
 }

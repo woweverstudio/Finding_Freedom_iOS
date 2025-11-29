@@ -39,6 +39,9 @@ extension Color {
         /// 주의 색상 - 주황 (#FF9500)
         static let caution = Color(hex: "FF9500")
         
+        /// 긍정 색상 - 초록 (#34C759)
+        static let positive = Color(hex: "34C759")
+        
         /// 구분선 색상
         static let divider = Color(hex: "2A2A2A")
         

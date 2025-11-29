@@ -19,8 +19,10 @@ final class Scenario {
     /// 은퇴 후 희망 월 수입 (원 단위)
     var desiredMonthlyIncome: Double = 3_000_000
     
-    /// 현재 순자산 (원 단위)
-    var currentNetAssets: Double = 0
+    /// 자산 오프셋 (원 단위)
+    /// 실제 자산에 더하거나 빼서 "만약 ~라면?" 시뮬레이션에 사용
+    /// 예: 로또당첨 시나리오는 +10억, 기본 시나리오는 0
+    var assetOffset: Double = 0
     
     /// 매월 목표 투자금액 (원 단위)
     var monthlyInvestment: Double = 500_000
@@ -48,7 +50,7 @@ final class Scenario {
     init(
         name: String,
         desiredMonthlyIncome: Double,
-        currentNetAssets: Double,
+        assetOffset: Double = 0,
         monthlyInvestment: Double,
         preRetirementReturnRate: Double = 6.5,
         postRetirementReturnRate: Double = 5.0,
@@ -58,7 +60,7 @@ final class Scenario {
         self.id = UUID()
         self.name = name
         self.desiredMonthlyIncome = desiredMonthlyIncome
-        self.currentNetAssets = currentNetAssets
+        self.assetOffset = assetOffset
         self.monthlyInvestment = monthlyInvestment
         self.preRetirementReturnRate = preRetirementReturnRate
         self.postRetirementReturnRate = postRetirementReturnRate
@@ -73,7 +75,7 @@ final class Scenario {
         Scenario(
             name: newName,
             desiredMonthlyIncome: desiredMonthlyIncome,
-            currentNetAssets: currentNetAssets,
+            assetOffset: assetOffset,
             monthlyInvestment: monthlyInvestment,
             preRetirementReturnRate: preRetirementReturnRate,
             postRetirementReturnRate: postRetirementReturnRate,
@@ -81,27 +83,33 @@ final class Scenario {
             isActive: false
         )
     }
+    
+    /// 시나리오에 적용될 실제 자산 계산
+    /// - Parameter currentAsset: 현재 실제 자산 (Asset.amount)
+    /// - Returns: 시나리오에 적용될 자산 (실제 자산 + 오프셋)
+    func effectiveAsset(with currentAsset: Double) -> Double {
+        currentAsset + assetOffset
+    }
 }
 
 // MARK: - Preset Scenarios
 extension Scenario {
     static func createDefaultScenarios(
         desiredMonthlyIncome: Double,
-        currentNetAssets: Double,
         monthlyInvestment: Double
     ) -> [Scenario] {
         [
             Scenario(
                 name: "기본",
                 desiredMonthlyIncome: desiredMonthlyIncome,
-                currentNetAssets: currentNetAssets,
+                assetOffset: 0,
                 monthlyInvestment: monthlyInvestment,
                 isActive: true
             ),
             Scenario(
                 name: "물가폭등",
                 desiredMonthlyIncome: desiredMonthlyIncome,
-                currentNetAssets: currentNetAssets,
+                assetOffset: 0,
                 monthlyInvestment: monthlyInvestment,
                 preRetirementReturnRate: 6.5,
                 postRetirementReturnRate: 5.0,
@@ -110,7 +118,7 @@ extension Scenario {
             Scenario(
                 name: "주식폭락",
                 desiredMonthlyIncome: desiredMonthlyIncome,
-                currentNetAssets: currentNetAssets,
+                assetOffset: 0,
                 monthlyInvestment: monthlyInvestment,
                 preRetirementReturnRate: 3.0,  // 수익률 감소
                 postRetirementReturnRate: 3.0,
@@ -119,7 +127,7 @@ extension Scenario {
             Scenario(
                 name: "로또당첨",
                 desiredMonthlyIncome: desiredMonthlyIncome,
-                currentNetAssets: currentNetAssets + 1_000_000_000,  // 10억 추가
+                assetOffset: 1_000_000_000,  // +10억 오프셋
                 monthlyInvestment: monthlyInvestment,
                 preRetirementReturnRate: 6.5,
                 postRetirementReturnRate: 5.0,
@@ -128,4 +136,3 @@ extension Scenario {
         ]
     }
 }
-

@@ -95,11 +95,11 @@ struct DashboardView: View {
     private var progressSection: some View {
         VStack(spacing: ExitSpacing.lg) {
             // 진행률 링 차트 + 토글 버튼
-            if let scenario = viewModel.activeScenario, let result = viewModel.retirementResult {
+            if let result = viewModel.retirementResult {
                 ZStack(alignment: .bottom) {
                     ProgressRingView(
                         progress: viewModel.progressValue,
-                        currentAmount: ExitNumberFormatter.formatToEokManWon(scenario.currentNetAssets),
+                        currentAmount: ExitNumberFormatter.formatToEokManWon(result.currentAssets),
                         targetAmount: ExitNumberFormatter.formatToEokManWon(result.targetAssets),
                         percentText: ExitNumberFormatter.formatPercentInt(result.progressPercent),
                         hideAmounts: hideAmounts
@@ -151,7 +151,7 @@ struct DashboardView: View {
             if let scenario = viewModel.activeScenario, let result = viewModel.retirementResult {
                 // 현재 자산 / 목표 자산 (1줄 유지, 자동 축소)
                 AssetProgressRow(
-                    currentAssets: ExitNumberFormatter.formatToEokManWon(scenario.currentNetAssets),
+                    currentAssets: ExitNumberFormatter.formatToEokManWon(result.currentAssets),
                     targetAssets: ExitNumberFormatter.formatToEokManWon(result.targetAssets),
                     percent: ExitNumberFormatter.formatPercentInt(result.progressPercent),
                     isHidden: hideAmounts
@@ -237,7 +237,7 @@ struct DashboardView: View {
     
     private var scenarioSettingsCard: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            if let scenario = viewModel.activeScenario {
+            if let scenario = viewModel.activeScenario, let result = viewModel.retirementResult {
                 // 헤더
                 HStack {
                     Text("시나리오")
@@ -268,11 +268,27 @@ struct DashboardView: View {
                         value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome)
                     )
                     
+                    // 현재 순자산 (실제 자산 + 오프셋)
                     ScenarioSettingRow(
                         label: "현재 순자산",
-                        value: ExitNumberFormatter.formatToEokManWon(scenario.currentNetAssets),
+                        value: ExitNumberFormatter.formatToEokManWon(result.currentAssets),
                         isHidden: hideAmounts
                     )
+                    
+                    // 가정 금액이 있으면 상세 표시
+                    if scenario.assetOffset != 0 {
+                        ScenarioSettingRow(
+                            label: "  └ 실제 자산",
+                            value: ExitNumberFormatter.formatToEokManWon(viewModel.currentAssetAmount),
+                            isHidden: hideAmounts,
+                            valueColor: Color.Exit.secondaryText
+                        )
+                        ScenarioSettingRow(
+                            label: "  └ 가정 금액",
+                            value: (scenario.assetOffset >= 0 ? "+" : "") + ExitNumberFormatter.formatToEokManWon(scenario.assetOffset),
+                            valueColor: scenario.assetOffset >= 0 ? Color.Exit.positive : Color.Exit.warning
+                        )
+                    }
                     
                     ScenarioSettingRow(
                         label: "매월 목표 투자금액",
@@ -319,4 +335,3 @@ struct DashboardView: View {
     }
     .preferredColorScheme(.dark)
 }
-

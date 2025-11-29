@@ -18,6 +18,9 @@ final class HomeViewModel {
     
     // MARK: - State
     
+    /// 현재 자산 (앱 전체 단일)
+    var currentAsset: Asset?
+    
     /// 현재 활성 시나리오
     var activeScenario: Scenario?
     
@@ -29,6 +32,9 @@ final class HomeViewModel {
     
     /// 월별 업데이트 기록
     var monthlyUpdates: [MonthlyUpdate] = []
+    
+    /// 자산 스냅샷 히스토리
+    var assetSnapshots: [AssetSnapshot] = []
     
     /// 은퇴 계산 결과
     var retirementResult: RetirementCalculationResult?
@@ -47,6 +53,9 @@ final class HomeViewModel {
     /// 수정할 월 (nil이면 새로 입력, 값이 있으면 해당 월 수정)
     var editingYearMonth: String? = nil
     
+    /// 입금 완료 후 자산 업데이트 확인 표시
+    var showAssetUpdateConfirm: Bool = false
+    
     // MARK: - Input States
     
     /// 입금액 입력
@@ -62,6 +71,11 @@ final class HomeViewModel {
     var selectedAssetTypes: Set<String> = []
     
     // MARK: - Computed Properties
+    
+    /// 현재 자산 금액 (Asset.amount)
+    var currentAssetAmount: Double {
+        currentAsset?.amount ?? 0
+    }
     
     /// D-DAY 메인 텍스트
     var dDayMainText: String {
@@ -90,10 +104,10 @@ final class HomeViewModel {
     
     /// 진행률 표시 텍스트
     var progressText: String {
-        guard let scenario = activeScenario, let result = retirementResult else {
+        guard let result = retirementResult else {
             return "0만원 / 0만원 (0%)"
         }
-        let current = ExitNumberFormatter.formatToEokManWon(scenario.currentNetAssets)
+        let current = ExitNumberFormatter.formatToEokManWon(result.currentAssets)
         let target = ExitNumberFormatter.formatToEokManWon(result.targetAssets)
         let percent = ExitNumberFormatter.formatPercentInt(result.progressPercent)
         return "\(current) / \(target) (\(percent))"
@@ -163,6 +177,14 @@ final class HomeViewModel {
         return totalDepositAmount / Double(monthlyUpdates.count)
     }
     
+    /// 자산 마지막 업데이트 일자 표시
+    var lastAssetUpdateText: String {
+        guard let asset = currentAsset else { return "" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy.MM.dd"
+        return formatter.string(from: asset.updatedAt)
+    }
+    
     // MARK: - Initialization
     
     func configure(with context: ModelContext) {
@@ -174,6 +196,10 @@ final class HomeViewModel {
     
     func loadData() {
         guard let context = modelContext else { return }
+        
+        // Asset 로드 (단일)
+        let assetDescriptor = FetchDescriptor<Asset>()
+        currentAsset = try? context.fetch(assetDescriptor).first
         
         // UserProfile 로드
         let profileDescriptor = FetchDescriptor<UserProfile>()
@@ -192,13 +218,19 @@ final class HomeViewModel {
         )
         monthlyUpdates = (try? context.fetch(updateDescriptor)) ?? []
         
+        // AssetSnapshots 로드
+        let snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
+            sortBy: [SortDescriptor(\.yearMonth, order: .reverse)]
+        )
+        assetSnapshots = (try? context.fetch(snapshotDescriptor)) ?? []
+        
         // 계산 실행
         calculateResults()
         
         // 입력 필드 초기값 설정
-        if let lastUpdate = monthlyUpdates.first {
-            totalAssetsInput = lastUpdate.totalAssets
-            selectedAssetTypes = Set(lastUpdate.assetTypes)
+        if let asset = currentAsset {
+            totalAssetsInput = asset.amount
+            selectedAssetTypes = Set(asset.assetTypes)
         } else if let profile = userProfile {
             totalAssetsInput = profile.currentNetAssets
             selectedAssetTypes = Set(profile.assetTypes)
@@ -210,8 +242,11 @@ final class HomeViewModel {
     func calculateResults() {
         guard let scenario = activeScenario else { return }
         
-        // 은퇴 계산
-        retirementResult = RetirementCalculator.calculate(from: scenario)
+        // 은퇴 계산 (현재 자산 + 시나리오 오프셋 적용)
+        retirementResult = RetirementCalculator.calculate(
+            from: scenario,
+            currentAsset: currentAssetAmount
+        )
     }
     
     // MARK: - Actions
@@ -230,7 +265,7 @@ final class HomeViewModel {
     ///   - isPassiveIncome: 패시브인컴 여부 (배당금, 이자, 월세 등)
     ///   - depositType: 입금 유형 이름 (기록용)
     func submitDeposit(isPassiveIncome: Bool = false, depositType: String = "") {
-        guard let context = modelContext, let scenario = activeScenario else { return }
+        guard let context = modelContext else { return }
         
         // 입금 날짜 기준 연월
         let yearMonth = MonthlyUpdate.yearMonth(from: depositDate)
@@ -242,7 +277,7 @@ final class HomeViewModel {
             } else {
                 existingUpdate.depositAmount += depositAmount
             }
-            existingUpdate.totalAssets += depositAmount
+            existingUpdate.totalAssets = currentAssetAmount + depositAmount
             existingUpdate.depositDate = depositDate
             existingUpdate.recordedAt = Date()
         } else {
@@ -251,16 +286,12 @@ final class HomeViewModel {
                 yearMonth: yearMonth,
                 depositAmount: isPassiveIncome ? 0 : depositAmount,
                 passiveIncome: isPassiveIncome ? depositAmount : 0,
-                totalAssets: scenario.currentNetAssets + depositAmount,
+                totalAssets: currentAssetAmount + depositAmount,
                 assetTypes: Array(selectedAssetTypes),
                 depositDate: depositDate
             )
             context.insert(newUpdate)
         }
-        
-        // 시나리오 자산 업데이트
-        scenario.currentNetAssets += depositAmount
-        scenario.updatedAt = Date()
         
         try? context.save()
         
@@ -287,19 +318,9 @@ final class HomeViewModel {
         rentAmount: Double,
         otherAmount: Double
     ) {
-        guard let context = modelContext, let scenario = activeScenario else { return }
-        
-        let newTotalDeposit = salaryAmount + dividendAmount + interestAmount + rentAmount + otherAmount
+        guard let context = modelContext else { return }
         
         if let existingUpdate = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) {
-            // 기존 기록의 이전 총액 계산
-            let previousTotal = existingUpdate.salaryAmount + existingUpdate.dividendAmount + 
-                               existingUpdate.interestAmount + existingUpdate.rentAmount + existingUpdate.otherAmount
-            
-            // 레거시 필드도 고려 (마이그레이션 안 된 데이터)
-            let legacyTotal = existingUpdate.depositAmount + existingUpdate.passiveIncome
-            let actualPreviousTotal = max(previousTotal, legacyTotal)
-            
             // 카테고리별 금액 업데이트
             existingUpdate.salaryAmount = salaryAmount
             existingUpdate.dividendAmount = dividendAmount
@@ -311,13 +332,9 @@ final class HomeViewModel {
             existingUpdate.depositAmount = salaryAmount + otherAmount
             existingUpdate.passiveIncome = dividendAmount + interestAmount + rentAmount
             
-            // 총 자산 업데이트 (차이만큼 반영)
-            let difference = newTotalDeposit - actualPreviousTotal
-            existingUpdate.totalAssets += difference
+            // 총 자산은 현재 Asset 값으로 기록
+            existingUpdate.totalAssets = currentAssetAmount
             existingUpdate.recordedAt = Date()
-            
-            // 시나리오 자산 업데이트
-            scenario.currentNetAssets += difference
         } else {
             // 새 기록 생성
             let newUpdate = MonthlyUpdate(
@@ -327,53 +344,67 @@ final class HomeViewModel {
                 interestAmount: interestAmount,
                 rentAmount: rentAmount,
                 otherAmount: otherAmount,
-                totalAssets: scenario.currentNetAssets + newTotalDeposit,
+                totalAssets: currentAssetAmount,
                 assetTypes: Array(selectedAssetTypes)
             )
             context.insert(newUpdate)
-            
-            // 시나리오 자산 업데이트
-            scenario.currentNetAssets += newTotalDeposit
         }
-        
-        scenario.updatedAt = Date()
         
         try? context.save()
         
-        // 데이터 리로드 및 시트 닫기
+        // 데이터 리로드
         loadData()
+        
+        // 시트 닫고 자산 업데이트 확인 표시
         showDepositSheet = false
+        
+        // 약간의 딜레이 후 자산 업데이트 확인 표시
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.showAssetUpdateConfirm = true
+        }
     }
     
     /// 자산 변동 업데이트
     func submitAssetUpdate() {
-        guard let context = modelContext, let scenario = activeScenario else { return }
+        guard let context = modelContext else { return }
         
-        let yearMonth = MonthlyUpdate.currentYearMonth()
+        let yearMonth = AssetSnapshot.currentYearMonth()
         
+        // Asset 업데이트 또는 생성
+        if let asset = currentAsset {
+            asset.update(amount: totalAssetsInput, assetTypes: Array(selectedAssetTypes))
+        } else {
+            let newAsset = Asset(amount: totalAssetsInput, assetTypes: Array(selectedAssetTypes))
+            context.insert(newAsset)
+            currentAsset = newAsset
+        }
+        
+        // AssetSnapshot 업데이트 또는 생성
+        if let existingSnapshot = assetSnapshots.first(where: { $0.yearMonth == yearMonth }) {
+            existingSnapshot.amount = totalAssetsInput
+            existingSnapshot.assetTypes = Array(selectedAssetTypes)
+            existingSnapshot.snapshotDate = Date()
+        } else {
+            let newSnapshot = AssetSnapshot(
+                yearMonth: yearMonth,
+                amount: totalAssetsInput,
+                assetTypes: Array(selectedAssetTypes)
+            )
+            context.insert(newSnapshot)
+        }
+        
+        // MonthlyUpdate의 totalAssets도 동기화 (있으면)
         if let existingUpdate = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) {
             existingUpdate.totalAssets = totalAssetsInput
             existingUpdate.assetTypes = Array(selectedAssetTypes)
             existingUpdate.recordedAt = Date()
-        } else {
-            let newUpdate = MonthlyUpdate(
-                yearMonth: yearMonth,
-                depositAmount: 0,
-                passiveIncome: 0,
-                totalAssets: totalAssetsInput,
-                assetTypes: Array(selectedAssetTypes)
-            )
-            context.insert(newUpdate)
         }
-        
-        // 시나리오 자산 업데이트
-        scenario.currentNetAssets = totalAssetsInput
-        scenario.updatedAt = Date()
         
         try? context.save()
         
         loadData()
         showAssetUpdateSheet = false
+        showAssetUpdateConfirm = false
     }
     
     /// 자산 종류 토글
@@ -438,12 +469,6 @@ final class HomeViewModel {
     func deleteMonthlyUpdate(_ update: MonthlyUpdate) {
         guard let context = modelContext else { return }
         
-        // 시나리오 자산에서 해당 입금액 차감
-        if let scenario = activeScenario {
-            scenario.currentNetAssets -= (update.depositAmount + update.passiveIncome)
-            scenario.updatedAt = Date()
-        }
-        
         // 삭제
         context.delete(update)
         try? context.save()
@@ -452,4 +477,3 @@ final class HomeViewModel {
         loadData()
     }
 }
-

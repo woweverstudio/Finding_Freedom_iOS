@@ -15,7 +15,9 @@ struct exit_iosApp: App {
         let schema = Schema([
             UserProfile.self,
             Scenario.self,
-            MonthlyUpdate.self
+            MonthlyUpdate.self,
+            Asset.self,
+            AssetSnapshot.self
         ])
         
         let modelConfiguration = ModelConfiguration(

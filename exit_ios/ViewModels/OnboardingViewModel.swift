@@ -187,10 +187,24 @@ final class OnboardingViewModel {
         )
         context.insert(profile)
         
-        // 기본 시나리오들 생성
+        // Asset 생성 (앱 전체 단일 자산)
+        let asset = Asset(
+            amount: currentNetAssets,
+            assetTypes: Array(selectedAssetTypes)
+        )
+        context.insert(asset)
+        
+        // AssetSnapshot 생성 (초기 스냅샷)
+        let snapshot = AssetSnapshot(
+            yearMonth: AssetSnapshot.currentYearMonth(),
+            amount: currentNetAssets,
+            assetTypes: Array(selectedAssetTypes)
+        )
+        context.insert(snapshot)
+        
+        // 기본 시나리오들 생성 (currentNetAssets 없이)
         ScenarioManager.createInitialScenarios(
             desiredMonthlyIncome: desiredMonthlyIncome,
-            currentNetAssets: currentNetAssets,
             monthlyInvestment: monthlyInvestment,
             context: context
         )
@@ -264,4 +278,3 @@ import SwiftUI
 private func withAnimation<Result>(_ animation: Animation? = .default, _ body: () throws -> Result) rethrows -> Result {
     try SwiftUI.withAnimation(animation, body)
 }
-

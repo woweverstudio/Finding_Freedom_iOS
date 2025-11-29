@@ -195,14 +195,68 @@ struct ScenarioSettingsView: View {
                 formatter: ExitNumberFormatter.formatToManWon
             )
             
+            // 현재 순자산 (읽기 전용 - 실제 Asset에서 가져옴)
+            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                Text("현재 순자산 (실제)")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                HStack {
+                    Text(ExitNumberFormatter.formatToEokManWon(viewModel.currentAssetAmount))
+                        .font(.Exit.body)
+                        .foregroundStyle(Color.Exit.primaryText)
+                    
+                    Spacer()
+                    
+                    Text("자산 업데이트에서 수정")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                }
+                .padding(ExitSpacing.md)
+                .background(Color.Exit.secondaryCardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            }
+            .padding(.horizontal, ExitSpacing.lg)
+            
+            // 가정 금액 (시나리오별)
             ScenarioField(
-                title: "현재 순자산",
+                title: "가정 금액",
+                subtitle: "\"만약 자산이 더/덜 있다면?\" 시뮬레이션용",
                 value: Binding(
-                    get: { scenario.currentNetAssets },
-                    set: { scenario.currentNetAssets = $0 }
+                    get: { scenario.assetOffset },
+                    set: { scenario.assetOffset = $0 }
                 ),
-                formatter: ExitNumberFormatter.formatToEokManWon
+                formatter: { value in
+                    let prefix = value >= 0 ? "+" : ""
+                    return prefix + ExitNumberFormatter.formatToEokManWon(value)
+                },
+                allowNegative: true
             )
+            
+            // 시나리오에 적용될 총 자산 (계산값)
+            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                Text("시나리오 적용 자산")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                HStack {
+                    let effectiveAsset = scenario.effectiveAsset(with: viewModel.currentAssetAmount)
+                    Text(ExitNumberFormatter.formatToEokManWon(effectiveAsset))
+                        .font(.Exit.body)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.Exit.accent)
+                    
+                    Spacer()
+                    
+                    Text("= 실제 자산 + 가정 금액")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                }
+                .padding(ExitSpacing.md)
+                .background(Color.Exit.accent.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            }
+            .padding(.horizontal, ExitSpacing.lg)
             
             ScenarioField(
                 title: "매월 목표 투자금액",
@@ -237,7 +291,6 @@ struct ScenarioSettingsView: View {
                 )
             )
         }
-        .padding(.horizontal, ExitSpacing.lg)
     }
     
     // MARK: - Action Buttons
@@ -348,8 +401,10 @@ private struct ScenarioTab: View {
 
 private struct ScenarioField: View {
     let title: String
+    var subtitle: String? = nil
     @Binding var value: Double
     let formatter: (Double) -> String
+    var allowNegative: Bool = false
     
     @State private var isEditing = false
     
@@ -358,6 +413,12 @@ private struct ScenarioField: View {
             Text(title)
                 .font(.Exit.caption)
                 .foregroundStyle(Color.Exit.secondaryText)
+            
+            if let subtitle = subtitle {
+                Text(subtitle)
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+            }
             
             HStack {
                 Text(formatter(value))
@@ -378,8 +439,9 @@ private struct ScenarioField: View {
             .background(Color.Exit.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
+        .padding(.horizontal, ExitSpacing.lg)
         .sheet(isPresented: $isEditing) {
-            AmountEditSheet(title: title, value: $value, formatter: formatter)
+            AmountEditSheet(title: title, value: $value, formatter: formatter, allowNegative: allowNegative)
         }
     }
 }
@@ -429,6 +491,7 @@ private struct ScenarioPercentField: View {
             .background(Color.Exit.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
+        .padding(.horizontal, ExitSpacing.lg)
     }
 }
 
@@ -438,6 +501,7 @@ private struct AmountEditSheet: View {
     let title: String
     @Binding var value: Double
     let formatter: (Double) -> String
+    var allowNegative: Bool = false
     
     @Environment(\.dismiss) private var dismiss
     @State private var editValue: Double = 0
@@ -481,7 +545,7 @@ private struct AmountEditSheet: View {
                 VStack(spacing: ExitSpacing.sm) {
                     Text(ExitNumberFormatter.formatInputDisplay(editValue))
                         .font(.Exit.numberDisplay)
-                        .foregroundStyle(Color.Exit.primaryText)
+                        .foregroundStyle(editValue < 0 ? Color.Exit.warning : Color.Exit.primaryText)
                     
                     Text(formatter(editValue))
                         .font(.Exit.title3)
@@ -491,7 +555,7 @@ private struct AmountEditSheet: View {
                 Spacer()
                 
                 // 키보드
-                CustomNumberKeyboard(value: $editValue)
+                CustomNumberKeyboard(value: $editValue, showNegativeToggle: allowNegative)
             }
         }
         .onAppear {
@@ -505,12 +569,11 @@ private struct AmountEditSheet: View {
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Scenario.self, configurations: config)
+    let container = try! ModelContainer(for: Scenario.self, Asset.self, configurations: config)
     
     // 샘플 시나리오 생성
     let scenarios = Scenario.createDefaultScenarios(
         desiredMonthlyIncome: 3_000_000,
-        currentNetAssets: 75_000_000,
         monthlyInvestment: 2_000_000
     )
     
@@ -526,4 +589,3 @@ private struct AmountEditSheet: View {
         .modelContainer(container)
         .preferredColorScheme(.dark)
 }
-

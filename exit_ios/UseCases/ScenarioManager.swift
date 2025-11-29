@@ -20,18 +20,15 @@ enum ScenarioManager {
     /// 온보딩 완료 후 기본 시나리오들 생성
     /// - Parameters:
     ///   - desiredMonthlyIncome: 희망 월 수입
-    ///   - currentNetAssets: 현재 순자산
     ///   - monthlyInvestment: 월 투자금액
     ///   - context: SwiftData ModelContext
     static func createInitialScenarios(
         desiredMonthlyIncome: Double,
-        currentNetAssets: Double,
         monthlyInvestment: Double,
         context: ModelContext
     ) {
         let scenarios = Scenario.createDefaultScenarios(
             desiredMonthlyIncome: desiredMonthlyIncome,
-            currentNetAssets: currentNetAssets,
             monthlyInvestment: monthlyInvestment
         )
         
@@ -103,7 +100,7 @@ enum ScenarioManager {
     static func updateScenario(
         _ scenario: Scenario,
         desiredMonthlyIncome: Double? = nil,
-        currentNetAssets: Double? = nil,
+        assetOffset: Double? = nil,
         monthlyInvestment: Double? = nil,
         preRetirementReturnRate: Double? = nil,
         postRetirementReturnRate: Double? = nil,
@@ -113,8 +110,8 @@ enum ScenarioManager {
         if let value = desiredMonthlyIncome {
             scenario.desiredMonthlyIncome = value
         }
-        if let value = currentNetAssets {
-            scenario.currentNetAssets = value
+        if let value = assetOffset {
+            scenario.assetOffset = value
         }
         if let value = monthlyInvestment {
             scenario.monthlyInvestment = value
@@ -185,4 +182,3 @@ enum ScenarioManager {
         return duplicated
     }
 }
-
