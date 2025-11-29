@@ -96,6 +96,7 @@ final class Scenario {
 extension Scenario {
     static func createDefaultScenarios(
         desiredMonthlyIncome: Double,
+        currentNetAssets: Double,
         monthlyInvestment: Double
     ) -> [Scenario] {
         [
@@ -111,14 +112,14 @@ extension Scenario {
                 desiredMonthlyIncome: desiredMonthlyIncome,
                 assetOffset: 0,
                 monthlyInvestment: monthlyInvestment,
-                preRetirementReturnRate: 6.5,
-                postRetirementReturnRate: 5.0,
-                inflationRate: 5.0  // 물가 상승률 증가
+                preRetirementReturnRate: 8.5,   // 명목 수익률도 상승
+                postRetirementReturnRate: 7.0,  // 명목 수익률도 상승
+                inflationRate: 5.0              // 물가 상승률 증가 (실질 수익률 2%)
             ),
             Scenario(
                 name: "주식폭락",
                 desiredMonthlyIncome: desiredMonthlyIncome,
-                assetOffset: 0,
+                assetOffset: -currentNetAssets * 0.5,  // 현재 자산의 -50%
                 monthlyInvestment: monthlyInvestment,
                 preRetirementReturnRate: 3.0,  // 수익률 감소
                 postRetirementReturnRate: 3.0,

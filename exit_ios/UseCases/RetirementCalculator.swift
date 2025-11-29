@@ -59,8 +59,9 @@ enum RetirementCalculator {
         let realReturnRate = (postRetirementReturnRate - inflationRate) / 100
         
         // 실질 수익률이 0 이하인 경우 방지
+        // (물가 상승률 >= 수익률이면 자산이 실질적으로 줄어듦)
         guard realReturnRate > 0 else {
-            return annualIncome * 40  // 40년치 자산 필요로 대체
+            return annualIncome * 50  // 50년치 자산 필요로 대체 (매우 보수적)
         }
         
         return annualIncome / realReturnRate

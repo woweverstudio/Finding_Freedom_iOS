@@ -202,9 +202,10 @@ final class OnboardingViewModel {
         )
         context.insert(snapshot)
         
-        // 기본 시나리오들 생성 (currentNetAssets 없이)
+        // 기본 시나리오들 생성
         ScenarioManager.createInitialScenarios(
             desiredMonthlyIncome: desiredMonthlyIncome,
+            currentNetAssets: currentNetAssets,
             monthlyInvestment: monthlyInvestment,
             context: context
         )

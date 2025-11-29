@@ -574,6 +574,7 @@ private struct AmountEditSheet: View {
     // 샘플 시나리오 생성
     let scenarios = Scenario.createDefaultScenarios(
         desiredMonthlyIncome: 3_000_000,
+        currentNetAssets: 75_000_000,
         monthlyInvestment: 2_000_000
     )
     

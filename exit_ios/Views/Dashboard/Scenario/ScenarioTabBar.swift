@@ -22,7 +22,7 @@ struct ScenarioTabBar: View {
                     HStack(spacing: ExitSpacing.xs) {
                         Image(systemName: "slider.horizontal.3")
                             .font(.Exit.caption)
-                        Text("시나리오 설정")
+                        Text("설정")
                             .font(.Exit.caption)
                     }
                     .foregroundStyle(Color.Exit.secondaryText)
@@ -59,33 +59,26 @@ private struct ScenarioChip: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: ExitSpacing.xs) {
-                Text(name)
-                    .font(.Exit.caption)
-                    .fontWeight(isSelected ? .semibold : .regular)
-                
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .bold))
-                }
-            }
-            .foregroundStyle(isSelected ? Color.white : Color.Exit.secondaryText)
-            .padding(.horizontal, ExitSpacing.md)
-            .padding(.vertical, ExitSpacing.sm)
-            .background(
-                Group {
-                    if isSelected {
-                        LinearGradient.exitAccent
-                    } else {
-                        Color.Exit.secondaryCardBackground
+            Text(name)
+                .font(.Exit.caption)
+                .fontWeight(isSelected ? .semibold : .regular)
+                .foregroundStyle(isSelected ? Color.white : Color.Exit.secondaryText)
+                .padding(.horizontal, ExitSpacing.md)
+                .padding(.vertical, ExitSpacing.sm)
+                .background(
+                    Group {
+                        if isSelected {
+                            LinearGradient.exitAccent
+                        } else {
+                            Color.Exit.secondaryCardBackground
+                        }
                     }
-                }
-            )
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.full))
-            .overlay(
-                RoundedRectangle(cornerRadius: ExitRadius.full)
-                    .stroke(isSelected ? Color.clear : Color.Exit.divider, lineWidth: 1)
-            )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.full))
+                .overlay(
+                    RoundedRectangle(cornerRadius: ExitRadius.full)
+                        .stroke(isSelected ? Color.clear : Color.Exit.divider, lineWidth: 1)
+                )
         }
         .buttonStyle(.plain)
         .animation(.easeInOut(duration: 0.2), value: isSelected)

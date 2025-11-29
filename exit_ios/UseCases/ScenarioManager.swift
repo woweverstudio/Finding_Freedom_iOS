@@ -20,15 +20,18 @@ enum ScenarioManager {
     /// 온보딩 완료 후 기본 시나리오들 생성
     /// - Parameters:
     ///   - desiredMonthlyIncome: 희망 월 수입
+    ///   - currentNetAssets: 현재 순자산
     ///   - monthlyInvestment: 월 투자금액
     ///   - context: SwiftData ModelContext
     static func createInitialScenarios(
         desiredMonthlyIncome: Double,
+        currentNetAssets: Double,
         monthlyInvestment: Double,
         context: ModelContext
     ) {
         let scenarios = Scenario.createDefaultScenarios(
             desiredMonthlyIncome: desiredMonthlyIncome,
+            currentNetAssets: currentNetAssets,
             monthlyInvestment: monthlyInvestment
         )
         
