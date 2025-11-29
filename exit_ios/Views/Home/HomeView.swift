@@ -101,7 +101,7 @@ struct HomeView: View {
     // MARK: - Home Tab Content
     
     private var homeTabContent: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(spacing: ExitSpacing.lg) {
                 // D-DAY 헤더
                 dDayHeader
@@ -122,6 +122,9 @@ struct HomeView: View {
                         viewModel.showScenarioSheet = true
                     }
                 )
+                
+                // 시나리오 설정값 테이블
+                scenarioSettingsCard
             }
             .padding(.vertical, ExitSpacing.lg)
         }
@@ -130,7 +133,7 @@ struct HomeView: View {
     // MARK: - Safety Score Tab Content
     
     private var safetyScoreTabContent: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(spacing: ExitSpacing.lg) {
                 SafetyScoreCard(
                     totalScore: viewModel.totalSafetyScore,
@@ -142,6 +145,82 @@ struct HomeView: View {
             }
             .padding(.vertical, ExitSpacing.lg)
         }
+    }
+    
+    // MARK: - Scenario Settings Card
+    
+    private var scenarioSettingsCard: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.md) {
+            if let scenario = viewModel.activeScenario {
+                // 헤더
+                HStack {
+                    Text("시나리오 설정")
+                        .font(.Exit.subheadline)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                    
+                    Spacer()
+                    
+                    Text(scenario.name)
+                        .font(.Exit.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.Exit.accent)
+                        .padding(.horizontal, ExitSpacing.sm)
+                        .padding(.vertical, ExitSpacing.xs)
+                        .background(
+                            Capsule()
+                                .fill(Color.Exit.accent.opacity(0.15))
+                        )
+                }
+                
+                Divider()
+                    .background(Color.Exit.divider)
+                
+                // 설정값 테이블
+                VStack(spacing: ExitSpacing.sm) {
+                    ScenarioSettingRow(
+                        label: "은퇴 후 희망 월수입",
+                        value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome)
+                    )
+                    
+                    ScenarioSettingRow(
+                        label: "현재 순자산",
+                        value: ExitNumberFormatter.formatToEokManWon(scenario.currentNetAssets),
+                        isHidden: hideAmounts
+                    )
+                    
+                    ScenarioSettingRow(
+                        label: "매월 목표 투자금액",
+                        value: ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment)
+                    )
+                    
+                    Divider()
+                        .background(Color.Exit.divider)
+                        .padding(.vertical, ExitSpacing.xs)
+                    
+                    ScenarioSettingRow(
+                        label: "은퇴 전 연 목표 수익률",
+                        value: String(format: "%.1f%%", scenario.preRetirementReturnRate),
+                        valueColor: Color.Exit.accent
+                    )
+                    
+                    ScenarioSettingRow(
+                        label: "은퇴 후 연 목표 수익률",
+                        value: String(format: "%.1f%%", scenario.postRetirementReturnRate),
+                        valueColor: Color.Exit.accent
+                    )
+                    
+                    ScenarioSettingRow(
+                        label: "예상 물가 상승률",
+                        value: String(format: "%.1f%%", scenario.inflationRate),
+                        valueColor: Color.Exit.caution
+                    )
+                }
+            }
+        }
+        .padding(ExitSpacing.lg)
+        .background(Color.Exit.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+        .padding(.horizontal, ExitSpacing.md)
     }
     
     // MARK: - D-DAY Header
@@ -372,294 +451,6 @@ struct HomeView: View {
             .frame(height: 100)
             .allowsHitTesting(false)
         )
-    }
-}
-
-// MARK: - Blurred Amount Text Component
-
-/// 금액을 블러 처리하는 텍스트 컴포넌트
-struct BlurredAmountText: View {
-    let text: String
-    let isHidden: Bool
-    
-    var body: some View {
-        Text(text)
-            .blur(radius: isHidden ? 8 : 0)
-            .opacity(isHidden ? 0.6 : 1)
-    }
-}
-
-/// 자산 진행률 표시 행 (자동 축소로 1줄 유지, 블러 처리)
-struct AssetProgressRow: View {
-    let currentAssets: String
-    let targetAssets: String
-    let percent: String
-    let isHidden: Bool
-    
-    var body: some View {
-        HStack(spacing: 4) {
-            Text(currentAssets)
-                .foregroundStyle(Color.Exit.accent)
-                .blur(radius: isHidden ? 10 : 0)
-            
-            Text("/")
-                .foregroundStyle(Color.Exit.tertiaryText)
-            
-            Text(targetAssets)
-                .foregroundStyle(Color.Exit.primaryText)
-                .blur(radius: isHidden ? 10 : 0)
-            
-            Text("(\(percent))")
-                .foregroundStyle(Color.Exit.secondaryText)
-                .blur(radius: isHidden ? 8 : 0)
-        }
-        .font(.Exit.title3)
-        .lineLimit(1)
-        .minimumScaleFactor(0.6)
-        .animation(.easeInOut(duration: 0.2), value: isHidden)
-    }
-}
-
-// MARK: - Deposit Sheet
-
-struct DepositSheet: View {
-    @Bindable var viewModel: HomeViewModel
-    @Environment(\.dismiss) private var dismiss
-    
-    @State private var showPassiveIncomeInput = false
-    
-    var body: some View {
-        ZStack {
-            Color.Exit.background.ignoresSafeArea()
-            
-            VStack(spacing: ExitSpacing.lg) {
-                sheetHeader(title: "입금하기")
-                
-                ScrollView {
-                    VStack(spacing: ExitSpacing.xl) {
-                        VStack(spacing: ExitSpacing.sm) {
-                            Text("이번 달 투자·저축 입금액")
-                                .font(.Exit.body)
-                                .foregroundStyle(Color.Exit.secondaryText)
-                            
-                            Text(ExitNumberFormatter.formatToEokManWon(viewModel.depositAmount))
-                                .font(.Exit.numberDisplay)
-                                .foregroundStyle(Color.Exit.primaryText)
-                        }
-                        
-                        Button {
-                            withAnimation {
-                                showPassiveIncomeInput.toggle()
-                            }
-                        } label: {
-                            HStack {
-                                Text("이번 달 받은 패시브인컴 총액 (선택)")
-                                    .font(.Exit.subheadline)
-                                    .foregroundStyle(Color.Exit.secondaryText)
-                                
-                                Spacer()
-                                
-                                Image(systemName: showPassiveIncomeInput ? "chevron.up" : "chevron.down")
-                                    .foregroundStyle(Color.Exit.tertiaryText)
-                            }
-                            .padding(ExitSpacing.md)
-                            .background(Color.Exit.cardBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-                        }
-                        .padding(.horizontal, ExitSpacing.md)
-                        
-                        if showPassiveIncomeInput {
-                            VStack(spacing: ExitSpacing.sm) {
-                                Text("배당 + 이자 + 월세 등")
-                                    .font(.Exit.caption)
-                                    .foregroundStyle(Color.Exit.tertiaryText)
-                                
-                                Text(ExitNumberFormatter.formatToManWon(viewModel.passiveIncomeAmount))
-                                    .font(.Exit.title2)
-                                    .foregroundStyle(Color.Exit.accent)
-                            }
-                        }
-                    }
-                    .padding(.top, ExitSpacing.lg)
-                }
-                
-                CustomNumberKeyboard(
-                    value: showPassiveIncomeInput ? $viewModel.passiveIncomeAmount : $viewModel.depositAmount
-                )
-                
-                Button {
-                    viewModel.submitDeposit()
-                } label: {
-                    Text("입금 완료")
-                        .exitPrimaryButton(isEnabled: viewModel.depositAmount > 0)
-                }
-                .disabled(viewModel.depositAmount <= 0)
-                .padding(.horizontal, ExitSpacing.md)
-                .padding(.bottom, ExitSpacing.lg)
-            }
-        }
-        .presentationDetents([.large])
-    }
-    
-    private func sheetHeader(title: String) -> some View {
-        HStack {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.Exit.body)
-                    .foregroundStyle(Color.Exit.secondaryText)
-            }
-            
-            Spacer()
-            
-            Text(title)
-                .font(.Exit.title3)
-                .foregroundStyle(Color.Exit.primaryText)
-            
-            Spacer()
-            
-            Image(systemName: "xmark")
-                .font(.Exit.body)
-                .foregroundStyle(.clear)
-        }
-        .padding(.horizontal, ExitSpacing.lg)
-        .padding(.top, ExitSpacing.lg)
-    }
-}
-
-// MARK: - Asset Update Sheet
-
-struct AssetUpdateSheet: View {
-    @Bindable var viewModel: HomeViewModel
-    @Environment(\.dismiss) private var dismiss
-    
-    @State private var showAssetTypes = false
-    
-    var body: some View {
-        ZStack {
-            Color.Exit.background.ignoresSafeArea()
-            
-            VStack(spacing: ExitSpacing.lg) {
-                sheetHeader(title: "자산 변동 업데이트")
-                
-                ScrollView {
-                    VStack(spacing: ExitSpacing.xl) {
-                        VStack(spacing: ExitSpacing.sm) {
-                            Text("현재 총 투자 가능 자산")
-                                .font(.Exit.body)
-                                .foregroundStyle(Color.Exit.secondaryText)
-                            
-                            Text(ExitNumberFormatter.formatToEokManWon(viewModel.totalAssetsInput))
-                                .font(.Exit.numberDisplay)
-                                .foregroundStyle(Color.Exit.primaryText)
-                        }
-                        
-                        Button {
-                            withAnimation {
-                                showAssetTypes.toggle()
-                            }
-                        } label: {
-                            HStack {
-                                Text("보유 자산 종류 변경")
-                                    .font(.Exit.subheadline)
-                                    .foregroundStyle(Color.Exit.secondaryText)
-                                
-                                Spacer()
-                                
-                                Text("\(viewModel.selectedAssetTypes.count)개 선택")
-                                    .font(.Exit.caption)
-                                    .foregroundStyle(Color.Exit.accent)
-                                
-                                Image(systemName: showAssetTypes ? "chevron.up" : "chevron.down")
-                                    .foregroundStyle(Color.Exit.tertiaryText)
-                            }
-                            .padding(ExitSpacing.md)
-                            .background(Color.Exit.cardBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-                        }
-                        .padding(.horizontal, ExitSpacing.md)
-                        
-                        if showAssetTypes {
-                            assetTypeGrid
-                        }
-                    }
-                    .padding(.top, ExitSpacing.lg)
-                }
-                
-                CustomNumberKeyboard(
-                    value: $viewModel.totalAssetsInput,
-                    showNegativeToggle: true
-                )
-                
-                Button {
-                    viewModel.submitAssetUpdate()
-                } label: {
-                    Text("업데이트 완료")
-                        .exitPrimaryButton()
-                }
-                .padding(.horizontal, ExitSpacing.md)
-                .padding(.bottom, ExitSpacing.lg)
-            }
-        }
-        .presentationDetents([.large])
-    }
-    
-    private var assetTypeGrid: some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible()),
-            GridItem(.flexible())
-        ], spacing: ExitSpacing.sm) {
-            ForEach(UserProfile.availableAssetTypes, id: \.self) { type in
-                Button {
-                    viewModel.toggleAssetType(type)
-                } label: {
-                    HStack {
-                        Text(type)
-                            .font(.Exit.caption)
-                        Spacer()
-                        if viewModel.selectedAssetTypes.contains(type) {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 10, weight: .bold))
-                        }
-                    }
-                    .foregroundStyle(viewModel.selectedAssetTypes.contains(type) ? Color.Exit.primaryText : Color.Exit.secondaryText)
-                    .padding(ExitSpacing.sm)
-                    .background(
-                        RoundedRectangle(cornerRadius: ExitRadius.sm)
-                            .fill(viewModel.selectedAssetTypes.contains(type) ? Color.Exit.accent.opacity(0.2) : Color.Exit.secondaryCardBackground)
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, ExitSpacing.md)
-    }
-    
-    private func sheetHeader(title: String) -> some View {
-        HStack {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.Exit.body)
-                    .foregroundStyle(Color.Exit.secondaryText)
-            }
-            
-            Spacer()
-            
-            Text(title)
-                .font(.Exit.title3)
-                .foregroundStyle(Color.Exit.primaryText)
-            
-            Spacer()
-            
-            Image(systemName: "xmark")
-                .font(.Exit.body)
-                .foregroundStyle(.clear)
-        }
-        .padding(.horizontal, ExitSpacing.lg)
-        .padding(.top, ExitSpacing.lg)
     }
 }
 
