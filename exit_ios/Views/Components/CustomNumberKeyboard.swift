@@ -23,7 +23,7 @@ struct CustomNumberKeyboard: View {
         }
         .padding(.horizontal, ExitSpacing.md)
         .padding(.vertical, ExitSpacing.md)
-        .background(Color.Exit.cardBackground)
+        .background(Color.Exit.background)
     }
     
     // MARK: - Quick Amount Buttons

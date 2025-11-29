@@ -37,7 +37,7 @@ struct AssetUpdateSheet: View {
                         }
                         
                         Button {
-                            withAnimation {
+                            withAnimation(.bouncy) {
                                 showAssetTypes.toggle()
                             }
                         } label: {
@@ -63,6 +63,7 @@ struct AssetUpdateSheet: View {
                         
                         if showAssetTypes {
                             assetTypeGrid
+                                .transition(.scale)
                         }
                     }
                     .padding(.top, ExitSpacing.lg)
@@ -73,6 +74,7 @@ struct AssetUpdateSheet: View {
                         value: $viewModel.totalAssetsInput,
                         showNegativeToggle: true
                     )
+                    .transition(.scale)
                 }
                 
                 Button {
@@ -92,22 +94,22 @@ struct AssetUpdateSheet: View {
         LazyVGrid(columns: [
             GridItem(.flexible()),
             GridItem(.flexible())
-        ], spacing: ExitSpacing.sm) {
+        ], spacing: ExitSpacing.md) {
             ForEach(UserProfile.availableAssetTypes, id: \.self) { type in
                 Button {
                     viewModel.toggleAssetType(type)
                 } label: {
                     HStack {
                         Text(type)
-                            .font(.Exit.caption)
+                            .font(.Exit.body)
                         Spacer()
                         if viewModel.selectedAssetTypes.contains(type) {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 12, weight: .bold))
                         }
                     }
                     .foregroundStyle(viewModel.selectedAssetTypes.contains(type) ? Color.Exit.primaryText : Color.Exit.secondaryText)
-                    .padding(ExitSpacing.sm)
+                    .padding(ExitSpacing.md)
                     .background(
                         RoundedRectangle(cornerRadius: ExitRadius.sm)
                             .fill(viewModel.selectedAssetTypes.contains(type) ? Color.Exit.accent.opacity(0.2) : Color.Exit.secondaryCardBackground)

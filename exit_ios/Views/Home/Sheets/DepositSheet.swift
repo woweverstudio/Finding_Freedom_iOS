@@ -236,6 +236,7 @@ struct DepositSheet: View {
                 CustomNumberKeyboard(
                     value: $viewModel.depositAmount
                 )
+                .transition(.scale)
             }
             
             Button {
@@ -297,7 +298,7 @@ struct DepositSheet: View {
                 .background(Color.Exit.cardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
                 .padding(.horizontal, ExitSpacing.md)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .transition(.scale)
                 .onChange(of: viewModel.depositDate) {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         showDatePicker = false
