@@ -176,8 +176,7 @@ struct MainTabView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, ExitSpacing.md)
-        .padding(.bottom, ExitSpacing.lg)
+        .padding(ExitSpacing.md)
         .background(
             LinearGradient(
                 colors: [Color.Exit.background.opacity(0), Color.Exit.background],
