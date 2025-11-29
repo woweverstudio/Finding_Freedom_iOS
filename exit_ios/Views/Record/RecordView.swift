@@ -1,5 +1,5 @@
 //
-//  RecordTabView.swift
+//  RecordView.swift
 //  exit_ios
 //
 //  Created by Exit on 2025.
@@ -363,3 +363,4 @@ struct RecordTabView: View {
     }
     .preferredColorScheme(.dark)
 }
+

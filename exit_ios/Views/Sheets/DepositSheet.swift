@@ -347,3 +347,4 @@ struct DepositSheet: View {
     DepositSheet(viewModel: HomeViewModel())
         .preferredColorScheme(.dark)
 }
+
