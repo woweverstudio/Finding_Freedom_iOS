@@ -28,9 +28,12 @@ struct AssetUpdateSheet: View {
                                 .font(.Exit.body)
                                 .foregroundStyle(Color.Exit.secondaryText)
                             
-                            Text(ExitNumberFormatter.formatToEokManWon(viewModel.totalAssetsInput))
+                            // 원 단위 (천 단위 콤마)
+                            Text(ExitNumberFormatter.formatToWon(viewModel.totalAssetsInput))
                                 .font(.Exit.numberDisplay)
-                                .foregroundStyle(Color.Exit.primaryText)
+                                .foregroundStyle(viewModel.totalAssetsInput < 0 ? Color.Exit.warning : Color.Exit.primaryText)
+                                .contentTransition(.numericText())
+                                .animation(.easeInOut(duration: 0.1), value: viewModel.totalAssetsInput)
                         }
                         
                         Button {
@@ -140,4 +143,3 @@ struct AssetUpdateSheet: View {
         .padding(.top, ExitSpacing.lg)
     }
 }
-

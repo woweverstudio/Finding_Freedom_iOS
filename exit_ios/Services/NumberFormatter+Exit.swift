@@ -133,5 +133,35 @@ enum ExitNumberFormatter {
         formatter.maximumFractionDigits = 0
         return formatter.string(from: NSNumber(value: value)) ?? "0"
     }
+    
+    /// 원 단위 포맷 (천 단위 쉼표 + "원")
+    /// - Parameter value: 원 단위 금액
+    /// - Returns: 포맷된 문자열 (예: "75,000,000원")
+    static func formatToWon(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        
+        if let formatted = formatter.string(from: NSNumber(value: abs(value))) {
+            let sign = value < 0 ? "-" : ""
+            return "\(sign)\(formatted)원"
+        }
+        return "0원"
+    }
+    
+    /// 원 단위 포맷 (천 단위 쉼표만, "원" 없음)
+    /// - Parameter value: 원 단위 금액
+    /// - Returns: 포맷된 문자열 (예: "75,000,000")
+    static func formatWithComma(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        
+        if let formatted = formatter.string(from: NSNumber(value: abs(value))) {
+            let sign = value < 0 ? "-" : ""
+            return "\(sign)\(formatted)"
+        }
+        return "0"
+    }
 }
 

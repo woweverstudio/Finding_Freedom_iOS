@@ -55,8 +55,8 @@ final class HomeViewModel {
     /// 입금액 입력
     var depositAmount: Double = 0
     
-    /// 패시브인컴 입력
-    var passiveIncomeAmount: Double = 0
+    /// 입금 날짜 (기본값: 오늘)
+    var depositDate: Date = Date()
     
     /// 현재 총 자산 입력
     var totalAssetsInput: Double = 0
@@ -218,20 +218,20 @@ final class HomeViewModel {
     func submitDeposit() {
         guard let context = modelContext, let scenario = activeScenario else { return }
         
-        // MonthlyUpdate 생성 또는 업데이트
-        let yearMonth = MonthlyUpdate.currentYearMonth()
+        // 입금 날짜 기준 연월
+        let yearMonth = MonthlyUpdate.yearMonth(from: depositDate)
         
         if let existingUpdate = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) {
             existingUpdate.depositAmount += depositAmount
-            existingUpdate.passiveIncome = passiveIncomeAmount
+            existingUpdate.depositDate = depositDate
             existingUpdate.recordedAt = Date()
         } else {
             let newUpdate = MonthlyUpdate(
                 yearMonth: yearMonth,
                 depositAmount: depositAmount,
-                passiveIncome: passiveIncomeAmount,
                 totalAssets: scenario.currentNetAssets + depositAmount,
-                assetTypes: Array(selectedAssetTypes)
+                assetTypes: Array(selectedAssetTypes),
+                depositDate: depositDate
             )
             context.insert(newUpdate)
         }
@@ -244,7 +244,7 @@ final class HomeViewModel {
         
         // 초기화 및 재계산
         depositAmount = 0
-        passiveIncomeAmount = 0
+        depositDate = Date()
         loadData()
         showDepositSheet = false
     }

@@ -28,7 +28,10 @@ final class MonthlyUpdate {
     /// 보유 자산 종류 (해당 시점)
     var assetTypes: [String] = []
     
-    /// 기록일
+    /// 입금 날짜 (실제 입금한 날짜)
+    var depositDate: Date = Date()
+    
+    /// 기록일 (데이터 생성/수정 시간)
     var recordedAt: Date = Date()
     
     init() {}
@@ -36,9 +39,10 @@ final class MonthlyUpdate {
     init(
         yearMonth: String,
         depositAmount: Double,
-        passiveIncome: Double,
+        passiveIncome: Double = 0,
         totalAssets: Double,
-        assetTypes: [String] = []
+        assetTypes: [String] = [],
+        depositDate: Date = Date()
     ) {
         self.id = UUID()
         self.yearMonth = yearMonth
@@ -46,6 +50,7 @@ final class MonthlyUpdate {
         self.passiveIncome = passiveIncome
         self.totalAssets = totalAssets
         self.assetTypes = assetTypes
+        self.depositDate = depositDate
         self.recordedAt = Date()
     }
     
@@ -55,5 +60,11 @@ final class MonthlyUpdate {
         formatter.dateFormat = "yyyyMM"
         return formatter.string(from: Date())
     }
+    
+    /// 날짜로부터 연월 문자열 생성
+    static func yearMonth(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMM"
+        return formatter.string(from: date)
+    }
 }
-

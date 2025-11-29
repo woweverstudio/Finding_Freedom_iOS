@@ -421,7 +421,7 @@ struct HomeView: View {
             // 입금하기 (우측)
             Button {
                 viewModel.depositAmount = 0
-                viewModel.passiveIncomeAmount = 0
+                viewModel.depositDate = Date()
                 viewModel.showDepositSheet = true
             } label: {
                 HStack(spacing: ExitSpacing.xs) {

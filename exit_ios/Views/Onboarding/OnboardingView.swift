@@ -23,15 +23,9 @@ struct OnboardingView: View {
                 // 진행률 표시
                 progressIndicator
                 
-                // 메인 컨텐츠
-                TabView(selection: $viewModel.currentStep) {
-                    ForEach(OnboardingStep.allCases, id: \.self) { step in
-                        stepContent(for: step)
-                            .tag(step)
-                    }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(.easeInOut(duration: 0.3), value: viewModel.currentStep)
+                // 메인 컨텐츠 (스와이프 비활성화)
+                stepContent(for: viewModel.currentStep)
+                    .animation(.easeInOut(duration: 0.3), value: viewModel.currentStep)
                 
                 // 하단 버튼
                 bottomButton
@@ -42,36 +36,16 @@ struct OnboardingView: View {
     // MARK: - Progress Indicator
     
     private var progressIndicator: some View {
-        VStack(spacing: ExitSpacing.md) {
-            HStack(spacing: ExitSpacing.sm) {
-                ForEach(OnboardingStep.allCases, id: \.self) { step in
-                    Capsule()
-                        .fill(step.rawValue <= viewModel.currentStep.rawValue ? Color.Exit.accent : Color.Exit.divider)
-                        .frame(height: 4)
-                        .animation(.easeInOut(duration: 0.3), value: viewModel.currentStep)
-                }
-            }
-            .padding(.horizontal, ExitSpacing.lg)
-            .padding(.top, ExitSpacing.lg)
-            
-            // 뒤로가기 버튼
-            if viewModel.currentStep.rawValue > 0 {
-                HStack {
-                    Button {
-                        viewModel.goToPreviousStep()
-                    } label: {
-                        HStack(spacing: ExitSpacing.xs) {
-                            Image(systemName: "chevron.left")
-                            Text("이전")
-                        }
-                        .font(.Exit.subheadline)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, ExitSpacing.lg)
+        HStack(spacing: ExitSpacing.sm) {
+            ForEach(OnboardingStep.allCases, id: \.self) { step in
+                Capsule()
+                    .fill(step.rawValue <= viewModel.currentStep.rawValue ? Color.Exit.accent : Color.Exit.divider)
+                    .frame(height: 4)
+                    .animation(.easeInOut(duration: 0.3), value: viewModel.currentStep)
             }
         }
+        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.top, ExitSpacing.lg)
     }
     
     // MARK: - Step Content
@@ -171,20 +145,33 @@ struct OnboardingView: View {
         .padding(.horizontal, ExitSpacing.lg)
     }
     
-    // MARK: - Bottom Button
+    // MARK: - Bottom Buttons
     
     private var bottomButton: some View {
-        Button {
-            if viewModel.isLastStep {
-                viewModel.completeOnboarding(context: modelContext)
-            } else {
-                viewModel.goToNextStep()
+        HStack(spacing: ExitSpacing.md) {
+            // 이전 버튼 (1스텝에서는 숨김)
+            if viewModel.currentStep.rawValue > 0 {
+                Button {
+                    viewModel.goToPreviousStep()
+                } label: {
+                    Text("이전")
+                        .exitSecondaryButton()
+                }
             }
-        } label: {
-            Text(viewModel.isLastStep ? "완료하고 시작하기" : "다음")
-                .exitPrimaryButton(isEnabled: viewModel.canProceed)
+            
+            // 다음/완료 버튼
+            Button {
+                if viewModel.isLastStep {
+                    viewModel.completeOnboarding(context: modelContext)
+                } else {
+                    viewModel.goToNextStep()
+                }
+            } label: {
+                Text(viewModel.isLastStep ? "완료하고 시작하기" : "다음")
+                    .exitPrimaryButton(isEnabled: viewModel.canProceed)
+            }
+            .disabled(!viewModel.canProceed)
         }
-        .disabled(!viewModel.canProceed)
         .padding(.horizontal, ExitSpacing.lg)
         .padding(.bottom, ExitSpacing.xl)
     }

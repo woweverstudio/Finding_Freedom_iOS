@@ -198,10 +198,10 @@ struct ExitPrimaryButtonStyle: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .font(.Exit.body)
+            .font(.Exit.subheadline)
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
+            .frame(height: 48)
             .background(
                 isEnabled ? LinearGradient.exitAccent : LinearGradient(colors: [Color.Exit.disabledBackground], startPoint: .leading, endPoint: .trailing)
             )
