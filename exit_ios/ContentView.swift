@@ -69,21 +69,8 @@ struct MainTabView: View {
                         .tag(MainTab.settings)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(.none, value: selectedTab) // TabView 자체 애니메이션 사용
-                
-                // 플로팅 버튼 공간 (레이아웃 유지를 위해 항상 존재, opacity로 숨김)
-                Spacer()
-                    .frame(height: 80)
-                    .opacity(selectedTab != .settings ? 1 : 0)
+                .animation(.none, value: selectedTab)
             }
-            
-            // 하단 플로팅 버튼 (레이아웃 유지를 위해 항상 존재, opacity로 숨김)
-            VStack {
-                Spacer()
-                floatingActionButtons
-            }
-            .opacity(selectedTab != .settings ? 1 : 0)
-            .allowsHitTesting(selectedTab != .settings)
             
             // 입금 완료 후 자산 업데이트 확인 다이얼로그
             if viewModel.showAssetUpdateConfirm {
@@ -139,72 +126,6 @@ struct MainTabView: View {
         .padding(.horizontal, ExitSpacing.xl)
         .padding(.top, ExitSpacing.md)
         .background(Color.Exit.background)
-    }
-    
-    // MARK: - Floating Action Buttons
-    
-    private var floatingActionButtons: some View {
-        HStack(spacing: ExitSpacing.md) {
-            // 자산 변동 업데이트 (좌측)
-            Button {
-                // 현재 Asset 값으로 초기화
-                viewModel.totalAssetsInput = viewModel.currentAssetAmount
-                if let asset = viewModel.currentAsset {
-                    viewModel.selectedAssetTypes = Set(asset.assetTypes)
-                }
-                viewModel.showAssetUpdateSheet = true
-            } label: {
-                HStack(spacing: ExitSpacing.xs) {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("자산 업데이트")
-                        .font(.Exit.caption)
-                        .fontWeight(.semibold)
-                }
-                .foregroundStyle(Color.Exit.primaryText)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-                .overlay(
-                    RoundedRectangle(cornerRadius: ExitRadius.md)
-                        .stroke(Color.Exit.divider, lineWidth: 1)
-                )
-            }
-            .buttonStyle(.plain)
-            
-            // 입금하기 (우측)
-            Button {
-                viewModel.depositAmount = 0
-                viewModel.depositDate = Date()
-                viewModel.showDepositSheet = true
-            } label: {
-                HStack(spacing: ExitSpacing.xs) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("입금하기")
-                        .font(.Exit.caption)
-                        .fontWeight(.semibold)
-                }
-                .foregroundStyle(Color.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(LinearGradient.exitAccent)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-                .exitButtonShadow()
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(ExitSpacing.md)
-        .background(
-            LinearGradient(
-                colors: [Color.Exit.background.opacity(0), Color.Exit.background],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 100)
-            .allowsHitTesting(false)
-        )
     }
     
     // MARK: - Asset Update Confirm Overlay

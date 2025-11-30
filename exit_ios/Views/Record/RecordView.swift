@@ -100,21 +100,30 @@ struct RecordTabView: View {
     }
     
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: ExitSpacing.lg) {
-                // 년도 선택
-                yearSelector
-                
-                // 요약 카드
-                summarySection
-                
-                // 막대 차트
-                barChartSection
-                
-                // 입금 기록 리스트
-                depositHistorySection
+        ZStack(alignment: .bottom) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: ExitSpacing.lg) {
+                    // 년도 선택
+                    yearSelector
+                    
+                    // 요약 카드
+                    summarySection
+                    
+                    // 막대 차트
+                    barChartSection
+                    
+                    // 입금 기록 리스트
+                    depositHistorySection
+                    
+                    // 플로팅 버튼 공간
+                    Spacer()
+                        .frame(height: 80)
+                }
+                .padding(.vertical, ExitSpacing.lg)
             }
-            .padding(.vertical, ExitSpacing.lg)
+            
+            // 플로팅 액션 버튼
+            FloatingActionButtons(viewModel: viewModel)
         }
     }
     

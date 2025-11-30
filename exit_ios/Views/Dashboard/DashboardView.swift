@@ -13,32 +13,41 @@ struct DashboardView: View {
     @Binding var hideAmounts: Bool
     
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: ExitSpacing.lg) {
-                // D-DAY 헤더
-                dDayHeader
-                
-                // 진행률 섹션
-                progressSection
-                
-                // 시나리오 탭
-                ScenarioTabBar(
-                    scenarios: viewModel.scenarios,
-                    selectedScenario: viewModel.activeScenario,
-                    onSelect: { scenario in
-                        withAnimation {
-                            viewModel.selectScenario(scenario)
+        ZStack(alignment: .bottom) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: ExitSpacing.lg) {
+                    // D-DAY 헤더
+                    dDayHeader
+                    
+                    // 진행률 섹션
+                    progressSection
+                    
+                    // 시나리오 탭
+                    ScenarioTabBar(
+                        scenarios: viewModel.scenarios,
+                        selectedScenario: viewModel.activeScenario,
+                        onSelect: { scenario in
+                            withAnimation {
+                                viewModel.selectScenario(scenario)
+                            }
+                        },
+                        onSettings: {
+                            viewModel.showScenarioSheet = true
                         }
-                    },
-                    onSettings: {
-                        viewModel.showScenarioSheet = true
-                    }
-                )
-                
-                // 시나리오 설정값 테이블
-                scenarioSettingsCard
+                    )
+                    
+                    // 시나리오 설정값 테이블
+                    scenarioSettingsCard
+                    
+                    // 플로팅 버튼 공간
+                    Spacer()
+                        .frame(height: 80)
+                }
+                .padding(.vertical, ExitSpacing.lg)
             }
-            .padding(.vertical, ExitSpacing.lg)
+            
+            // 플로팅 액션 버튼
+            FloatingActionButtons(viewModel: viewModel)
         }
     }
     

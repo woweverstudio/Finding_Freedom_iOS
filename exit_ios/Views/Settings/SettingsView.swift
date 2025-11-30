@@ -513,7 +513,7 @@ struct ReminderEditSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+//        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
     
