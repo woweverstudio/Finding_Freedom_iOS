@@ -227,8 +227,8 @@ struct RecordTabView: View {
         viewModel.scenarios.first { $0.isSystemScenario } ?? viewModel.activeScenario
     }
     
-    /// 계획 대비 달성 점수 (0~100)
-    private var planScore: Int {
+    /// 입금 달성도 점수 (0~100)
+    private var depositScore: Int {
         guard let scenario = myPlanScenario else { return 0 }
         guard !filteredUpdates.isEmpty else { return 0 }
         
@@ -240,7 +240,7 @@ struct RecordTabView: View {
         for update in filteredUpdates {
             let actualDeposit = update.salaryAmount + update.dividendAmount + update.interestAmount + update.rentAmount + update.otherAmount
             let deposit = actualDeposit > 0 ? actualDeposit : (update.depositAmount + update.passiveIncome)
-            let achievement = min(deposit / monthlyTarget, 1.5) // 150% 상한
+            let achievement = min(deposit / monthlyTarget, 1.0) // 100% 상한
             totalAchievement += achievement
         }
         
@@ -248,14 +248,43 @@ struct RecordTabView: View {
         return min(Int(averageAchievement * 100), 100)
     }
     
+    /// 월 평균 패시브인컴
+    private var yearAveragePassiveIncome: Double {
+        guard !filteredUpdates.isEmpty else { return 0 }
+        return yearTotalPassiveIncome / Double(filteredUpdates.count)
+    }
+    
+    /// 패시브인컴 달성도 점수 (0~100)
+    private var passiveIncomeScore: Int {
+        guard let scenario = myPlanScenario else { return 0 }
+        guard !filteredUpdates.isEmpty else { return 0 }
+        
+        let targetIncome = scenario.desiredMonthlyIncome
+        guard targetIncome > 0 else { return 100 }
+        
+        // 월 평균 패시브인컴 vs 목표 현금흐름
+        let achievement = min(yearAveragePassiveIncome / targetIncome, 1.0) // 100% 상한
+        return Int(achievement * 100)
+    }
+    
+    /// 종합 계획 달성 점수 (입금 50% + 패시브인컴 50%)
+    private var planScore: Int {
+        (depositScore + passiveIncomeScore) / 2
+    }
+    
     /// 점수에 따른 색상
-    private var scoreColor: Color {
-        switch planScore {
+    private func scoreColor(for score: Int) -> Color {
+        switch score {
         case 80...100: return Color.Exit.accent
         case 60..<80: return Color.Exit.positive
         case 40..<60: return Color.Exit.caution
         default: return Color.Exit.warning
         }
+    }
+    
+    /// 종합 점수 색상
+    private var totalScoreColor: Color {
+        scoreColor(for: planScore)
     }
     
     /// 점수에 따른 메시지
@@ -295,24 +324,25 @@ struct RecordTabView: View {
                 .background(Color.Exit.divider)
             
             // 컴팩트 요약 표
-            VStack(spacing: 0) {
+            VStack(spacing: ExitSpacing.md) {
                 RecordSummaryRow(label: "총 입금액", value: ExitNumberFormatter.formatToEokManWon(yearTotalDeposit))
                 RecordSummaryRow(label: "총 패시브인컴", value: ExitNumberFormatter.formatToManWon(yearTotalPassiveIncome))
                 RecordSummaryRow(label: "월 평균 입금", value: ExitNumberFormatter.formatToManWon(yearAverageDeposit))
-                RecordSummaryRow(label: "기록된 달", value: "\(filteredUpdates.count)개월", isLast: true)
             }
-            .background(Color.Exit.secondaryCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             
             // 계획 달성 점수
             if let scenario = myPlanScenario, !filteredUpdates.isEmpty {
-                VStack(spacing: ExitSpacing.sm) {
+                VStack(spacing: ExitSpacing.md) {
+                    // 종합 점수 헤더
+                    Divider()
+                        .background(Color.Exit.divider)
+                    
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("계획 달성도")
                                 .font(.Exit.caption)
                                 .foregroundStyle(Color.Exit.secondaryText)
-                            Text("월 목표 \(ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment)) 기준")
+                            Text("입금 50% + 패시브인컴 50%")
                                 .font(.Exit.caption2)
                                 .foregroundStyle(Color.Exit.tertiaryText)
                         }
@@ -322,14 +352,14 @@ struct RecordTabView: View {
                         HStack(alignment: .lastTextBaseline, spacing: 4) {
                             Text("\(planScore)")
                                 .font(.system(size: 32, weight: .heavy, design: .rounded))
-                                .foregroundStyle(scoreColor)
+                                .foregroundStyle(totalScoreColor)
                             Text("점")
                                 .font(.Exit.caption)
                                 .foregroundStyle(Color.Exit.secondaryText)
                         }
                     }
                     
-                    // 프로그레스 바
+                    // 종합 프로그레스 바
                     GeometryReader { geometry in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 4)
@@ -337,7 +367,7 @@ struct RecordTabView: View {
                                 .frame(height: 8)
                             
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(scoreColor)
+                                .fill(totalScoreColor)
                                 .frame(width: geometry.size.width * CGFloat(planScore) / 100, height: 8)
                         }
                     }
@@ -346,13 +376,92 @@ struct RecordTabView: View {
                     HStack {
                         Text(scoreMessage)
                             .font(.Exit.caption2)
-                            .foregroundStyle(scoreColor)
+                            .foregroundStyle(totalScoreColor)
+                        Spacer()
+                    }
+                    
+                    Divider()
+                        .background(Color.Exit.divider)
+                    
+                    // 세부 점수
+                    VStack(spacing: ExitSpacing.sm) {
+                        // 입금 달성도
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("입금 달성도")
+                                    .font(.Exit.caption2)
+                                    .foregroundStyle(Color.Exit.secondaryText)
+                                Text("목표 \(ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))/월")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(Color.Exit.tertiaryText)
+                            }
+                            
+                            Spacer()
+                            
+                            // 미니 프로그레스 바
+                            GeometryReader { geometry in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Color.Exit.divider)
+                                        .frame(height: 4)
+                                    
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(scoreColor(for: depositScore))
+                                        .frame(width: geometry.size.width * CGFloat(depositScore) / 100, height: 4)
+                                }
+                            }
+                            .frame(width: 60, height: 4)
+                            
+                            Text("\(depositScore)점")
+                                .font(.Exit.caption2)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(scoreColor(for: depositScore))
+                                .frame(width: 40, alignment: .trailing)
+                        }
+                        
+                        // 패시브인컴 달성도
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("패시브인컴 달성도")
+                                    .font(.Exit.caption2)
+                                    .foregroundStyle(Color.Exit.secondaryText)
+                                Text("목표 \(ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))/월")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(Color.Exit.tertiaryText)
+                            }
+                            
+                            Spacer()
+                            
+                            // 미니 프로그레스 바
+                            GeometryReader { geometry in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Color.Exit.divider)
+                                        .frame(height: 4)
+                                    
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(scoreColor(for: passiveIncomeScore))
+                                        .frame(width: geometry.size.width * CGFloat(passiveIncomeScore) / 100, height: 4)
+                                }
+                            }
+                            .frame(width: 60, height: 4)
+                            
+                            Text("\(passiveIncomeScore)점")
+                                .font(.Exit.caption2)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(scoreColor(for: passiveIncomeScore))
+                                .frame(width: 40, alignment: .trailing)
+                        }
+                    }
+                    
+                    // 현재 실적 요약
+                    HStack {
+                        Text("현재 월평균 패시브인컴: \(ExitNumberFormatter.formatToManWon(yearAveragePassiveIncome))")
+                            .font(.Exit.caption2)
+                            .foregroundStyle(Color.Exit.tertiaryText)
                         Spacer()
                     }
                 }
-                .padding(ExitSpacing.md)
-                .background(Color.Exit.secondaryCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             }
         }
         .padding(ExitSpacing.lg)

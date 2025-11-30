@@ -21,6 +21,7 @@ struct CalculationFormulaSheet: View {
                     VStack(alignment: .leading, spacing: ExitSpacing.xl) {
                         // 목표 자산 계산
                         targetAssetSection
+                            .padding(.top, ExitSpacing.lg)
                         
                         Divider()
                             .background(Color.Exit.divider)
@@ -107,9 +108,6 @@ struct CalculationFormulaSheet: View {
                         valueColor: Color.Exit.caution
                     )
                     
-                    Divider()
-                        .background(Color.Exit.divider)
-                    
                     FormulaValueRow(
                         label: "계산된 목표 자산",
                         value: ExitNumberFormatter.formatToEokManWon(result.targetAssets),
@@ -183,9 +181,6 @@ struct CalculationFormulaSheet: View {
                         value: String(format: "%.1f%%", scenario.preRetirementReturnRate),
                         valueColor: Color.Exit.accent
                     )
-                    
-                    Divider()
-                        .background(Color.Exit.divider)
                     
                     FormulaValueRow(
                         label: "목표 도달까지",

@@ -86,14 +86,6 @@ struct RecordSummaryRow: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.Exit.primaryText)
             }
-            .padding(.horizontal, ExitSpacing.md)
-            .padding(.vertical, ExitSpacing.sm)
-            
-            if !isLast {
-                Divider()
-                    .background(Color.Exit.divider)
-                    .padding(.leading, ExitSpacing.md)
-            }
         }
     }
 }
