@@ -12,6 +12,7 @@ import SwiftData
 enum MainTab: String, CaseIterable {
     case dashboard = "홈"
     case record = "기록"
+    case settings = "설정"
 }
 
 /// 앱 메인 컨텐츠 뷰
@@ -37,12 +38,14 @@ struct ContentView: View {
     }
 }
 
-/// 메인 탭 뷰 (대시보드 + 기록)
+/// 메인 탭 뷰 (대시보드 + 기록 + 설정)
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = HomeViewModel()
+    @State private var settingsViewModel = SettingsViewModel()
     @State private var hideAmounts = false
     @State private var selectedTab: MainTab = .dashboard
+    @State private var shouldNavigateToWelcome = false
     
     var body: some View {
         ZStack {
@@ -61,19 +64,26 @@ struct MainTabView: View {
                     
                     RecordTabView(viewModel: viewModel)
                         .tag(MainTab.record)
+                    
+                    SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
+                        .tag(MainTab.settings)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
+                .animation(.none, value: selectedTab) // TabView 자체 애니메이션 사용
                 
-                // 플로팅 버튼 공간
+                // 플로팅 버튼 공간 (레이아웃 유지를 위해 항상 존재, opacity로 숨김)
                 Spacer()
                     .frame(height: 80)
+                    .opacity(selectedTab != .settings ? 1 : 0)
             }
             
-            // 하단 플로팅 버튼
+            // 하단 플로팅 버튼 (레이아웃 유지를 위해 항상 존재, opacity로 숨김)
             VStack {
                 Spacer()
                 floatingActionButtons
             }
+            .opacity(selectedTab != .settings ? 1 : 0)
+            .allowsHitTesting(selectedTab != .settings)
             
             // 입금 완료 후 자산 업데이트 확인 다이얼로그
             if viewModel.showAssetUpdateConfirm {
@@ -82,6 +92,11 @@ struct MainTabView: View {
         }
         .onAppear {
             viewModel.configure(with: modelContext)
+            settingsViewModel.configure(with: modelContext)
+        }
+        .onChange(of: shouldNavigateToWelcome) { _, newValue in
+            // 데이터 삭제 후 앱 재시작을 위해 UserProfile을 다시 체크
+            // ContentView에서 hasCompletedOnboarding을 확인하므로 자동으로 WelcomeView로 이동
         }
         .fullScreenCover(isPresented: $viewModel.showDepositSheet) {
             DepositSheet(viewModel: viewModel)
@@ -100,9 +115,8 @@ struct MainTabView: View {
         HStack(spacing: 0) {
             ForEach(MainTab.allCases, id: \.self) { tab in
                 Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selectedTab = tab
-                    }
+                    // 탭 바 인디케이터만 애니메이션, TabView는 자체 전환 사용
+                    selectedTab = tab
                 } label: {
                     VStack(spacing: ExitSpacing.xs) {
                         Text(tab.rawValue)
@@ -117,6 +131,7 @@ struct MainTabView: View {
                             .clipShape(Capsule())
                     }
                     .frame(maxWidth: .infinity)
+                    .animation(.easeInOut(duration: 0.2), value: selectedTab)
                 }
                 .buttonStyle(.plain)
             }
@@ -309,6 +324,7 @@ struct MainTabView: View {
             Scenario.self,
             MonthlyUpdate.self,
             Asset.self,
-            AssetSnapshot.self
+            AssetSnapshot.self,
+            DepositReminder.self
         ], inMemory: true)
 }

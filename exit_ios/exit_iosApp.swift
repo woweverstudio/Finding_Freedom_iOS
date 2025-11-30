@@ -17,7 +17,8 @@ struct exit_iosApp: App {
             Scenario.self,
             MonthlyUpdate.self,
             Asset.self,
-            AssetSnapshot.self
+            AssetSnapshot.self,
+            DepositReminder.self
         ])
         
         let modelConfiguration = ModelConfiguration(
