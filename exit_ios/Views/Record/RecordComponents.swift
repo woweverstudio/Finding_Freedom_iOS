@@ -6,16 +6,35 @@
 //
 
 import SwiftUI
+import Charts
 
 // MARK: - 월별 차트 데이터
 
 struct MonthChartData: Identifiable {
-    let id = UUID()
+    var id: Int { month }
     let month: Int
     let depositAmount: Double
     let passiveIncome: Double
     
     var total: Double { depositAmount + passiveIncome }
+    
+    /// 월 이름 (1월, 2월 등)
+    var monthLabel: String {
+        "\(month)월"
+    }
+}
+
+/// 차트용 스택 데이터 타입
+enum ChartCategory: String, CaseIterable {
+    case salary = "월급"
+    case passive = "월급 외 수익"
+    
+    var color: Color {
+        switch self {
+        case .salary: return Color.Exit.secondaryText.opacity(0.6)
+        case .passive: return Color.Exit.accent
+        }
+    }
 }
 
 // MARK: - 요약 카드
@@ -46,76 +65,138 @@ struct RecordSummaryCard: View {
     }
 }
 
-// MARK: - 12개월 막대 차트
+// MARK: - 12개월 막대 차트 (Swift Charts)
 
 struct YearlyBarChart: View {
     let data: [MonthChartData]
+    @State private var animatedData: [MonthChartData] = []
+    @State private var showAnnotations: Bool = false
+    
+    private var hasAnyData: Bool {
+        data.contains { $0.total > 0 }
+    }
     
     private var maxAmount: Double {
         let maxTotal = data.map { $0.total }.max() ?? 0
         return max(maxTotal, 1)
     }
     
-    private var hasAnyData: Bool {
-        data.contains { $0.total > 0 }
+    /// 애니메이션용 데이터 (모든 값이 0인 상태)
+    private var zeroData: [MonthChartData] {
+        data.map { MonthChartData(month: $0.month, depositAmount: 0, passiveIncome: 0) }
     }
     
     var body: some View {
-        GeometryReader { geometry in
-            let barAreaHeight = geometry.size.height - 24
-            
-            VStack(spacing: 0) {
-                // 막대 영역
-                HStack(alignment: .bottom, spacing: 4) {
-                    ForEach(data) { item in
-                        VStack(spacing: 1) {
-                            Spacer(minLength: 0)
-                            
-                            // 패시브인컴 부분
-                            if item.passiveIncome > 0 {
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(Color.Exit.accent.opacity(0.6))
-                                    .frame(height: barHeight(for: item.passiveIncome, in: barAreaHeight))
-                            }
-                            
-                            // 입금액 부분
-                            if item.depositAmount > 0 {
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(LinearGradient.exitAccent)
-                                    .frame(height: barHeight(for: item.depositAmount, in: barAreaHeight))
-                            }
-                            
-                            // 빈 막대 (데이터 없을 때)
-                            if item.total == 0 {
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(Color.Exit.divider)
-                                    .frame(height: 4)
-                            }
+        VStack(spacing: ExitSpacing.sm) {
+            Chart {
+                ForEach(animatedData) { item in
+                    // 월급 막대 (회색) - 먼저 그려서 아래에 위치
+                    BarMark(
+                        x: .value("월", item.monthLabel),
+                        y: .value("월급", item.depositAmount)
+                    )
+                    .foregroundStyle(Color.Exit.secondaryText.opacity(0.4))
+                    .cornerRadius(4)
+                    
+                    // 월급 외 수익 막대 (accent) - 스택되어 위에 위치
+                    BarMark(
+                        x: .value("월", item.monthLabel),
+                        y: .value("월급 외 수익", item.passiveIncome)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.Exit.accent, Color.Exit.accent.opacity(0.7)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .cornerRadius(4)
+                    .annotation(position: .top, spacing: 4) {
+                        if item.total > 0 && showAnnotations {
+                            Text(ExitNumberFormatter.formatToManWonShort(item.total))
+                                .font(.system(size: 8, weight: .medium))
+                                .foregroundStyle(Color.Exit.secondaryText)
                         }
-                        .frame(maxWidth: .infinity)
                     }
                 }
-                .frame(height: barAreaHeight)
-                
-                // 월 표시 영역
-                HStack(spacing: 4) {
-                    ForEach(data) { item in
-                        Text("\(item.month)")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(item.total > 0 ? Color.Exit.primaryText : Color.Exit.tertiaryText)
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                .frame(height: 20)
-                .padding(.top, 4)
             }
+            .chartXAxis {
+                AxisMarks(values: .automatic) { value in
+                    AxisValueLabel {
+                        if let month = value.as(String.self) {
+                            Text(month.replacingOccurrences(of: "월", with: ""))
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(Color.Exit.secondaryText)
+                        }
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
+                        .foregroundStyle(Color.Exit.divider)
+                    AxisValueLabel {
+                        if let amount = value.as(Double.self) {
+                            Text(ExitNumberFormatter.formatToManWonShort(amount))
+                                .font(.system(size: 9, weight: .regular))
+                                .foregroundStyle(Color.Exit.tertiaryText)
+                        }
+                    }
+                }
+            }
+            .chartYScale(domain: 0...(maxAmount * 1.2))
+            .chartPlotStyle { plotArea in
+                plotArea
+                    .background(Color.clear)
+            }
+            
+            // 범례
+            HStack(spacing: ExitSpacing.lg) {
+                HStack(spacing: 6) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.Exit.secondaryText.opacity(0.4))
+                        .frame(width: 12, height: 8)
+                    Text("월급")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                }
+                
+                HStack(spacing: 6) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.Exit.accent)
+                        .frame(width: 12, height: 8)
+                    Text("월급 외 수익")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                }
+            }
+        }
+        .onAppear {
+            startAnimation()
+        }
+        .onChange(of: data.map { $0.month }) { _, _ in
+            startAnimation()
         }
     }
     
-    private func barHeight(for amount: Double, in maxHeight: CGFloat) -> CGFloat {
-        guard maxAmount > 0, hasAnyData else { return 4 }
-        let ratio = amount / maxAmount
-        return max(CGFloat(ratio) * maxHeight, 4)
+    private func startAnimation() {
+        // 초기화: 모든 막대 높이를 0으로
+        animatedData = zeroData
+        showAnnotations = false
+        
+        // 아래에서 위로 올라오는 애니메이션
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
+                animatedData = data
+            }
+            
+            // 애니메이션 완료 후 어노테이션 표시
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                withAnimation(.easeIn(duration: 0.2)) {
+                    showAnnotations = true
+                }
+            }
+        }
     }
 }
 

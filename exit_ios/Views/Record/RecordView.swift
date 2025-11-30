@@ -14,6 +14,12 @@ struct RecordTabView: View {
     @State private var updateToDelete: MonthlyUpdate?
     @State private var showDeleteConfirmation: Bool = false
     
+    // 애니메이션 상태
+    @State private var showYearSelector = false
+    @State private var showSummary = false
+    @State private var showChart = false
+    @State private var showHistory = false
+    
     private var currentYear: Int {
         Calendar.current.component(.year, from: Date())
     }
@@ -105,15 +111,23 @@ struct RecordTabView: View {
                 VStack(spacing: ExitSpacing.lg) {
                     // 년도 선택
                     yearSelector
+                        .opacity(showYearSelector ? 1 : 0)
+                        .offset(y: showYearSelector ? 0 : -20)
                     
                     // 요약 카드
                     summarySection
+                        .opacity(showSummary ? 1 : 0)
+                        .offset(y: showSummary ? 0 : 30)
                     
                     // 막대 차트
                     barChartSection
+                        .opacity(showChart ? 1 : 0)
+                        .offset(y: showChart ? 0 : 30)
                     
                     // 입금 기록 리스트
                     depositHistorySection
+                        .opacity(showHistory ? 1 : 0)
+                        .offset(y: showHistory ? 0 : 30)
                     
                     // 플로팅 버튼 공간
                     Spacer()
@@ -124,6 +138,36 @@ struct RecordTabView: View {
             
             // 플로팅 액션 버튼
             FloatingActionButtons(viewModel: viewModel)
+        }
+        .onAppear {
+            startEntryAnimation()
+        }
+    }
+    
+    // MARK: - 진입 애니메이션
+    
+    private func startEntryAnimation() {
+        // 리셋
+        showYearSelector = false
+        showSummary = false
+        showChart = false
+        showHistory = false
+        
+        // 순차적으로 나타나기
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.1)) {
+            showYearSelector = true
+        }
+        
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.2)) {
+            showSummary = true
+        }
+        
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.35)) {
+            showChart = true
+        }
+        
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.5)) {
+            showHistory = true
         }
     }
     
