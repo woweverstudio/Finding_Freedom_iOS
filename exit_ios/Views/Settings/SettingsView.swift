@@ -349,6 +349,7 @@ struct SettingsView: View {
                         }
                     }
                     .padding(ExitSpacing.md)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 
@@ -383,6 +384,7 @@ struct SettingsView: View {
                             .foregroundStyle(Color.Exit.tertiaryText)
                     }
                     .padding(ExitSpacing.md)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
