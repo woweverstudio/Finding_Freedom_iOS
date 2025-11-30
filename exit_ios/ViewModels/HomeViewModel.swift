@@ -427,8 +427,9 @@ final class HomeViewModel {
     }
     
     /// 시나리오 삭제
+    /// - Note: "내 계획" 시나리오는 삭제 불가
     func deleteScenario(_ scenario: Scenario) {
-        guard let context = modelContext, scenarios.count > 1 else { return }
+        guard let context = modelContext, scenarios.count > 1, scenario.isDeletable else { return }
         ScenarioManager.deleteScenario(scenario, from: scenarios, context: context)
         loadData()
     }

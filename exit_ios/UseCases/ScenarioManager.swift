@@ -148,11 +148,15 @@ enum ScenarioManager {
     
     /// 시나리오 삭제
     /// - Note: 활성 시나리오 삭제 시 다른 시나리오를 활성화
+    /// - Note: "내 계획" 시나리오는 삭제 불가
     static func deleteScenario(
         _ scenario: Scenario,
         from allScenarios: [Scenario],
         context: ModelContext
     ) {
+        // "내 계획" 시나리오는 삭제 불가
+        guard scenario.isDeletable else { return }
+        
         let wasActive = scenario.isActive
         context.delete(scenario)
         

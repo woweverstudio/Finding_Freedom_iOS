@@ -316,23 +316,26 @@ struct ScenarioSettingsView: View {
             } label: {
                 Label("이름 바꾸기", systemImage: "pencil")
                     .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
+                    .foregroundStyle(scenario.isDeletable ? Color.Exit.secondaryText : Color.Exit.tertiaryText)
                     .padding(ExitSpacing.sm)
-                    .background(Color.Exit.cardBackground)
+                    .background(scenario.isDeletable ? Color.Exit.cardBackground : Color.Exit.secondaryCardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
             }
+            .disabled(!scenario.isDeletable)
             
             Button {
                 showDeleteConfirm = true
             } label: {
                 Label("삭제하기", systemImage: "trash")
                     .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.warning)
+                    .foregroundStyle(scenario.isDeletable ? Color.Exit.warning : Color.Exit.tertiaryText)
                     .padding(ExitSpacing.sm)
-                    .background(Color.Exit.warning.opacity(0.1))
+                    .background(scenario.isDeletable ? Color.Exit.warning.opacity(0.1) : Color.Exit.secondaryCardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
             }
-            .disabled(viewModel.scenarios.count <= 1)
+            .disabled(viewModel.scenarios.count <= 1 || !scenario.isDeletable)
+            
+            Spacer()
         }
         .padding(.horizontal, ExitSpacing.lg)
     }

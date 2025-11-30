@@ -37,7 +37,7 @@ enum ChartCategory: String, CaseIterable {
     }
 }
 
-// MARK: - 요약 카드
+// MARK: - 요약 카드 (레거시)
 
 struct RecordSummaryCard: View {
     let title: String
@@ -62,6 +62,39 @@ struct RecordSummaryCard: View {
         .padding(ExitSpacing.md)
         .background(Color.Exit.secondaryCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+    }
+}
+
+// MARK: - 요약 표 행
+
+struct RecordSummaryRow: View {
+    let label: String
+    let value: String
+    var isLast: Bool = false
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(label)
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                Spacer()
+                
+                Text(value)
+                    .font(.Exit.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.Exit.primaryText)
+            }
+            .padding(.horizontal, ExitSpacing.md)
+            .padding(.vertical, ExitSpacing.sm)
+            
+            if !isLast {
+                Divider()
+                    .background(Color.Exit.divider)
+                    .padding(.leading, ExitSpacing.md)
+            }
+        }
     }
 }
 

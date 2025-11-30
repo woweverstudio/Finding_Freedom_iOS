@@ -14,7 +14,11 @@ final class Scenario {
     var id: UUID = UUID()
     
     /// 시나리오 이름
-    var name: String = "기본"
+    var name: String = "내 계획"
+    
+    /// 시스템 기본 시나리오 여부 (삭제/이름변경 불가)
+    /// - Note: "내 계획" 시나리오처럼 앱이 기본 생성한 시나리오
+    var isSystemScenario: Bool = false
     
     /// 은퇴 후 희망 월 수입 (원 단위)
     var desiredMonthlyIncome: Double = 3_000_000
@@ -55,10 +59,12 @@ final class Scenario {
         preRetirementReturnRate: Double = 6.5,
         postRetirementReturnRate: Double = 5.0,
         inflationRate: Double = 2.5,
-        isActive: Bool = false
+        isActive: Bool = false,
+        isSystemScenario: Bool = false
     ) {
         self.id = UUID()
         self.name = name
+        self.isSystemScenario = isSystemScenario
         self.desiredMonthlyIncome = desiredMonthlyIncome
         self.assetOffset = assetOffset
         self.monthlyInvestment = monthlyInvestment
@@ -90,6 +96,12 @@ final class Scenario {
     func effectiveAsset(with currentAsset: Double) -> Double {
         currentAsset + assetOffset
     }
+    
+    /// 삭제 가능 여부
+    /// - Note: 시스템 시나리오는 삭제/이름변경 불가
+    var isDeletable: Bool {
+        !isSystemScenario
+    }
 }
 
 // MARK: - Preset Scenarios
@@ -101,11 +113,12 @@ extension Scenario {
     ) -> [Scenario] {
         [
             Scenario(
-                name: "기본",
+                name: "내 계획",
                 desiredMonthlyIncome: desiredMonthlyIncome,
                 assetOffset: 0,
                 monthlyInvestment: monthlyInvestment,
-                isActive: true
+                isActive: true,
+                isSystemScenario: true  // 삭제/이름변경 불가
             ),
             Scenario(
                 name: "물가폭등",

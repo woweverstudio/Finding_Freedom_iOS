@@ -93,7 +93,7 @@ private struct ScenarioChip: View {
         
         VStack {
             let scenarios = [
-                Scenario(name: "기본", desiredMonthlyIncome: 3_000_000, monthlyInvestment: 2_000_000, isActive: true),
+                Scenario(name: "내 계획", desiredMonthlyIncome: 3_000_000, monthlyInvestment: 2_000_000, isActive: true),
                 Scenario(name: "물가폭등", desiredMonthlyIncome: 3_000_000, monthlyInvestment: 2_000_000),
                 Scenario(name: "주식폭락", desiredMonthlyIncome: 3_000_000, monthlyInvestment: 2_000_000),
                 Scenario(name: "로또당첨", desiredMonthlyIncome: 3_000_000, assetOffset: 1_000_000_000, monthlyInvestment: 2_000_000)

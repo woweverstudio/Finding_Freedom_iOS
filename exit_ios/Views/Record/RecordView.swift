@@ -221,6 +221,55 @@ struct RecordTabView: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
+    // MARK: - "내 계획" 시나리오 찾기
+    
+    private var myPlanScenario: Scenario? {
+        viewModel.scenarios.first { $0.isSystemScenario } ?? viewModel.activeScenario
+    }
+    
+    /// 계획 대비 달성 점수 (0~100)
+    private var planScore: Int {
+        guard let scenario = myPlanScenario else { return 0 }
+        guard !filteredUpdates.isEmpty else { return 0 }
+        
+        let monthlyTarget = scenario.monthlyInvestment
+        guard monthlyTarget > 0 else { return 100 }
+        
+        // 각 월별 달성률 계산
+        var totalAchievement: Double = 0
+        for update in filteredUpdates {
+            let actualDeposit = update.salaryAmount + update.dividendAmount + update.interestAmount + update.rentAmount + update.otherAmount
+            let deposit = actualDeposit > 0 ? actualDeposit : (update.depositAmount + update.passiveIncome)
+            let achievement = min(deposit / monthlyTarget, 1.5) // 150% 상한
+            totalAchievement += achievement
+        }
+        
+        let averageAchievement = totalAchievement / Double(filteredUpdates.count)
+        return min(Int(averageAchievement * 100), 100)
+    }
+    
+    /// 점수에 따른 색상
+    private var scoreColor: Color {
+        switch planScore {
+        case 80...100: return Color.Exit.accent
+        case 60..<80: return Color.Exit.positive
+        case 40..<60: return Color.Exit.caution
+        default: return Color.Exit.warning
+        }
+    }
+    
+    /// 점수에 따른 메시지
+    private var scoreMessage: String {
+        switch planScore {
+        case 90...100: return "완벽해요!"
+        case 80..<90: return "훌륭해요"
+        case 70..<80: return "잘하고 있어요"
+        case 60..<70: return "조금만 더"
+        case 50..<60: return "분발해요"
+        default: return "힘내세요"
+        }
+    }
+    
     // MARK: - 요약 섹션
     
     private var summarySection: some View {
@@ -245,37 +294,65 @@ struct RecordTabView: View {
             Divider()
                 .background(Color.Exit.divider)
             
-            // 요약 카드들
-            HStack(spacing: ExitSpacing.md) {
-                RecordSummaryCard(
-                    title: "총 입금액",
-                    value: ExitNumberFormatter.formatToEokManWon(yearTotalDeposit),
-                    icon: "plus.circle.fill",
-                    color: Color.Exit.primaryText
-                )
-                
-                RecordSummaryCard(
-                    title: "총 패시브인컴",
-                    value: ExitNumberFormatter.formatToManWon(yearTotalPassiveIncome),
-                    icon: "banknote.fill",
-                    color: Color.Exit.primaryText
-                )
+            // 컴팩트 요약 표
+            VStack(spacing: 0) {
+                RecordSummaryRow(label: "총 입금액", value: ExitNumberFormatter.formatToEokManWon(yearTotalDeposit))
+                RecordSummaryRow(label: "총 패시브인컴", value: ExitNumberFormatter.formatToManWon(yearTotalPassiveIncome))
+                RecordSummaryRow(label: "월 평균 입금", value: ExitNumberFormatter.formatToManWon(yearAverageDeposit))
+                RecordSummaryRow(label: "기록된 달", value: "\(filteredUpdates.count)개월", isLast: true)
             }
+            .background(Color.Exit.secondaryCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             
-            HStack(spacing: ExitSpacing.md) {
-                RecordSummaryCard(
-                    title: "월 평균 입금",
-                    value: ExitNumberFormatter.formatToManWon(yearAverageDeposit),
-                    icon: "chart.line.uptrend.xyaxis",
-                    color: Color.Exit.primaryText
-                )
-                
-                RecordSummaryCard(
-                    title: "기록된 달",
-                    value: "\(filteredUpdates.count)개월",
-                    icon: "calendar",
-                    color: filteredUpdates.isEmpty ? Color.Exit.tertiaryText : Color.Exit.primaryText
-                )
+            // 계획 달성 점수
+            if let scenario = myPlanScenario, !filteredUpdates.isEmpty {
+                VStack(spacing: ExitSpacing.sm) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("계획 달성도")
+                                .font(.Exit.caption)
+                                .foregroundStyle(Color.Exit.secondaryText)
+                            Text("월 목표 \(ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment)) 기준")
+                                .font(.Exit.caption2)
+                                .foregroundStyle(Color.Exit.tertiaryText)
+                        }
+                        
+                        Spacer()
+                        
+                        HStack(alignment: .lastTextBaseline, spacing: 4) {
+                            Text("\(planScore)")
+                                .font(.system(size: 32, weight: .heavy, design: .rounded))
+                                .foregroundStyle(scoreColor)
+                            Text("점")
+                                .font(.Exit.caption)
+                                .foregroundStyle(Color.Exit.secondaryText)
+                        }
+                    }
+                    
+                    // 프로그레스 바
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.Exit.divider)
+                                .frame(height: 8)
+                            
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(scoreColor)
+                                .frame(width: geometry.size.width * CGFloat(planScore) / 100, height: 8)
+                        }
+                    }
+                    .frame(height: 8)
+                    
+                    HStack {
+                        Text(scoreMessage)
+                            .font(.Exit.caption2)
+                            .foregroundStyle(scoreColor)
+                        Spacer()
+                    }
+                }
+                .padding(ExitSpacing.md)
+                .background(Color.Exit.secondaryCardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             }
         }
         .padding(ExitSpacing.lg)

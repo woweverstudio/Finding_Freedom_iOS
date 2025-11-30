@@ -15,39 +15,50 @@ struct DashboardView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: ExitSpacing.lg) {
-                    // D-DAY 헤더
-                    dDayHeader
-                    
-                    // 진행률 섹션
-                    progressSection
-                    
-                    // 시나리오 탭
-                    ScenarioTabBar(
-                        scenarios: viewModel.scenarios,
-                        selectedScenario: viewModel.activeScenario,
-                        onSelect: { scenario in
-                            withAnimation {
-                                viewModel.selectScenario(scenario)
+            ScrollViewReader { scrollProxy in
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: ExitSpacing.lg) {
+                        // D-DAY 헤더
+                        dDayHeader
+                            .id("top")  // 스크롤 최상단 ID
+                        
+                        // 진행률 섹션
+                        progressSection
+                        
+                        // 시나리오 탭
+                        ScenarioTabBar(
+                            scenarios: viewModel.scenarios,
+                            selectedScenario: viewModel.activeScenario,
+                            onSelect: { scenario in
+                                withAnimation {
+                                    viewModel.selectScenario(scenario)
+                                }
+                            },
+                            onSettings: {
+                                viewModel.showScenarioSheet = true
                             }
-                        },
-                        onSettings: {
-                            viewModel.showScenarioSheet = true
-                        }
-                    )
-                    
-                    // 시나리오 설정값 테이블
-                    scenarioSettingsCard
-                    
-                    // 계산방법 보기 버튼
-                    calculateFomulaButton                    
-                    
-                    // 플로팅 버튼 공간
-                    Spacer()
-                        .frame(height: 80)
+                        )
+                        
+                        // 시나리오 설정값 테이블
+                        scenarioSettingsCard
+                        
+                        // 계산방법 보기 버튼
+                        calculateFomulaButton                    
+                        
+                        // 플로팅 버튼 공간
+                        Spacer()
+                            .frame(height: 80)
+                    }
+                    .padding(.vertical, ExitSpacing.lg)
                 }
-                .padding(.vertical, ExitSpacing.lg)
+                .onChange(of: viewModel.showScenarioSheet) { _, isShowing in
+                    // 시나리오 시트가 닫힐 때 스크롤 최상단으로
+                    if !isShowing {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            scrollProxy.scrollTo("top", anchor: .top)
+                        }
+                    }
+                }
             }
             
             // 플로팅 액션 버튼
@@ -272,19 +283,6 @@ struct DashboardView: View {
                             Capsule()
                                 .fill(Color.Exit.accent.opacity(0.15))
                         )
-                    
-                    Button {
-                        viewModel.showScenarioSheet = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text("수정")
-                                .font(.Exit.caption)
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 10, weight: .semibold))
-                        }
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                    }
-                    .buttonStyle(.plain)
                 }
                 
                 Divider()
@@ -346,6 +344,26 @@ struct DashboardView: View {
                         valueColor: Color.Exit.caution
                     )
                 }
+                
+                // 시나리오 수정 버튼
+                Button {
+                    viewModel.showScenarioSheet = true
+                } label: {
+                    HStack(spacing: ExitSpacing.sm) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("시나리오 수정하기")
+                            .font(.Exit.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundStyle(Color.Exit.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, ExitSpacing.sm)
+                    .background(Color.Exit.accent.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, ExitSpacing.sm)
             }
         }
         .padding(ExitSpacing.lg)
