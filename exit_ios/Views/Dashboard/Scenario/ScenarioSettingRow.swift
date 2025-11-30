@@ -26,7 +26,7 @@ struct ScenarioSettingRow: View {
                 .font(.Exit.caption)
                 .fontWeight(.medium)
                 .foregroundStyle(valueColor)
-                .blur(radius: isHidden ? 8 : 0)
+                .blur(radius: isHidden ? 4 : 0)
                 .animation(.easeInOut(duration: 0.2), value: isHidden)
         }
     }

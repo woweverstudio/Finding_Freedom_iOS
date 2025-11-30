@@ -11,6 +11,7 @@ import SwiftUI
 struct DashboardView: View {
     @Bindable var viewModel: HomeViewModel
     @Binding var hideAmounts: Bool
+    @State private var showFormulaSheet = false
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -38,6 +39,9 @@ struct DashboardView: View {
                     
                     // 시나리오 설정값 테이블
                     scenarioSettingsCard
+                    
+                    // 계산방법 보기 버튼
+                    calculateFomulaButton                    
                     
                     // 플로팅 버튼 공간
                     Spacer()
@@ -127,6 +131,9 @@ struct DashboardView: View {
             detailedCalculationCard
         }
         .padding(.horizontal, ExitSpacing.md)
+        .sheet(isPresented: $showFormulaSheet) {
+            CalculationFormulaSheet(viewModel: viewModel)
+        }
     }
     
     // MARK: - Amount Visibility Toggle
@@ -265,6 +272,19 @@ struct DashboardView: View {
                             Capsule()
                                 .fill(Color.Exit.accent.opacity(0.15))
                         )
+                    
+                    Button {
+                        viewModel.showScenarioSheet = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("수정")
+                                .font(.Exit.caption)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    }
+                    .buttonStyle(.plain)
                 }
                 
                 Divider()
@@ -332,6 +352,18 @@ struct DashboardView: View {
         .background(Color.Exit.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         .padding(.horizontal, ExitSpacing.md)
+    }
+    
+    private var calculateFomulaButton: some View {
+        // 계산방법 보기 버튼
+        Button {
+            showFormulaSheet = true
+        } label: {
+            Text("계산방법 보기")
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.tertiaryText)
+        }
+        .buttonStyle(.plain)
     }
 }
 
