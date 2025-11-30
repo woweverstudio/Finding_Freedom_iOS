@@ -172,14 +172,25 @@ struct YearlyBarChart: View {
             }
         }
         .onAppear {
-            startAnimation()
+            startEntryAnimation()
         }
         .onChange(of: data.map { $0.month }) { _, _ in
-            startAnimation()
+            // 년도 변경 시 전체 애니메이션
+            startEntryAnimation()
+        }
+        .onChange(of: dataHash) { _, _ in
+            // 금액 변경 시 부드럽게 업데이트
+            updateChartData()
         }
     }
     
-    private func startAnimation() {
+    /// 데이터 변경 감지용 해시 (금액 포함)
+    private var dataHash: String {
+        data.map { "\($0.month):\($0.depositAmount):\($0.passiveIncome)" }.joined()
+    }
+    
+    /// 최초 진입 애니메이션 (아래에서 위로)
+    private func startEntryAnimation() {
         // 초기화: 모든 막대 높이를 0으로
         animatedData = zeroData
         showAnnotations = false
@@ -196,6 +207,14 @@ struct YearlyBarChart: View {
                     showAnnotations = true
                 }
             }
+        }
+    }
+    
+    /// 데이터 업데이트 애니메이션 (부드러운 전환)
+    private func updateChartData() {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            animatedData = data
+            showAnnotations = true
         }
     }
 }

@@ -37,18 +37,7 @@ struct CalculationFormulaSheet: View {
                     .padding(ExitSpacing.lg)
                 }
             }
-            .navigationTitle("계산 방법")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("닫기") {
-                        dismiss()
-                    }
-                    .foregroundStyle(Color.Exit.secondaryText)
-                }
-            }
         }
-        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
     
