@@ -154,7 +154,10 @@ private struct QuickButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button {
+            HapticService.shared.soft()
+            action()
+        } label: {
             Text(title)
                 .font(.Exit.caption)
                 .fontWeight(.medium)
@@ -182,7 +185,10 @@ private struct NumberKey: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button {
+            HapticService.shared.soft()
+            action()
+        } label: {
             Text(digit)
                 .font(.Exit.keypad)
                 .foregroundStyle(isAction ? Color.Exit.accent : Color.Exit.primaryText)
