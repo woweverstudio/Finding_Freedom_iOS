@@ -95,7 +95,7 @@ struct YearlyBarChart: View {
                         x: .value("월", item.monthLabel),
                         y: .value("월급", item.depositAmount)
                     )
-                    .foregroundStyle(Color.Exit.secondaryText.opacity(0.4))
+                    .foregroundStyle(Color.Exit.accent.opacity(0.4))
                     .cornerRadius(4)
                     
                     // 월급 외 수익 막대 (accent) - 스택되어 위에 위치
@@ -154,7 +154,7 @@ struct YearlyBarChart: View {
             HStack(spacing: ExitSpacing.lg) {
                 HStack(spacing: 6) {
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.Exit.secondaryText.opacity(0.4))
+                        .fill(Color.Exit.accent.opacity(0.4))
                         .frame(width: 12, height: 8)
                     Text("월급")
                         .font(.Exit.caption2)
