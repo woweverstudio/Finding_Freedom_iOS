@@ -51,7 +51,14 @@ final class SimulationViewModel {
     /// 현재 표시할 결과 (진행 중이면 partialResult, 완료면 monteCarloResult)
     var displayResult: MonteCarloResult? {
         if isSimulating {
-            return partialResult
+            // 시뮬레이션 중: partialResult가 없으면 빈 결과 반환 (애니메이션 시작점)
+            return partialResult ?? MonteCarloResult(
+                successRate: 0,
+                successMonthsDistribution: [],
+                failureCount: 0,
+                totalSimulations: 0,
+                representativePaths: nil
+            )
         } else {
             return monteCarloResult
         }
@@ -62,9 +69,10 @@ final class SimulationViewModel {
         customVolatility ?? activeScenario?.returnRateVolatility ?? 15.0
     }
     
-    /// 차트용 연도 분포 데이터
+    /// 차트용 연도 분포 데이터 (실시간 업데이트)
     var yearDistributionData: [(year: Int, count: Int)] {
-        guard let result = monteCarloResult else { return [] }
+        // displayResult 사용 (진행 중에도 업데이트)
+        guard let result = displayResult else { return [] }
         
         let distribution = result.yearDistribution()
         return distribution.sorted(by: { $0.key < $1.key })
@@ -109,65 +117,78 @@ final class SimulationViewModel {
     
     // MARK: - Simulation
     
-    /// 몬테카를로 시뮬레이션 실행
+    /// 몬테카를로 시뮬레이션 실행 (Fire-and-Forget 방식)
+    /// UI가 즉시 업데이트되도록 await 없이 백그라운드 작업 시작
     @MainActor
-    func runMonteCarloSimulation() async {
+    func runMonteCarloSimulation() {
         guard let scenario = activeScenario else { return }
         
+        // ✅ 1. 즉시 상태 변경 → SwiftUI가 바로 감지하여 화면 전환
         isSimulating = true
         simulationProgress = 0.0
         partialResult = nil
         
-        // 시뮬레이션에 필요한 값들을 미리 캡처
+        // ✅ 2. 메인 스레드에서 모든 값을 미리 캡처 (SwiftData @Model 접근)
         let currentAsset = self.currentAssetAmount
         let simCount = self.simulationCount
+        let desiredMonthlyIncome = scenario.desiredMonthlyIncome
+        let postRetirementReturnRate = scenario.postRetirementReturnRate
+        let inflationRate = scenario.inflationRate
+        let monthlyInvestment = scenario.monthlyInvestment
+        let preRetirementReturnRate = scenario.preRetirementReturnRate
+        let returnRateVolatility = scenario.returnRateVolatility
+        let effectiveAsset = scenario.effectiveAsset(with: currentAsset)
         
-        // 백그라운드 스레드에서 시뮬레이션 실행
-        let result = await Task.detached(priority: .userInitiated) {
-            MonteCarloSimulator.simulate(
-                scenario: scenario,
-                currentAsset: currentAsset,
+        let targetAsset = RetirementCalculator.calculateTargetAssets(
+            desiredMonthlyIncome: desiredMonthlyIncome,
+            postRetirementReturnRate: postRetirementReturnRate,
+            inflationRate: inflationRate
+        )
+        
+        // ✅ 3. 백그라운드 작업 시작 (await 없이 Fire-and-Forget!)
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let result = MonteCarloSimulator.simulate(
+                initialAsset: effectiveAsset,
+                monthlyInvestment: monthlyInvestment,
+                targetAsset: targetAsset,
+                meanReturn: preRetirementReturnRate,
+                volatility: returnRateVolatility,
                 simulationCount: simCount,
                 trackPaths: true,
-                progressCallback: { @Sendable completed, successMonths, allPaths in
+                progressCallback: { @Sendable completed, successMonths, _ in
                     // 메인 스레드로 진행률 업데이트
+                    let progress = Double(completed) / Double(simCount)
+                    let failureCount = completed - successMonths.count
+                    let successRate = Double(successMonths.count) / Double(completed)
+                    let successMonthsCopy = successMonths
+                    
                     Task { @MainActor in
-                        self.simulationProgress = Double(completed) / Double(simCount)
-                        
-                        // 부분 결과 생성
-                        let failureCount = completed - successMonths.count
-                        let successRate = Double(successMonths.count) / Double(completed)
-                        
-                        // 대표 경로 추출 (충분한 데이터가 있을 때만)
-                        let representativePaths = successMonths.count >= 3 ?
-                            MonteCarloSimulator.extractRepresentativePathsPublic(
-                                paths: allPaths,
-                                successMonths: successMonths
-                            ) : nil
-                        
-                        self.partialResult = MonteCarloResult(
+                        self?.simulationProgress = progress
+                        self?.partialResult = MonteCarloResult(
                             successRate: successRate,
-                            successMonthsDistribution: successMonths,
+                            successMonthsDistribution: successMonthsCopy,
                             failureCount: failureCount,
                             totalSimulations: completed,
-                            representativePaths: representativePaths
+                            representativePaths: nil
                         )
                     }
                 }
             )
-        }.value
-        
-        // 최종 결과를 메인 스레드에서 업데이트
-        self.monteCarloResult = result
-        self.partialResult = nil
-        self.isSimulating = false
+            
+            // ✅ 4. 완료 후 메인 스레드에서 최종 결과 업데이트
+            await MainActor.run {
+                self?.monteCarloResult = result
+                self?.partialResult = nil
+                self?.isSimulating = false
+            }
+        }
+        // ← ✅ 5. 여기서 바로 리턴! UI가 즉시 업데이트됨
     }
     
     /// 시뮬레이션 다시 실행
+    @MainActor
     func refreshSimulation() {
-        Task { @MainActor in
-            await runMonteCarloSimulation()
-        }
+        runMonteCarloSimulation()
     }
     
     /// 시뮬레이션 횟수 변경

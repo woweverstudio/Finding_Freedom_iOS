@@ -8,6 +8,7 @@
 import Foundation
 
 /// Exit 앱 전용 숫자 포맷터
+/// nonisolated로 선언하여 어떤 actor에서든 호출 가능
 enum ExitNumberFormatter {
     
     // MARK: - 금액 포맷팅 (만원 단위)
@@ -15,7 +16,7 @@ enum ExitNumberFormatter {
     /// 원 단위를 "X,XXX만원" 형식으로 변환
     /// - Parameter value: 원 단위 금액
     /// - Returns: 포맷된 문자열 (예: "7,500만원")
-    static func formatToManWon(_ value: Double) -> String {
+    nonisolated static func formatToManWon(_ value: Double) -> String {
         let manWon = value / 10_000
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
@@ -30,7 +31,7 @@ enum ExitNumberFormatter {
     /// 원 단위를 "X억 X,XXX만원" 형식으로 변환 (억 단위 포함)
     /// - Parameter value: 원 단위 금액
     /// - Returns: 포맷된 문자열 (예: "4억 2,750만원")
-    static func formatToEokManWon(_ value: Double) -> String {
+    nonisolated static func formatToEokManWon(_ value: Double) -> String {
         let eok = Int(value / 100_000_000)
         let remainingManWon = (value.truncatingRemainder(dividingBy: 100_000_000)) / 10_000
         
@@ -53,7 +54,7 @@ enum ExitNumberFormatter {
     /// 원 단위를 짧은 형식으로 변환 (차트용)
     /// - Parameter value: 원 단위 금액
     /// - Returns: 포맷된 문자열 (예: "150만")
-    static func formatToManWonShort(_ value: Double) -> String {
+    nonisolated static func formatToManWonShort(_ value: Double) -> String {
         let manWon = value / 10_000
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
@@ -68,7 +69,7 @@ enum ExitNumberFormatter {
     /// 축약된 금액 표시 (홈화면용)
     /// - Parameter value: 원 단위 금액
     /// - Returns: 포맷된 문자열 (예: "7,500만원 / 4억 2,750만원")
-    static func formatProgressDisplay(current: Double, target: Double) -> String {
+    nonisolated static func formatProgressDisplay(current: Double, target: Double) -> String {
         "\(formatToEokManWon(current)) / \(formatToEokManWon(target))"
     }
     
@@ -77,14 +78,14 @@ enum ExitNumberFormatter {
     /// 퍼센트 포맷 (소수점 1자리)
     /// - Parameter value: 0~100 사이의 퍼센트 값
     /// - Returns: 포맷된 문자열 (예: "28.5%")
-    static func formatPercent(_ value: Double) -> String {
+    nonisolated static func formatPercent(_ value: Double) -> String {
         String(format: "%.1f%%", value)
     }
     
     /// 퍼센트 포맷 (정수)
     /// - Parameter value: 0~100 사이의 퍼센트 값
     /// - Returns: 포맷된 문자열 (예: "28%")
-    static func formatPercentInt(_ value: Double) -> String {
+    nonisolated static func formatPercentInt(_ value: Double) -> String {
         String(format: "%.0f%%", value)
     }
     
@@ -93,7 +94,7 @@ enum ExitNumberFormatter {
     /// 개월 수를 "X년 Y개월" 형식으로 변환
     /// - Parameter months: 총 개월 수
     /// - Returns: 포맷된 문자열 (예: "7년 6개월")
-    static func formatMonthsToYearsMonths(_ months: Int) -> String {
+    nonisolated static func formatMonthsToYearsMonths(_ months: Int) -> String {
         let years = months / 12
         let remainingMonths = months % 12
         
@@ -111,14 +112,14 @@ enum ExitNumberFormatter {
     /// 점수 포맷 (정수)
     /// - Parameter value: 점수 값
     /// - Returns: 포맷된 문자열 (예: "84점")
-    static func formatScore(_ value: Double) -> String {
+    nonisolated static func formatScore(_ value: Double) -> String {
         "\(Int(value))점"
     }
     
     /// 점수 변화 포맷
     /// - Parameter change: 변화량
     /// - Returns: 포맷된 문자열 (예: "↑5점" 또는 "↓3점")
-    static func formatScoreChange(_ change: Double) -> String {
+    nonisolated static func formatScoreChange(_ change: Double) -> String {
         if change >= 0 {
             return "↑\(Int(change))점"
         } else {
@@ -131,7 +132,7 @@ enum ExitNumberFormatter {
     /// 숫자 문자열을 원 단위로 파싱
     /// - Parameter string: 입력된 문자열
     /// - Returns: 원 단위 금액
-    static func parseToWon(_ string: String) -> Double {
+    nonisolated static func parseToWon(_ string: String) -> Double {
         let cleanString = string.replacingOccurrences(of: ",", with: "")
                                 .replacingOccurrences(of: "만원", with: "")
                                 .replacingOccurrences(of: "원", with: "")
@@ -142,7 +143,7 @@ enum ExitNumberFormatter {
     /// 입력 중인 금액을 포맷팅 (천 단위 쉼표)
     /// - Parameter value: 원 단위 금액
     /// - Returns: 포맷된 문자열 (예: "75,000,000")
-    static func formatInputDisplay(_ value: Double) -> String {
+    nonisolated static func formatInputDisplay(_ value: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 0
@@ -152,7 +153,7 @@ enum ExitNumberFormatter {
     /// 원 단위 포맷 (천 단위 쉼표 + "원")
     /// - Parameter value: 원 단위 금액
     /// - Returns: 포맷된 문자열 (예: "75,000,000원")
-    static func formatToWon(_ value: Double) -> String {
+    nonisolated static func formatToWon(_ value: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 0
@@ -167,7 +168,7 @@ enum ExitNumberFormatter {
     /// 원 단위 포맷 (천 단위 쉼표만, "원" 없음)
     /// - Parameter value: 원 단위 금액
     /// - Returns: 포맷된 문자열 (예: "75,000,000")
-    static func formatWithComma(_ value: Double) -> String {
+    nonisolated static func formatWithComma(_ value: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 0

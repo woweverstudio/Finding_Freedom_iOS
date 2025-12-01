@@ -36,7 +36,7 @@ struct SimulationInfoCard: View {
                 
                 infoRow(label: "평균 수익률", value: String(format: "%.1f%%", scenario.preRetirementReturnRate))
                 infoRow(label: "수익률 변동성", value: String(format: "%.1f%%", effectiveVolatility))
-                infoRow(label: "시뮬레이션 횟수", value: "\(totalSimulations.formatted())회")
+                animatedInfoRow(label: "시뮬레이션 횟수", value: totalSimulations)
             }
         }
         .padding(ExitSpacing.md)
@@ -55,6 +55,22 @@ struct SimulationInfoCard: View {
                 .font(.Exit.caption)
                 .fontWeight(isAccent ? .semibold : .medium)
                 .foregroundStyle(isAccent ? Color.Exit.accent : Color.Exit.primaryText)
+        }
+    }
+    
+    private func animatedInfoRow(label: String, value: Int) -> some View {
+        HStack {
+            Text(label)
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.secondaryText)
+            Spacer()
+            HStack(spacing: 0) {
+                AnimatedCountText(value: value)
+                Text("회")
+            }
+            .font(.Exit.caption)
+            .fontWeight(.medium)
+            .foregroundStyle(Color.Exit.primaryText)
         }
     }
 }

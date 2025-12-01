@@ -39,6 +39,7 @@ struct RetirementCalculationResult {
 
 /// 은퇴 계산 유스케이스
 /// 목표 자산 계산 및 D-DAY 산출
+/// nonisolated로 선언하여 어떤 actor에서든 호출 가능
 enum RetirementCalculator {
     
     // MARK: - 목표 자산 계산
@@ -50,7 +51,7 @@ enum RetirementCalculator {
     ///   - postRetirementReturnRate: 은퇴 후 연 목표 수익률 (%, 예: 5.0)
     ///   - inflationRate: 예상 물가 상승률 (%, 예: 2.5)
     /// - Returns: 필요 자산 (원 단위)
-    static func calculateTargetAssets(
+    nonisolated static func calculateTargetAssets(
         desiredMonthlyIncome: Double,
         postRetirementReturnRate: Double,
         inflationRate: Double
@@ -76,7 +77,7 @@ enum RetirementCalculator {
     ///   - monthlyInvestment: 월 투자 금액 (원 단위)
     ///   - annualReturnRate: 은퇴 전 연 목표 수익률 (%, 예: 6.5)
     /// - Returns: 필요 개월 수
-    static func calculateMonthsToRetirement(
+    nonisolated static func calculateMonthsToRetirement(
         currentAssets: Double,
         targetAssets: Double,
         monthlyInvestment: Double,
@@ -112,7 +113,7 @@ enum RetirementCalculator {
     ///   - scenario: 시나리오 데이터
     ///   - currentAsset: 현재 실제 자산 (Asset.amount)
     /// - Returns: 계산 결과
-    static func calculate(from scenario: Scenario, currentAsset: Double) -> RetirementCalculationResult {
+    nonisolated static func calculate(from scenario: Scenario, currentAsset: Double) -> RetirementCalculationResult {
         let targetAssets = calculateTargetAssets(
             desiredMonthlyIncome: scenario.desiredMonthlyIncome,
             postRetirementReturnRate: scenario.postRetirementReturnRate,
@@ -140,7 +141,7 @@ enum RetirementCalculator {
     }
     
     /// 간단한 값들로 계산 실행
-    static func calculate(
+    nonisolated static func calculate(
         desiredMonthlyIncome: Double,
         currentNetAssets: Double,
         monthlyInvestment: Double,

@@ -60,9 +60,12 @@ struct DistributionChart: View {
             
             Spacer()
             
-            Text("\(result.successCount)건 성공")
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.secondaryText)
+            HStack(spacing: 0) {
+                AnimatedCountText(value: result.successCount)
+                Text("건 성공")
+            }
+            .font(.Exit.caption)
+            .foregroundStyle(Color.Exit.secondaryText)
         }
     }
     
@@ -131,9 +134,15 @@ struct DistributionChart: View {
                 .font(.system(size: 12))
                 .foregroundStyle(Color.Exit.accent)
             
-            Text("가장 많이 나온 결과: \(result.medianMonths / 12)년 (\(maxCount)회)")
-                .font(.Exit.caption2)
-                .foregroundStyle(Color.Exit.secondaryText)
+            HStack(spacing: 0) {
+                Text("가장 많이 나온 결과: ")
+                AnimatedIntText(value: result.medianMonths / 12)
+                Text("년 (")
+                AnimatedCountText(value: maxCount)
+                Text("회)")
+            }
+            .font(.Exit.caption2)
+            .foregroundStyle(Color.Exit.secondaryText)
         }
         .padding(.top, ExitSpacing.sm)
     }

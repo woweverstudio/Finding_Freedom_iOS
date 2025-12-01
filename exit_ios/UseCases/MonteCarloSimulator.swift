@@ -99,6 +99,7 @@ struct MonteCarloResult {
 }
 
 /// 몬테카를로 시뮬레이터 (정적 메서드만 사용 - 안드로이드 재사용 가능)
+/// nonisolated로 선언하여 백그라운드 스레드에서도 호출 가능
 enum MonteCarloSimulator {
     
     // MARK: - Main Simulation
@@ -118,7 +119,7 @@ enum MonteCarloSimulator {
     ///   - trackPaths: 자산 경로 추적 여부 (차트용)
     ///   - progressCallback: 진행률 콜백 (completed, successMonths, paths)
     /// - Returns: 시뮬레이션 결과
-    static func simulate(
+    nonisolated static func simulate(
         initialAsset: Double,
         monthlyInvestment: Double,
         targetAsset: Double,
@@ -134,8 +135,8 @@ enum MonteCarloSimulator {
         var allPaths: [AssetPath] = []
         var failureCount = 0
         
-        // 업데이트 간격 (100번마다 한 번씩 콜백)
-        let updateInterval = 100
+        // 업데이트 간격 (500번마다 한 번씩 콜백 - UI 블로킹 방지)
+        let updateInterval = 500
         
         // 시뮬레이션 실행
         for i in 0..<simulationCount {
@@ -186,7 +187,7 @@ enum MonteCarloSimulator {
     
     /// 단일 시뮬레이션 실행
     /// - Returns: (목표 달성 개월 수, 자산 경로)
-    private static func runSingleSimulation(
+    nonisolated private static func runSingleSimulation(
         initialAsset: Double,
         monthlyInvestment: Double,
         targetAsset: Double,
@@ -257,7 +258,7 @@ enum MonteCarloSimulator {
     ///   - mean: 평균
     ///   - standardDeviation: 표준편차
     /// - Returns: 샘플링된 값
-    private static func sampleNormalDistribution(
+    nonisolated private static func sampleNormalDistribution(
         mean: Double,
         standardDeviation: Double
     ) -> Double {
@@ -275,7 +276,7 @@ enum MonteCarloSimulator {
     // MARK: - Representative Paths
     
     /// 대표 경로 추출 (공개 메서드)
-    static func extractRepresentativePathsPublic(
+    nonisolated static func extractRepresentativePathsPublic(
         paths: [AssetPath],
         successMonths: [Int]
     ) -> RepresentativePaths? {
@@ -312,7 +313,7 @@ enum MonteCarloSimulator {
     ///   - trackPaths: 자산 경로 추적 여부
     ///   - progressCallback: 진행률 콜백
     /// - Returns: 시뮬레이션 결과
-    static func simulate(
+    nonisolated static func simulate(
         scenario: Scenario,
         currentAsset: Double,
         simulationCount: Int = 10_000,
