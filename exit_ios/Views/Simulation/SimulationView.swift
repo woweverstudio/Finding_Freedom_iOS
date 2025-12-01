@@ -13,11 +13,8 @@ struct SimulationView: View {
     
     var body: some View {
         ZStack {
-            if viewModel.isSimulating {
-                // 로딩 화면
-                loadingView
-            } else if let result = viewModel.monteCarloResult {
-                // 결과 화면
+            if let result = viewModel.displayResult {
+                // 결과 화면 (진행 중이거나 완료)
                 resultsView(result: result)
             } else {
                 // 초기 화면
@@ -27,24 +24,6 @@ struct SimulationView: View {
                     onStart: { viewModel.refreshSimulation() }
                 )
             }
-        }
-    }
-    
-    // MARK: - Loading View
-    
-    private var loadingView: some View {
-        VStack(spacing: ExitSpacing.lg) {
-            ProgressView()
-                .scaleEffect(1.5)
-                .tint(Color.Exit.accent)
-            
-            Text("시뮬레이션 실행 중...")
-                .font(.Exit.title3)
-                .foregroundStyle(Color.Exit.primaryText)
-            
-            Text("\(viewModel.simulationCount.formatted())번 시뮬레이션")
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.secondaryText)
         }
     }
     

@@ -103,6 +103,9 @@ enum MonteCarloSimulator {
     
     // MARK: - Main Simulation
     
+    /// 진행률 콜백 타입
+    typealias ProgressCallback = @Sendable (Int, [Int], [AssetPath]) -> Void
+    
     /// 몬테카를로 시뮬레이션 실행
     /// - Parameters:
     ///   - initialAsset: 초기 자산 (원)
@@ -113,6 +116,7 @@ enum MonteCarloSimulator {
     ///   - simulationCount: 시뮬레이션 횟수 (기본 10,000)
     ///   - maxMonths: 최대 개월 수 (기본 1200개월 = 100년)
     ///   - trackPaths: 자산 경로 추적 여부 (차트용)
+    ///   - progressCallback: 진행률 콜백 (completed, successMonths, paths)
     /// - Returns: 시뮬레이션 결과
     static func simulate(
         initialAsset: Double,
@@ -122,15 +126,19 @@ enum MonteCarloSimulator {
         volatility: Double,
         simulationCount: Int = 10_000,
         maxMonths: Int = 1200,
-        trackPaths: Bool = true
+        trackPaths: Bool = true,
+        progressCallback: ProgressCallback? = nil
     ) -> MonteCarloResult {
         
         var successMonths: [Int] = []
         var allPaths: [AssetPath] = []
         var failureCount = 0
         
+        // 업데이트 간격 (100번마다 한 번씩 콜백)
+        let updateInterval = 100
+        
         // 시뮬레이션 실행
-        for _ in 0..<simulationCount {
+        for i in 0..<simulationCount {
             let (months, path) = runSingleSimulation(
                 initialAsset: initialAsset,
                 monthlyInvestment: monthlyInvestment,
@@ -150,12 +158,17 @@ enum MonteCarloSimulator {
             if trackPaths, let path = path {
                 allPaths.append(path)
             }
+            
+            // 진행률 콜백 (100번마다)
+            if (i + 1) % updateInterval == 0 || i == simulationCount - 1 {
+                progressCallback?(i + 1, successMonths, allPaths)
+            }
         }
         
         let successRate = Double(successMonths.count) / Double(simulationCount)
         
         // 대표 경로 추출
-        let representativePaths = trackPaths ? extractRepresentativePaths(
+        let representativePaths = trackPaths ? extractRepresentativePathsPublic(
             paths: allPaths,
             successMonths: successMonths
         ) : nil
@@ -261,8 +274,8 @@ enum MonteCarloSimulator {
     
     // MARK: - Representative Paths
     
-    /// 대표 경로 추출
-    private static func extractRepresentativePaths(
+    /// 대표 경로 추출 (공개 메서드)
+    static func extractRepresentativePathsPublic(
         paths: [AssetPath],
         successMonths: [Int]
     ) -> RepresentativePaths? {
@@ -297,12 +310,14 @@ enum MonteCarloSimulator {
     ///   - currentAsset: 현재 자산
     ///   - simulationCount: 시뮬레이션 횟수
     ///   - trackPaths: 자산 경로 추적 여부
+    ///   - progressCallback: 진행률 콜백
     /// - Returns: 시뮬레이션 결과
     static func simulate(
         scenario: Scenario,
         currentAsset: Double,
         simulationCount: Int = 10_000,
-        trackPaths: Bool = true
+        trackPaths: Bool = true,
+        progressCallback: ProgressCallback? = nil
     ) -> MonteCarloResult {
         // 목표 자산 계산
         let targetAsset = RetirementCalculator.calculateTargetAssets(
@@ -321,7 +336,8 @@ enum MonteCarloSimulator {
             meanReturn: scenario.preRetirementReturnRate,
             volatility: scenario.returnRateVolatility,
             simulationCount: simulationCount,
-            trackPaths: trackPaths
+            trackPaths: trackPaths,
+            progressCallback: progressCallback
         )
     }
 }

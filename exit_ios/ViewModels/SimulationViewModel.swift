@@ -29,6 +29,12 @@ final class SimulationViewModel {
     /// 시뮬레이션 진행 중 여부
     var isSimulating: Bool = false
     
+    /// 시뮬레이션 진행률 (0.0 ~ 1.0)
+    var simulationProgress: Double = 0.0
+    
+    /// 부분 결과 (실시간 업데이트용)
+    var partialResult: MonteCarloResult?
+    
     /// 시뮬레이션 횟수 (사용자가 조정 가능)
     var simulationCount: Int = 10_000
     
@@ -40,6 +46,15 @@ final class SimulationViewModel {
     /// 현재 자산 금액
     var currentAssetAmount: Double {
         currentAsset?.amount ?? 0
+    }
+    
+    /// 현재 표시할 결과 (진행 중이면 partialResult, 완료면 monteCarloResult)
+    var displayResult: MonteCarloResult? {
+        if isSimulating {
+            return partialResult
+        } else {
+            return monteCarloResult
+        }
     }
     
     /// 사용할 변동성 (커스텀 또는 시나리오 기본값)
@@ -100,6 +115,8 @@ final class SimulationViewModel {
         guard let scenario = activeScenario else { return }
         
         isSimulating = true
+        simulationProgress = 0.0
+        partialResult = nil
         
         // 시뮬레이션에 필요한 값들을 미리 캡처
         let currentAsset = self.currentAssetAmount
@@ -110,12 +127,39 @@ final class SimulationViewModel {
             MonteCarloSimulator.simulate(
                 scenario: scenario,
                 currentAsset: currentAsset,
-                simulationCount: simCount
+                simulationCount: simCount,
+                trackPaths: true,
+                progressCallback: { @Sendable completed, successMonths, allPaths in
+                    // 메인 스레드로 진행률 업데이트
+                    Task { @MainActor in
+                        self.simulationProgress = Double(completed) / Double(simCount)
+                        
+                        // 부분 결과 생성
+                        let failureCount = completed - successMonths.count
+                        let successRate = Double(successMonths.count) / Double(completed)
+                        
+                        // 대표 경로 추출 (충분한 데이터가 있을 때만)
+                        let representativePaths = successMonths.count >= 3 ?
+                            MonteCarloSimulator.extractRepresentativePathsPublic(
+                                paths: allPaths,
+                                successMonths: successMonths
+                            ) : nil
+                        
+                        self.partialResult = MonteCarloResult(
+                            successRate: successRate,
+                            successMonthsDistribution: successMonths,
+                            failureCount: failureCount,
+                            totalSimulations: completed,
+                            representativePaths: representativePaths
+                        )
+                    }
+                }
             )
         }.value
         
-        // 결과를 메인 스레드에서 업데이트
+        // 최종 결과를 메인 스레드에서 업데이트
         self.monteCarloResult = result
+        self.partialResult = nil
         self.isSimulating = false
     }
     

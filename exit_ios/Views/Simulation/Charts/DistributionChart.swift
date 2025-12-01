@@ -13,6 +13,8 @@ struct DistributionChart: View {
     let yearDistributionData: [(year: Int, count: Int)]
     let result: MonteCarloResult
     
+    @State private var animationProgress: Double = 0
+    
     // Computed properties로 분리
     private var maxCount: Int {
         yearDistributionData.map(\.count).max() ?? 1
@@ -114,6 +116,13 @@ struct DistributionChart: View {
             }
         }
         .chartXScale(domain: .automatic(includesZero: false))
+        .animation(.easeInOut(duration: 1.2), value: yearDistributionData.count)
+        .onAppear {
+            animationProgress = 1.0
+        }
+        .onChange(of: yearDistributionData.count) { _, _ in
+            animationProgress = 1.0
+        }
     }
     
     private var footerView: some View {

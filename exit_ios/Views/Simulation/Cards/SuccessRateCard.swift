@@ -20,7 +20,7 @@ struct SuccessRateCard: View {
                     .foregroundStyle(Color.Exit.secondaryText)
                 
                 HStack(alignment: .lastTextBaseline, spacing: 4) {
-                    Text("\(Int(result.successRate * 100))")
+                    AnimatedIntText(value: Int(result.successRate * 100))
                         .font(.system(size: 72, weight: .heavy, design: .rounded))
                         .foregroundStyle(Color(hex: result.confidenceLevel.color))
                     
@@ -46,7 +46,7 @@ struct SuccessRateCard: View {
             // 설명 텍스트
             VStack(alignment: .leading, spacing: ExitSpacing.sm) {
                 HStack(spacing: 0) {
-                    Text("\(result.totalSimulations.formatted())")
+                    AnimatedCountText(value: result.totalSimulations)
                         .foregroundStyle(Color.Exit.accent)
                         .fontWeight(.semibold)
                     Text("번의 시뮬레이션 결과")
