@@ -12,7 +12,7 @@ import SwiftData
 enum MainTab: String, CaseIterable {
     case dashboard = "홈"
     case record = "기록"
-    case settings = "설정"
+    case simulation = "시뮬레이션"
 }
 
 /// 앱 메인 컨텐츠 뷰
@@ -38,14 +38,16 @@ struct ContentView: View {
     }
 }
 
-/// 메인 탭 뷰 (대시보드 + 기록 + 설정)
+/// 메인 탭 뷰 (대시보드 + 기록 + 시뮬레이션)
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = HomeViewModel()
+    @State private var simulationViewModel = SimulationViewModel()
     @State private var settingsViewModel = SettingsViewModel()
     @State private var hideAmounts = false
     @State private var selectedTab: MainTab = .dashboard
     @State private var shouldNavigateToWelcome = false
+    @State private var showSettings = false
     
     var body: some View {
         ZStack {
@@ -65,8 +67,8 @@ struct MainTabView: View {
                     RecordTabView(viewModel: viewModel)
                         .tag(MainTab.record)
                     
-                    SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
-                        .tag(MainTab.settings)
+                    SimulationView(viewModel: simulationViewModel)
+                        .tag(MainTab.simulation)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .animation(.none, value: selectedTab)
@@ -79,6 +81,7 @@ struct MainTabView: View {
         }
         .onAppear {
             viewModel.configure(with: modelContext)
+            simulationViewModel.configure(with: modelContext)
             settingsViewModel.configure(with: modelContext)
         }
         .onChange(of: shouldNavigateToWelcome) { _, newValue in
@@ -100,14 +103,14 @@ struct MainTabView: View {
     
     private var customTabBar: some View {
         HStack(spacing: 0) {
+            // 메인 탭들
             ForEach(MainTab.allCases, id: \.self) { tab in
                 Button {
-                    // 탭 바 인디케이터만 애니메이션, TabView는 자체 전환 사용
                     selectedTab = tab
                 } label: {
                     VStack(spacing: ExitSpacing.xs) {
                         Text(tab.rawValue)
-                            .font(.Exit.body)
+                            .font(.Exit.caption)
                             .fontWeight(selectedTab == tab ? .bold : .medium)
                             .foregroundStyle(selectedTab == tab ? Color.Exit.accent : Color.Exit.secondaryText)
                         
@@ -122,10 +125,30 @@ struct MainTabView: View {
                 }
                 .buttonStyle(.plain)
             }
+            
+            // 설정 아이콘
+            Button {
+                showSettings = true
+            } label: {
+                VStack(spacing: ExitSpacing.xs) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.Exit.secondaryText)
+                    
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(height: 3)
+                }
+                .frame(width: 60)
+            }
+            .buttonStyle(.plain)
         }
-        .padding(.horizontal, ExitSpacing.xl)
+        .padding(.horizontal, ExitSpacing.md)
         .padding(.top, ExitSpacing.md)
         .background(Color.Exit.background)
+        .sheet(isPresented: $showSettings) {
+            SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
+        }
     }
     
     // MARK: - Asset Update Confirm Overlay

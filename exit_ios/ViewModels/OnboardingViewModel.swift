@@ -36,7 +36,7 @@ enum OnboardingStep: Int, CaseIterable {
         case .currentAssets:
             return "투자 가능한 자산만 입력해주세요"
         case .monthlyInvestment:
-            return "패시브인컴 재투자 포함"
+            return "월급 등 근로 소득만 포함 (배당/이자 재투자 제외)"
         case .assetTypes:
             return "복수 선택 가능, 나중에 수정 가능"
         }

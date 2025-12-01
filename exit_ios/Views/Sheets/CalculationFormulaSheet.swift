@@ -37,6 +37,7 @@ struct CalculationFormulaSheet: View {
                     }
                     .padding(ExitSpacing.lg)
                 }
+                .scrollIndicators(.hidden)
             }
         }
         .presentationDragIndicator(.visible)

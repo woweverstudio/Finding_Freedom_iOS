@@ -101,7 +101,7 @@ struct SettingsView: View {
                             
                             // 제목
                             Text(latestAnnouncement.title)
-                                .font(.Exit.body)
+                                .font(.Exit.caption)
                                 .fontWeight(latestAnnouncement.isRead ? .regular : .semibold)
                                 .foregroundStyle(latestAnnouncement.isRead ? Color.Exit.secondaryText : Color.Exit.primaryText)
                                 .lineLimit(1)

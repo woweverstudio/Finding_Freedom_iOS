@@ -40,6 +40,13 @@ final class Scenario {
     /// 예상 물가 상승률 (%)
     var inflationRate: Double = 2.5
     
+    /// 수익률 변동성 (표준편차, %)
+    /// - Note: 몬테카를로 시뮬레이션에 사용
+    /// - 주식 중심 포트폴리오: 15~20%
+    /// - 혼합 포트폴리오: 10~15%
+    /// - 안정적 포트폴리오: 5~10%
+    var returnRateVolatility: Double = 15.0
+    
     /// 현재 적용 중인 시나리오 여부
     var isActive: Bool = false
     
@@ -59,6 +66,7 @@ final class Scenario {
         preRetirementReturnRate: Double = 6.5,
         postRetirementReturnRate: Double = 5.0,
         inflationRate: Double = 2.5,
+        returnRateVolatility: Double = 15.0,
         isActive: Bool = false,
         isSystemScenario: Bool = false
     ) {
@@ -71,6 +79,7 @@ final class Scenario {
         self.preRetirementReturnRate = preRetirementReturnRate
         self.postRetirementReturnRate = postRetirementReturnRate
         self.inflationRate = inflationRate
+        self.returnRateVolatility = returnRateVolatility
         self.isActive = isActive
         self.createdAt = Date()
         self.updatedAt = Date()
@@ -86,6 +95,7 @@ final class Scenario {
             preRetirementReturnRate: preRetirementReturnRate,
             postRetirementReturnRate: postRetirementReturnRate,
             inflationRate: inflationRate,
+            returnRateVolatility: returnRateVolatility,
             isActive: false
         )
     }
