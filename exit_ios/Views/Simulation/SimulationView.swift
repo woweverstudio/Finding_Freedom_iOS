@@ -98,7 +98,10 @@ struct SimulationView: View {
                 }
                 
                 // 성공률 카드
-                SuccessRateCard(result: result)
+                SuccessRateCard(
+                    result: result,
+                    originalDDayMonths: viewModel.originalDDayMonths
+                )
                 
                 // 자산 변화 예측 차트
                 if let paths = result.representativePaths,
@@ -112,8 +115,11 @@ struct SimulationView: View {
                     result: result
                 )
                 
-                // 퍼센타일 카드
-                PercentileCard(result: result)
+                // 퍼센타일 카드 (기존 D-Day와 시뮬레이션 결과 비교)
+                PercentileCard(
+                    result: result,
+                    originalDDayMonths: viewModel.originalDDayMonths
+                )
                 
                 // 상세 통계
                 if let scenario = viewModel.activeScenario {

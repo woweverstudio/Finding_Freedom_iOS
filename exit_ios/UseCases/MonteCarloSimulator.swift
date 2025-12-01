@@ -222,13 +222,9 @@ enum MonteCarloSimulator {
             // 3. 수익 적용 (로그 정규분포)
             currentAsset *= exp(monthlyReturn)
             
-            // 4. 자산이 0 이하로 떨어지면 실패
-            if currentAsset <= 0 {
-                let path = trackPath ? AssetPath(
-                    monthlyAssets: assetHistory,
-                    monthsToTarget: nil
-                ) : nil
-                return (nil, path)
+            // 자산이 0 이하로 떨어져도 월 저축으로 회복 가능하므로 최소 0으로 유지
+            if currentAsset < 0 {
+                currentAsset = 0
             }
             
             months += 1

@@ -10,12 +10,51 @@ import SwiftUI
 /// 성공률 카드
 struct SuccessRateCard: View {
     let result: MonteCarloResult
+    let originalDDayMonths: Int  // 기존 D-Day
+    
+    /// 실패 기준 기간 (기존 D-Day * 1.5)
+    private var failureThresholdMonths: Int {
+        Int(Double(originalDDayMonths) * 1.5)
+    }
+    
+    private var failureThresholdText: String {
+        let years = failureThresholdMonths / 12
+        let months = failureThresholdMonths % 12
+        if months == 0 {
+            return "\(years)년"
+        } else {
+            return "\(years)년 \(months)개월"
+        }
+    }
+    
+    private var originalDDayText: String {
+        let years = originalDDayMonths / 12
+        let months = originalDDayMonths % 12
+        if months == 0 {
+            return "\(years)년"
+        } else {
+            return "\(years)년 \(months)개월"
+        }
+    }
+    
+    private var extraTimeText: String {
+        let extraMonths = failureThresholdMonths - originalDDayMonths
+        let years = extraMonths / 12
+        let months = extraMonths % 12
+        if years > 0 && months > 0 {
+            return "\(years)년 \(months)개월"
+        } else if years > 0 {
+            return "\(years)년"
+        } else {
+            return "\(months)개월"
+        }
+    }
     
     var body: some View {
         VStack(spacing: ExitSpacing.lg) {
             // 큰 성공률 표시
             VStack(spacing: ExitSpacing.sm) {
-                Text("FIRE 달성 확률")
+                Text("계획대로 회사 탈출에 성공할 확률")
                     .font(.Exit.caption)
                     .foregroundStyle(Color.Exit.secondaryText)
                 
@@ -40,21 +79,36 @@ struct SuccessRateCard: View {
                     )
             }
             
-            Divider()
-                .background(Color.Exit.divider)
-            
-            // 설명 텍스트
+            // 확률 계산 설명
             VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                Text("\(result.totalSimulations.formatted())번의 시뮬레이션 결과")
+                Text("왜 이 확률인가요?")
                     .font(.Exit.caption)
+                    .fontWeight(.medium)
                     .foregroundStyle(Color.Exit.secondaryText)
                 
-                Text(successRateMessage)
-                    .font(.Exit.body)
-                    .foregroundStyle(Color.Exit.primaryText)
-                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                    Text("주식 시장은 매년 오르락내리락해요. 그래서 \(result.totalSimulations.formatted())가지 다른 미래를 시뮬레이션해봤어요.")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    
+                    Text("현재 계획대로면 \(originalDDayText) 후에 FIRE를 달성해요. 하지만 시장이 안 좋으면 더 늦어질 수 있어요.")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    
+                    Text("여기서는 원래 목표보다 \(extraTimeText) 더 걸리면 (총 \(failureThresholdText)) '실패'로 봤어요. 계획보다 50% 넘게 늦어지면 많이 어긋난 거니까요.")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                }
+                .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // 코칭 메시지
+            Text(successRateMessage)
+                .font(.Exit.body)
+                .foregroundStyle(Color.Exit.primaryText)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(ExitSpacing.lg)
         .background(Color.Exit.cardBackground)

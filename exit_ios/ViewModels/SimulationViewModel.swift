@@ -55,6 +55,13 @@ final class SimulationViewModel {
         customVolatility ?? activeScenario?.returnRateVolatility ?? 15.0
     }
     
+    /// 기존 D-Day (확정적 계산, 변동성 미반영)
+    var originalDDayMonths: Int {
+        guard let scenario = activeScenario else { return 0 }
+        let result = RetirementCalculator.calculate(from: scenario, currentAsset: currentAssetAmount)
+        return result.monthsToRetirement
+    }
+    
     /// 차트용 연도 분포 데이터
     var yearDistributionData: [(year: Int, count: Int)] {
         guard let result = monteCarloResult else { return [] }
@@ -129,6 +136,17 @@ final class SimulationViewModel {
             inflationRate: inflationRate
         )
         
+        // 기존 D-Day 계산 (확정적 계산)
+        let originalDDay = RetirementCalculator.calculateMonthsToRetirement(
+            currentAssets: effectiveAsset,
+            targetAssets: targetAsset,
+            monthlyInvestment: monthlyInvestment,
+            annualReturnRate: preRetirementReturnRate
+        )
+        
+        // 실패 조건: 목표 D-Day * 1.5 (예: 8년 → 12년)
+        let maxMonthsForSimulation = Int(Double(originalDDay) * 1.5)
+        
         // 백그라운드 작업 시작
         Task.detached(priority: .userInitiated) { [weak self] in
             let result = MonteCarloSimulator.simulate(
@@ -138,6 +156,7 @@ final class SimulationViewModel {
                 meanReturn: preRetirementReturnRate,
                 volatility: returnRateVolatility,
                 simulationCount: simCount,
+                maxMonths: maxMonthsForSimulation,
                 trackPaths: true,
                 progressCallback: { @Sendable completed, _, _ in
                     // 진행률만 업데이트

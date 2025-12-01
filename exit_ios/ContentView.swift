@@ -110,7 +110,7 @@ struct MainTabView: View {
                 } label: {
                     VStack(spacing: ExitSpacing.xs) {
                         Text(tab.rawValue)
-                            .font(.Exit.caption)
+                            .font(.Exit.body)
                             .fontWeight(selectedTab == tab ? .bold : .medium)
                             .foregroundStyle(selectedTab == tab ? Color.Exit.accent : Color.Exit.secondaryText)
                         

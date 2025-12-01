@@ -10,6 +10,7 @@ import SwiftUI
 /// 퍼센타일 카드
 struct PercentileCard: View {
     let result: MonteCarloResult
+    let originalDDayMonths: Int  // 기존 D-Day (확정적 계산)
     
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
@@ -17,7 +18,7 @@ struct PercentileCard: View {
             HStack {
                 Image(systemName: "chart.line.uptrend.xyaxis")
                     .foregroundStyle(Color.Exit.accent)
-                Text("시나리오별 예상 기간")
+                Text("FIRE 달성 시점 비교")
                     .font(.Exit.title3)
                     .foregroundStyle(Color.Exit.primaryText)
             }
@@ -25,36 +26,48 @@ struct PercentileCard: View {
             Divider()
                 .background(Color.Exit.divider)
             
-            // 퍼센타일 데이터
+            // 기존 D-Day vs 시뮬레이션 결과
             VStack(spacing: ExitSpacing.md) {
+                // 기존 예측 (확정적 계산)
                 percentileRow(
-                    icon: "🎯",
-                    label: "최선의 경우 (10%)",
+                    label: "📌 기존 예측 (변동성 미반영)",
+                    months: originalDDayMonths,
+                    color: Color.Exit.secondaryText,
+                    isHighlighted: false
+                )
+                
+                Divider()
+                    .background(Color.Exit.divider)
+                
+                // 설명
+                Text("시장 변동성을 반영한 시뮬레이션 결과")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                
+                percentileRow(
+                    label: "🎯 최선의 경우 (상위 10%)",
                     months: result.bestCase10Percent,
-                    color: Color.Exit.positive
+                    color: Color.Exit.positive,
+                    isHighlighted: false
                 )
                 
                 percentileRow(
-                    icon: "📊",
-                    label: "평균",
-                    months: Int(result.averageMonthsToSuccess),
-                    color: Color.Exit.accent
-                )
-                
-                percentileRow(
-                    icon: "📈",
-                    label: "중앙값 (50%)",
+                    label: "📊 시뮬레이션 중앙값",
                     months: result.medianMonths,
-                    color: Color.Exit.accent
+                    color: Color.Exit.accent,
+                    isHighlighted: true
                 )
                 
                 percentileRow(
-                    icon: "⚠️",
-                    label: "최악의 경우 (10%)",
+                    label: "⚠️ 최악의 경우 (하위 10%)",
                     months: result.worstCase10Percent,
-                    color: Color.Exit.caution
+                    color: Color.Exit.caution,
+                    isHighlighted: false
                 )
             }
+            
+            // 해석
+            differenceExplanation
         }
         .padding(ExitSpacing.lg)
         .background(Color.Exit.cardBackground)
@@ -62,18 +75,51 @@ struct PercentileCard: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
-    private func percentileRow(icon: String, label: String, months: Int, color: Color) -> some View {
+    // 기존 예측과 시뮬레이션 결과 비교 설명
+    private var differenceExplanation: some View {
+        let diff = result.medianMonths - originalDDayMonths
+        let diffYears = abs(diff) / 12
+        let diffMonths = abs(diff) % 12
+        
+        let diffText: String
+        if diffYears > 0 && diffMonths > 0 {
+            diffText = "\(diffYears)년 \(diffMonths)개월"
+        } else if diffYears > 0 {
+            diffText = "\(diffYears)년"
+        } else {
+            diffText = "\(diffMonths)개월"
+        }
+        
+        let message: String
+        if diff > 12 {
+            message = "시장 변동성을 고려하면 기존 예측보다 약 \(diffText) 더 걸릴 수 있어요"
+        } else if diff < -12 {
+            message = "운이 좋으면 기존 예측보다 약 \(diffText) 빨리 달성할 수도 있어요"
+        } else {
+            message = "기존 예측과 시뮬레이션 결과가 비슷해요. 계획이 현실적입니다"
+        }
+        
+        return VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+            Divider()
+                .background(Color.Exit.divider)
+            
+            Text(message)
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+    
+    private func percentileRow(label: String, months: Int, color: Color, isHighlighted: Bool) -> some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label)
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-            }
+            Text(label)
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.secondaryText)
             
             Spacer()
             
             Text(formatMonths(months))
-                .font(.Exit.body)
+                .font(isHighlighted ? .Exit.title3 : .Exit.body)
                 .fontWeight(.semibold)
                 .foregroundStyle(color)
         }
