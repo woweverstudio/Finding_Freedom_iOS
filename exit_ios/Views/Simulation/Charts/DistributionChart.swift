@@ -13,8 +13,6 @@ struct DistributionChart: View {
     let yearDistributionData: [(year: Int, count: Int)]
     let result: MonteCarloResult
     
-    @State private var animationProgress: Double = 0
-    
     // Computed properties로 분리
     private var maxCount: Int {
         yearDistributionData.map(\.count).max() ?? 1
@@ -60,12 +58,9 @@ struct DistributionChart: View {
             
             Spacer()
             
-            HStack(spacing: 0) {
-                AnimatedCountText(value: result.successCount)
-                Text("건 성공")
-            }
-            .font(.Exit.caption)
-            .foregroundStyle(Color.Exit.secondaryText)
+            Text("\(result.successCount.formatted())건 성공")
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.secondaryText)
         }
     }
     
@@ -119,13 +114,6 @@ struct DistributionChart: View {
             }
         }
         .chartXScale(domain: .automatic(includesZero: false))
-        .animation(.easeInOut(duration: 1.2), value: yearDistributionData.count)
-        .onAppear {
-            animationProgress = 1.0
-        }
-        .onChange(of: yearDistributionData.count) { _, _ in
-            animationProgress = 1.0
-        }
     }
     
     private var footerView: some View {
@@ -134,15 +122,9 @@ struct DistributionChart: View {
                 .font(.system(size: 12))
                 .foregroundStyle(Color.Exit.accent)
             
-            HStack(spacing: 0) {
-                Text("가장 많이 나온 결과: ")
-                AnimatedIntText(value: result.medianMonths / 12)
-                Text("년 (")
-                AnimatedCountText(value: maxCount)
-                Text("회)")
-            }
-            .font(.Exit.caption2)
-            .foregroundStyle(Color.Exit.secondaryText)
+            Text("가장 많이 나온 결과: \(result.medianMonths / 12)년 (\(maxCount)회)")
+                .font(.Exit.caption2)
+                .foregroundStyle(Color.Exit.secondaryText)
         }
         .padding(.top, ExitSpacing.sm)
     }

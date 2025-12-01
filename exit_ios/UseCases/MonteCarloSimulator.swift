@@ -135,8 +135,8 @@ enum MonteCarloSimulator {
         var allPaths: [AssetPath] = []
         var failureCount = 0
         
-        // 업데이트 간격 (500번마다 한 번씩 콜백 - UI 블로킹 방지)
-        let updateInterval = 500
+        // 업데이트 간격 (200번마다 한 번씩 콜백 - 부드러운 애니메이션)
+        let updateInterval = 200
         
         // 시뮬레이션 실행
         for i in 0..<simulationCount {

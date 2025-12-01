@@ -28,9 +28,9 @@ struct StatisticsCard: View {
                 .background(Color.Exit.divider)
             
             VStack(spacing: ExitSpacing.sm) {
-                animatedCountRow(label: "시뮬레이션 횟수", value: result.totalSimulations, suffix: "회")
-                animatedCountRow(label: "성공", value: result.successCount, suffix: "회", valueColor: Color.Exit.positive)
-                animatedCountRow(label: "실패", value: result.failureCount, suffix: "회", valueColor: Color.Exit.warning)
+                statRow(label: "시뮬레이션 횟수", value: "\(result.totalSimulations.formatted())회")
+                statRow(label: "성공", value: "\(result.successCount.formatted())회", valueColor: Color.Exit.positive)
+                statRow(label: "실패", value: "\(result.failureCount.formatted())회", valueColor: Color.Exit.warning)
                 
                 Divider()
                     .background(Color.Exit.divider)
@@ -62,22 +62,5 @@ struct StatisticsCard: View {
         }
     }
     
-    private func animatedCountRow(label: String, value: Int, suffix: String, valueColor: Color = Color.Exit.primaryText) -> some View {
-        HStack {
-            Text(label)
-                .font(.Exit.body)
-                .foregroundStyle(Color.Exit.secondaryText)
-
-            Spacer()
-
-            HStack(spacing: 0) {
-                AnimatedCountText(value: value)
-                Text(suffix)
-            }
-            .font(.Exit.body)
-            .fontWeight(.medium)
-            .foregroundStyle(valueColor)
-        }
-    }
 }
 

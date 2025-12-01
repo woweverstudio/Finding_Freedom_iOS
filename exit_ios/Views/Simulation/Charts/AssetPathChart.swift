@@ -13,8 +13,6 @@ struct AssetPathChart: View {
     let paths: RepresentativePaths
     let scenario: Scenario
     
-    @State private var animationProgress: Double = 0
-    
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
             // 헤더
@@ -120,13 +118,6 @@ struct AssetPathChart: View {
                         }
                     }
                 }
-            }
-            .animation(.easeInOut(duration: 1.2), value: paths.best.monthsToTarget)
-            .onAppear {
-                animationProgress = 1.0
-            }
-            .onChange(of: paths.best.monthsToTarget) { _, _ in
-                animationProgress = 1.0
             }
             
             // 범례

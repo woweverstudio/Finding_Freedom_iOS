@@ -64,9 +64,6 @@ struct PercentileCard: View {
     
     private func percentileRow(icon: String, label: String, months: Int, color: Color) -> some View {
         HStack {
-//            Text(icon)
-//                .font(.system(size: 24))
-            
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.Exit.caption)
@@ -75,31 +72,12 @@ struct PercentileCard: View {
             
             Spacer()
             
-            AnimatedMonthsText(months: months)
+            Text(formatMonths(months))
                 .font(.Exit.body)
                 .fontWeight(.semibold)
                 .foregroundStyle(color)
         }
         .padding(.vertical, ExitSpacing.xs)
-    }
-}
-
-/// 개월수를 년/개월 형식으로 애니메이션 표시
-private struct AnimatedMonthsText: View {
-    let months: Int
-    
-    @State private var displayMonths: Double = 0
-    
-    var body: some View {
-        Text(formatMonths(Int(displayMonths)))
-            .contentTransition(.numericText(value: displayMonths))
-            .animation(.easeOut(duration: 0.8), value: displayMonths)
-            .onAppear {
-                displayMonths = Double(months)
-            }
-            .onChange(of: months) { oldValue, newValue in
-                displayMonths = Double(newValue)
-            }
     }
     
     private func formatMonths(_ months: Int) -> String {

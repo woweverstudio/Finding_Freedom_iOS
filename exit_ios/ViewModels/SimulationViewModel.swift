@@ -32,9 +32,6 @@ final class SimulationViewModel {
     /// 시뮬레이션 진행률 (0.0 ~ 1.0)
     var simulationProgress: Double = 0.0
     
-    /// 부분 결과 (실시간 업데이트용)
-    var partialResult: MonteCarloResult?
-    
     /// 시뮬레이션 횟수 (사용자가 조정 가능)
     var simulationCount: Int = 10_000
     
@@ -48,20 +45,9 @@ final class SimulationViewModel {
         currentAsset?.amount ?? 0
     }
     
-    /// 현재 표시할 결과 (진행 중이면 partialResult, 완료면 monteCarloResult)
+    /// 현재 표시할 결과
     var displayResult: MonteCarloResult? {
-        if isSimulating {
-            // 시뮬레이션 중: partialResult가 없으면 빈 결과 반환 (애니메이션 시작점)
-            return partialResult ?? MonteCarloResult(
-                successRate: 0,
-                successMonthsDistribution: [],
-                failureCount: 0,
-                totalSimulations: 0,
-                representativePaths: nil
-            )
-        } else {
-            return monteCarloResult
-        }
+        return monteCarloResult
     }
     
     /// 사용할 변동성 (커스텀 또는 시나리오 기본값)
@@ -69,10 +55,9 @@ final class SimulationViewModel {
         customVolatility ?? activeScenario?.returnRateVolatility ?? 15.0
     }
     
-    /// 차트용 연도 분포 데이터 (실시간 업데이트)
+    /// 차트용 연도 분포 데이터
     var yearDistributionData: [(year: Int, count: Int)] {
-        // displayResult 사용 (진행 중에도 업데이트)
-        guard let result = displayResult else { return [] }
+        guard let result = monteCarloResult else { return [] }
         
         let distribution = result.yearDistribution()
         return distribution.sorted(by: { $0.key < $1.key })
@@ -123,12 +108,11 @@ final class SimulationViewModel {
     func runMonteCarloSimulation() {
         guard let scenario = activeScenario else { return }
         
-        // ✅ 1. 즉시 상태 변경 → SwiftUI가 바로 감지하여 화면 전환
+        // 상태 변경
         isSimulating = true
         simulationProgress = 0.0
-        partialResult = nil
         
-        // ✅ 2. 메인 스레드에서 모든 값을 미리 캡처 (SwiftData @Model 접근)
+        // 메인 스레드에서 모든 값을 미리 캡처 (SwiftData @Model 접근)
         let currentAsset = self.currentAssetAmount
         let simCount = self.simulationCount
         let desiredMonthlyIncome = scenario.desiredMonthlyIncome
@@ -145,7 +129,7 @@ final class SimulationViewModel {
             inflationRate: inflationRate
         )
         
-        // ✅ 3. 백그라운드 작업 시작 (await 없이 Fire-and-Forget!)
+        // 백그라운드 작업 시작
         Task.detached(priority: .userInitiated) { [weak self] in
             let result = MonteCarloSimulator.simulate(
                 initialAsset: effectiveAsset,
@@ -155,34 +139,21 @@ final class SimulationViewModel {
                 volatility: returnRateVolatility,
                 simulationCount: simCount,
                 trackPaths: true,
-                progressCallback: { @Sendable completed, successMonths, _ in
-                    // 메인 스레드로 진행률 업데이트
+                progressCallback: { @Sendable completed, _, _ in
+                    // 진행률만 업데이트
                     let progress = Double(completed) / Double(simCount)
-                    let failureCount = completed - successMonths.count
-                    let successRate = Double(successMonths.count) / Double(completed)
-                    let successMonthsCopy = successMonths
-                    
-                    Task { @MainActor in
+                    DispatchQueue.main.async {
                         self?.simulationProgress = progress
-                        self?.partialResult = MonteCarloResult(
-                            successRate: successRate,
-                            successMonthsDistribution: successMonthsCopy,
-                            failureCount: failureCount,
-                            totalSimulations: completed,
-                            representativePaths: nil
-                        )
                     }
                 }
             )
             
-            // ✅ 4. 완료 후 메인 스레드에서 최종 결과 업데이트
-            await MainActor.run {
+            // 완료 후 메인 스레드에서 결과 업데이트
+            DispatchQueue.main.async {
                 self?.monteCarloResult = result
-                self?.partialResult = nil
                 self?.isSimulating = false
             }
         }
-        // ← ✅ 5. 여기서 바로 리턴! UI가 즉시 업데이트됨
     }
     
     /// 시뮬레이션 다시 실행
