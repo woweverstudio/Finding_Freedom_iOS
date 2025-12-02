@@ -30,7 +30,7 @@ struct AssetPathChart: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.lg) {
-            // 헤더
+            // 1. 타이틀
             HStack {
                 Image(systemName: "chart.xyaxis.line")
                     .foregroundStyle(Color.Exit.accent)
@@ -39,21 +39,20 @@ struct AssetPathChart: View {
                     .foregroundStyle(Color.Exit.primaryText)
             }
             
-            // 자산 변화 차트
+            // 2. 차트 및 데이터
             assetChart
             
-            // 범례
             legendView
             
             // FIRE 달성 시점 비교 (result가 있을 때만)
             if let result = result, originalDDayMonths > 0 {
-                Divider()
-                    .background(Color.Exit.divider)
-                
                 timelineSection(result: result)
             }
             
-            // 시뮬레이션 조건
+            // 3. 도움말
+            helpSection
+            
+            // 4. 시뮬레이션 조건
             if currentAssetAmount > 0 {
                 simulationConditionSection
             }
@@ -64,13 +63,36 @@ struct AssetPathChart: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
+    // MARK: - Help Section
+    
+    private var helpSection: some View {
+        HStack(alignment: .top, spacing: ExitSpacing.sm) {
+            Image(systemName: "lightbulb.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(Color.Exit.accent)
+            
+            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                Text("이 그래프가 알려주는 것")
+                    .font(.Exit.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                Text("시장 상황에 따라 자산이 어떻게 변할지 3가지 시나리오로 보여줘요. 행운(상위 10%)부터 불운(하위 10%)까지, 대부분의 경우가 이 범위 안에 들어요.")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(ExitSpacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Exit.secondaryCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+    }
+    
     // MARK: - Simulation Condition
     
     private var simulationConditionSection: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            Divider()
-                .background(Color.Exit.divider)
-            
             Text("📊 시뮬레이션 조건")
                 .font(.Exit.caption)
                 .fontWeight(.medium)
@@ -289,7 +311,7 @@ struct AssetPathChart: View {
         }
         
         return HStack(spacing: ExitSpacing.xs) {
-            Image(systemName: "lightbulb.fill")
+            Image(systemName: "info.circle.fill")
                 .font(.system(size: 12))
                 .foregroundStyle(Color.Exit.accent)
             Text(message)

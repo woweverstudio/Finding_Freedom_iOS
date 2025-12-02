@@ -72,16 +72,16 @@ struct DistributionChart: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.lg) {
-            // 핵심 메시지
+            // 1. 타이틀 + 설명
             keyMessageSection
             
-            // 시각적 타임라인
+            // 2. 차트 및 데이터
             timelineVisualization
             
-            // 해석 도움말
-            interpretationHelp
+            // 3. 도움말
+            helpSection
             
-            // 시뮬레이션 조건
+            // 4. 시뮬레이션 조건
             if let scenario = scenario {
                 simulationConditionSection(scenario: scenario)
             }
@@ -92,13 +92,36 @@ struct DistributionChart: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
+    // MARK: - Help Section
+    
+    private var helpSection: some View {
+        HStack(alignment: .top, spacing: ExitSpacing.sm) {
+            Image(systemName: "lightbulb.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(Color.Exit.accent)
+            
+            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                Text("이 그래프가 알려주는 것")
+                    .font(.Exit.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                Text("막대가 높을수록 그 시점에 목표를 달성할 확률이 높아요. 대부분(\(Int(80))%)은 \(probabilityRange.start)~\(probabilityRange.end)년 사이에 달성해요.")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(ExitSpacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Exit.secondaryCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+    }
+    
     // MARK: - Simulation Condition
     
     private func simulationConditionSection(scenario: Scenario) -> some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            Divider()
-                .background(Color.Exit.divider)
-            
             Text("📊 시뮬레이션 조건")
                 .font(.Exit.caption)
                 .fontWeight(.medium)
@@ -136,6 +159,7 @@ struct DistributionChart: View {
     
     private var keyMessageSection: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
+            // 타이틀
             HStack {
                 Image(systemName: "target")
                     .foregroundStyle(Color.Exit.accent)
@@ -252,35 +276,5 @@ struct DistributionChart: View {
                 .foregroundStyle(color)
         }
         .frame(maxWidth: .infinity)
-    }
-    
-    // MARK: - Interpretation Help
-    
-    private var interpretationHelp: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            Divider()
-                .background(Color.Exit.divider)
-            
-            HStack(alignment: .top, spacing: ExitSpacing.sm) {
-                Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color.Exit.accent)
-                
-                VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                    Text("이 그래프가 알려주는 것")
-                        .font(.Exit.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                    
-                    Text("막대가 높을수록 그 시점에 목표를 달성할 확률이 높아요. 대부분(\(Int(80))%)은 \(probabilityRange.start)~\(probabilityRange.end)년 사이에 달성해요.")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(ExitSpacing.sm)
-            .background(Color.Exit.secondaryCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
-        }
     }
 }

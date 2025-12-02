@@ -68,25 +68,22 @@ struct RetirementShortTermChart: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.lg) {
-            // 헤더
+            // 1. 타이틀 + 설명
             headerSection
             
-            // 핵심 메시지
+            // 2. 차트 및 데이터
             keyMessageSection
             
-            // 차트
             shortTermChart
             
-            // 범례
             legendSection
             
-            // 연도별 상세
             yearlyDetailSection
             
-            // 해석 도움말
-            interpretationSection
+            // 3. 도움말
+            helpSection
             
-            // 시뮬레이션 조건
+            // 4. 시뮬레이션 조건
             simulationConditionSection
         }
         .padding(ExitSpacing.lg)
@@ -95,13 +92,36 @@ struct RetirementShortTermChart: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
+    // MARK: - Help Section
+    
+    private var helpSection: some View {
+        HStack(alignment: .top, spacing: ExitSpacing.sm) {
+            Image(systemName: "lightbulb.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(Color.Exit.accent)
+            
+            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                Text("왜 처음 10년이 중요할까요?")
+                    .font(.Exit.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                Text("은퇴 직후 시장이 하락하면(불운) 회복할 시간이 부족해요. 반면 처음 몇 년이 좋으면 여유가 생겨요. 이를 '시퀀스 리스크'라고 해요.")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(ExitSpacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Exit.secondaryCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+    }
+    
     // MARK: - Simulation Condition
     
     private var simulationConditionSection: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            Divider()
-                .background(Color.Exit.divider)
-            
             Text("📊 시뮬레이션 조건")
                 .font(.Exit.caption)
                 .fontWeight(.medium)
@@ -110,7 +130,7 @@ struct RetirementShortTermChart: View {
             HStack(spacing: ExitSpacing.lg) {
                 dataItem(label: "목표 자산", value: ExitNumberFormatter.formatChartAxis(targetAsset))
                 dataItem(label: "월 지출", value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
-                dataItem(label: "수익률", value: String(format: "%.1f%%", scenario.postRetirementReturnRate))
+                dataItem(label: "은퇴 후 수익률", value: String(format: "%.1f%%", scenario.postRetirementReturnRate))
             }
         }
     }
@@ -338,35 +358,4 @@ struct RetirementShortTermChart: View {
         .background(Color.Exit.secondaryCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
     }
-    
-    // MARK: - Interpretation
-    
-    private var interpretationSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            Divider()
-                .background(Color.Exit.divider)
-            
-            HStack(alignment: .top, spacing: ExitSpacing.sm) {
-                Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color.Exit.accent)
-                
-                VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                    Text("왜 처음 10년이 중요할까요?")
-                        .font(.Exit.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                    
-                    Text("은퇴 직후 시장이 하락하면(불운) 회복할 시간이 부족해요. 반면 처음 몇 년이 좋으면 여유가 생겨요. 이를 '시퀀스 리스크'라고 해요.")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(ExitSpacing.sm)
-            .background(Color.Exit.accent.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
-        }
-    }
 }
-

@@ -62,66 +62,57 @@ struct SuccessRateCard: View {
     }
     
     var body: some View {
-        VStack(spacing: ExitSpacing.lg) {
-            // 큰 성공률 표시
-            VStack(spacing: ExitSpacing.sm) {
-                Text("계획대로 회사 탈출에 성공할 확률")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                
-                HStack(alignment: .lastTextBaseline, spacing: 4) {
-                    Text("\(Int(result.successRate * 100))")
-                        .font(.system(size: 72, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Color(hex: result.confidenceLevel.color))
-                    
-                    Text("%")
-                        .font(.Exit.title)
+        VStack(alignment: .leading, spacing: ExitSpacing.lg) {
+            // 1. 타이틀
+            HStack {
+                Image(systemName: "percent")
+                    .foregroundStyle(Color.Exit.accent)
+                Text("성공 확률")
+                    .font(.Exit.title3)
+                    .foregroundStyle(Color.Exit.primaryText)
+            }
+            
+            // 2. 차트 및 데이터 (성공률 + 코칭 메시지)
+            VStack(spacing: ExitSpacing.md) {
+                // 큰 성공률 표시
+                VStack(spacing: ExitSpacing.sm) {
+                    Text("계획대로 회사 탈출에 성공할 확률")
+                        .font(.Exit.caption)
                         .foregroundStyle(Color.Exit.secondaryText)
+                    
+                    HStack(alignment: .lastTextBaseline, spacing: 4) {
+                        Text("\(Int(result.successRate * 100))")
+                            .font(.system(size: 72, weight: .heavy, design: .rounded))
+                            .foregroundStyle(Color(hex: result.confidenceLevel.color))
+                        
+                        Text("%")
+                            .font(.Exit.title)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                    }
+                    
+                    Text(result.confidenceLevel.rawValue)
+                        .font(.Exit.body)
+                        .foregroundStyle(Color(hex: result.confidenceLevel.color))
+                        .padding(.horizontal, ExitSpacing.md)
+                        .padding(.vertical, ExitSpacing.xs)
+                        .background(
+                            Capsule()
+                                .fill(Color(hex: result.confidenceLevel.color).opacity(0.15))
+                        )
                 }
                 
-                Text(result.confidenceLevel.rawValue)
+                // 코칭 메시지
+                Text(successRateMessage)
                     .font(.Exit.body)
-                    .foregroundStyle(Color(hex: result.confidenceLevel.color))
-                    .padding(.horizontal, ExitSpacing.md)
-                    .padding(.vertical, ExitSpacing.xs)
-                    .background(
-                        Capsule()
-                            .fill(Color(hex: result.confidenceLevel.color).opacity(0.15))
-                    )
+                    .foregroundStyle(Color.Exit.primaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             
-            // 확률 계산 설명
-            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                Text("왜 이 확률인가요?")
-                    .font(.Exit.caption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                
-                VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                    Text("주식 시장은 매년 오르락내리락해요. 그래서 \(result.totalSimulations.formatted())가지 다른 미래를 시뮬레이션해봤어요.")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                    
-                    Text("현재 계획대로면 \(originalDDayText) 후에 FIRE를 달성해요. 하지만 시장이 안 좋으면 더 늦어질 수 있어요.")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                    
-                    Text("여기서는 원래 목표보다 \(extraTimeText) 더 걸리면 (총 \(failureThresholdText)) '실패'로 봤어요. 계획보다 \(failurePercentText) 넘게 늦어지면 많이 어긋난 거니까요.")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                }
-                .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            // 3. 도움말
+            helpSection
             
-            // 코칭 메시지
-            Text(successRateMessage)
-                .font(.Exit.body)
-                .foregroundStyle(Color.Exit.primaryText)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            // 시뮬레이션 조건
+            // 4. 시뮬레이션 조건
             if let scenario = scenario {
                 simulationConditionSection(scenario: scenario)
             }
@@ -132,13 +123,42 @@ struct SuccessRateCard: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
+    // MARK: - Help Section
+    
+    private var helpSection: some View {
+        HStack(alignment: .top, spacing: ExitSpacing.sm) {
+            Image(systemName: "lightbulb.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(Color.Exit.accent)
+            
+            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                Text("이 확률이 의미하는 것")
+                    .font(.Exit.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                    Text("주식 시장은 매년 오르락내리락해요. 그래서 \(result.totalSimulations.formatted())가지 다른 미래를 시뮬레이션해봤어요.")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    
+                    Text("현재 계획대로면 \(originalDDayText) 후에 FIRE를 달성해요. 여기서는 계획보다 \(failurePercentText) 넘게 늦어지면(\(failureThresholdText)) '실패'로 봤어요.")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(ExitSpacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Exit.secondaryCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+    }
+    
     // MARK: - Simulation Condition
     
     private func simulationConditionSection(scenario: Scenario) -> some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            Divider()
-                .background(Color.Exit.divider)
-            
             Text("📊 시뮬레이션 조건")
                 .font(.Exit.caption)
                 .fontWeight(.medium)

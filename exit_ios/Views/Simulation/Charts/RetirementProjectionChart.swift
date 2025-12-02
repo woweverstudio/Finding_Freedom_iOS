@@ -43,20 +43,21 @@ struct RetirementProjectionChart: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.lg) {
-            // 헤더
+            // 1. 타이틀
             headerSection
             
-            // 핵심 메시지 (테이블 형식)
+            // 2. 차트 및 데이터
             keyMessageTable
             
-            // 차트 (평균, 불운, 기존예측만)
             projectionChart
             
-            // 범례
             legendSection
             
-            // 해석
-            interpretationSection
+            // 3. 도움말
+            helpSection
+            
+            // 4. 시뮬레이션 조건
+            simulationConditionSection
         }
         .padding(ExitSpacing.lg)
         .background(Color.Exit.cardBackground)
@@ -74,6 +75,62 @@ struct RetirementProjectionChart: View {
                 .font(.Exit.title3)
                 .foregroundStyle(Color.Exit.primaryText)
         }
+    }
+    
+    // MARK: - Help Section
+    
+    private var helpSection: some View {
+        HStack(alignment: .top, spacing: ExitSpacing.sm) {
+            Image(systemName: "lightbulb.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(Color.Exit.accent)
+            
+            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                Text("이 그래프가 알려주는 것")
+                    .font(.Exit.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                Text("시장 상황에 따라 자산 수명이 크게 달라져요. 불운한 시기에 은퇴하면 더 빨리 소진될 수 있으니 여유 있게 준비하세요!")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(ExitSpacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Exit.secondaryCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+    }
+    
+    // MARK: - Simulation Condition
+    
+    private var simulationConditionSection: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            Text("📊 시뮬레이션 조건")
+                .font(.Exit.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Exit.secondaryText)
+            
+            HStack(spacing: ExitSpacing.lg) {
+                dataItem(label: "목표 자산", value: ExitNumberFormatter.formatChartAxis(targetAsset))
+                dataItem(label: "월 지출", value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
+                dataItem(label: "은퇴 후 수익률", value: String(format: "%.1f%%", scenario.postRetirementReturnRate))
+            }
+        }
+    }
+    
+    private func dataItem(label: String, value: String) -> some View {
+        VStack(spacing: 2) {
+            Text(label)
+                .font(.Exit.caption2)
+                .foregroundStyle(Color.Exit.tertiaryText)
+            Text(value)
+                .font(.Exit.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Exit.primaryText)
+        }
+        .frame(maxWidth: .infinity)
     }
     
     // MARK: - Key Message Table
@@ -110,8 +167,6 @@ struct RetirementProjectionChart: View {
                 color: Color.Exit.positive
             )
             
-            Divider().background(Color.Exit.divider)
-            
             // 평균 행
             tableRow(
                 icon: "📊",
@@ -120,8 +175,6 @@ struct RetirementProjectionChart: View {
                 detail: formatSimple(result.medianPath.finalAsset),
                 color: Color.Exit.accent
             )
-            
-            Divider().background(Color.Exit.divider)
             
             // 불운 행
             tableRow(
@@ -273,56 +326,6 @@ struct RetirementProjectionChart: View {
             Text(label)
                 .font(.Exit.caption2)
                 .foregroundStyle(Color.Exit.secondaryText)
-        }
-    }
-    
-    // MARK: - Interpretation
-    
-    private var interpretationSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            Divider()
-                .background(Color.Exit.divider)
-            
-            // 데이터 요약
-            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                Text("📊 시뮬레이션 조건")
-                    .font(.Exit.caption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                
-                HStack(spacing: ExitSpacing.lg) {
-                    dataItem(label: "목표 자산", value: ExitNumberFormatter.formatToEokManWon(targetAsset))
-                    dataItem(label: "월 지출", value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
-                    dataItem(label: "수익률", value: String(format: "%.1f%%", scenario.postRetirementReturnRate))
-                }
-            }
-            
-            // 해석 도움말
-            HStack(alignment: .top, spacing: ExitSpacing.sm) {
-                Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color.Exit.accent)
-                
-                Text("시장 상황에 따라 자산 수명이 크게 달라져요. 불운한 시기에 은퇴하면 더 빨리 소진될 수 있으니 여유 있게 준비하세요!")
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(ExitSpacing.sm)
-            .background(Color.Exit.accent.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
-        }
-    }
-    
-    private func dataItem(label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.Exit.caption2)
-                .foregroundStyle(Color.Exit.tertiaryText)
-            Text(value)
-                .font(.Exit.caption)
-                .fontWeight(.medium)
-                .foregroundStyle(Color.Exit.primaryText)
         }
     }
 }
