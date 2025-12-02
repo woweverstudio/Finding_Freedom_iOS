@@ -38,8 +38,8 @@ final class SimulationViewModel {
     /// 변동성 조정 (사용자가 조정 가능)
     var customVolatility: Double?
     
-    /// 실패 조건 배수 (기본값 1.5 = 목표 기간의 150%)
-    var failureThresholdMultiplier: Double = 1.5
+    /// 실패 조건 배수 (기본값 1.1 = 목표 기간의 110%)
+    var failureThresholdMultiplier: Double = 1.1
     
     // MARK: - Computed Properties
     
@@ -213,7 +213,7 @@ final class SimulationViewModel {
     
     /// 실패 조건 초기화
     func resetFailureThreshold() {
-        failureThresholdMultiplier = 1.5
+        failureThresholdMultiplier = 1.1
     }
     
     /// 모든 설정 초기화

@@ -263,14 +263,14 @@ struct SimulationEmptyView: View {
                     icon: "calendar.badge.clock",
                     iconColor: Color.Exit.positive,
                     title: "예상 달성 시점",
-                    description: "최선의 경우 8년, 평균 12년, 최악의 경우 18년... 다양한 시나리오를 한눈에!"
+                    description: "행운이면 8년, 평균 12년, 불운이면 18년... 다양한 시나리오를 한눈에!"
                 )
                 
                 featureCard(
                     icon: "chart.xyaxis.line",
                     iconColor: Color(hex: "FF9500"),
                     title: "자산 변화 예측 그래프",
-                    description: "시간에 따라 내 자산이 어떻게 변할지 3가지 경우(최선/평균/최악)로 시각화해요."
+                    description: "시간에 따라 내 자산이 어떻게 변할지 3가지 경우(행운/평균/불운)로 시각화해요."
                 )
                 
                 featureCard(
@@ -406,12 +406,12 @@ struct SimulationEmptyView: View {
             
             // 간단한 데모 차트
             Chart {
-                // 최선
+                // 행운
                 ForEach(demoChartData.best.indices, id: \.self) { index in
                     LineMark(
                         x: .value("년", index),
                         y: .value("자산", demoChartData.best[index]),
-                        series: .value("시나리오", "최선")
+                        series: .value("시나리오", "행운")
                     )
                     .foregroundStyle(Color.Exit.positive)
                     .lineStyle(StrokeStyle(lineWidth: 2))
@@ -430,12 +430,12 @@ struct SimulationEmptyView: View {
                     .interpolationMethod(.catmullRom)
                 }
                 
-                // 최악
+                // 불운
                 ForEach(demoChartData.worst.indices, id: \.self) { index in
                     LineMark(
                         x: .value("년", index),
                         y: .value("자산", demoChartData.worst[index]),
-                        series: .value("시나리오", "최악")
+                        series: .value("시나리오", "불운")
                     )
                     .foregroundStyle(Color.Exit.caution)
                     .lineStyle(StrokeStyle(lineWidth: 2))
@@ -471,9 +471,9 @@ struct SimulationEmptyView: View {
             
             // 범례
             HStack(spacing: ExitSpacing.md) {
-                legendItem(color: Color.Exit.positive, label: "최선의 경우")
-                legendItem(color: Color.Exit.accent, label: "평균")
-                legendItem(color: Color.Exit.caution, label: "최악의 경우")
+                legendItem(color: Color.Exit.positive, label: "🍀 행운")
+                legendItem(color: Color.Exit.accent, label: "📊 평균")
+                legendItem(color: Color.Exit.caution, label: "🌧️ 불운")
             }
         }
         .padding(ExitSpacing.lg)

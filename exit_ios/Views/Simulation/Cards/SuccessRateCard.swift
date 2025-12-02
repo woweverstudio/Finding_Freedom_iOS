@@ -11,7 +11,7 @@ import SwiftUI
 struct SuccessRateCard: View {
     let result: MonteCarloResult
     let originalDDayMonths: Int  // 기존 D-Day
-    var failureThresholdMultiplier: Double = 1.5  // 실패 조건 배수 (기본값 1.5)
+    var failureThresholdMultiplier: Double = 1.1  // 실패 조건 배수 (기본값 1.1)
     
     /// 실패 기준 기간 (기존 D-Day * multiplier)
     private var failureThresholdMonths: Int {

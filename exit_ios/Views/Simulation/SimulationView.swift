@@ -98,25 +98,24 @@ struct SimulationView: View {
                     failureThresholdMultiplier: viewModel.failureThresholdMultiplier
                 )
                 
-                // 2. 자산 변화 예측 차트
+                // 2. 자산 변화 예측 차트 + FIRE 달성 시점 비교
                 if let paths = result.representativePaths,
                    let scenario = viewModel.activeScenario {
-                    AssetPathChart(paths: paths, scenario: scenario)
+                    AssetPathChart(
+                        paths: paths,
+                        scenario: scenario,
+                        result: result,
+                        originalDDayMonths: viewModel.originalDDayMonths
+                    )
                 }
                 
-                // 3. FIRE 달성 시점 비교 카드
-                PercentileCard(
-                    result: result,
-                    originalDDayMonths: viewModel.originalDDayMonths
-                )
-                
-                // 4. 목표 달성 시점 분포 차트
+                // 3. 목표 달성 시점 분포 차트
                 DistributionChart(
                     yearDistributionData: viewModel.yearDistributionData,
                     result: result
                 )
                 
-                // 5. 시뮬레이션 상세 카드
+                // 4. 시뮬레이션 상세 카드
                 if let scenario = viewModel.activeScenario {
                     StatisticsCard(
                         result: result,
@@ -125,7 +124,7 @@ struct SimulationView: View {
                     )
                 }
                 
-                // 6. 시뮬레이션 정보 카드
+                // 5. 시뮬레이션 정보 카드
                 if let scenario = viewModel.activeScenario {
                     SimulationInfoCard(
                         scenario: scenario,
@@ -135,7 +134,7 @@ struct SimulationView: View {
                     )
                 }
                 
-                // 7. 액션 버튼들
+                // 6. 액션 버튼들
                 actionButtons                
             }
             .padding(.vertical, ExitSpacing.lg)
@@ -199,7 +198,7 @@ struct SimulationSettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var tempVolatility: Double = 15.0
-    @State private var tempFailureThreshold: Double = 1.5
+    @State private var tempFailureThreshold: Double = 1.1
     @State private var selectedField: SettingField = .volatility
     
     enum SettingField {
@@ -536,7 +535,7 @@ struct SimulationSettingsSheet: View {
     private var resetButton: some View {
         Button {
             tempVolatility = viewModel.activeScenario?.returnRateVolatility ?? 15.0
-            tempFailureThreshold = 1.5
+            tempFailureThreshold = 1.1
         } label: {
             HStack(spacing: ExitSpacing.sm) {
                 Image(systemName: "arrow.counterclockwise")
