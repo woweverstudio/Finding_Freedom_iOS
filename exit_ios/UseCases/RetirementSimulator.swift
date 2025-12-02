@@ -20,14 +20,20 @@ struct RetirementPath {
 
 /// 은퇴 후 시뮬레이션 결과
 struct RetirementSimulationResult {
-    /// 행운 경로 (상위 10%)
-    let bestPath: RetirementPath
+    /// 매우 행운 경로 (상위 10%)
+    let veryBestPath: RetirementPath
     
-    /// 평균 경로 (중앙값)
+    /// 행운 경로 (상위 30%)
+    let luckyPath: RetirementPath
+    
+    /// 평균 경로 (중앙값 50%)
     let medianPath: RetirementPath
     
-    /// 불운 경로 (하위 10%)
-    let worstPath: RetirementPath
+    /// 불운 경로 (하위 30%)
+    let unluckyPath: RetirementPath
+    
+    /// 매우 불운 경로 (하위 10%)
+    let veryWorstPath: RetirementPath
     
     /// 기존 예측 경로 (변동성 없음)
     let deterministicPath: RetirementPath
@@ -35,9 +41,13 @@ struct RetirementSimulationResult {
     /// 시뮬레이션 횟수
     let totalSimulations: Int
     
+    // 기존 호환성을 위한 별칭
+    var bestPath: RetirementPath { veryBestPath }
+    var worstPath: RetirementPath { veryWorstPath }
+    
     // 편의 프로퍼티
     var medianDepletionYear: Int? { medianPath.depletionYear }
-    var worstDepletionYear: Int? { worstPath.depletionYear }
+    var worstDepletionYear: Int? { veryWorstPath.depletionYear }
 }
 
 /// 은퇴 후 자산 변화 시뮬레이터
@@ -105,14 +115,18 @@ enum RetirementSimulator {
         // 최종 자산이 높은 순서로 정렬 (상위 = 행운, 하위 = 불운)
         let sortedPaths = allPaths.sorted { $0.finalAsset > $1.finalAsset }
         
-        let bestPath = sortedPaths[simulationCount / 10]           // 상위 10%
-        let medianPath = sortedPaths[simulationCount / 2]          // 중앙값
-        let worstPath = sortedPaths[simulationCount * 9 / 10]      // 하위 10%
+        let veryBestPath = sortedPaths[simulationCount / 10]           // 상위 10%
+        let luckyPath = sortedPaths[simulationCount * 3 / 10]          // 상위 30%
+        let medianPath = sortedPaths[simulationCount / 2]              // 중앙값 50%
+        let unluckyPath = sortedPaths[simulationCount * 7 / 10]        // 하위 30%
+        let veryWorstPath = sortedPaths[simulationCount * 9 / 10]      // 하위 10%
         
         return RetirementSimulationResult(
-            bestPath: bestPath,
+            veryBestPath: veryBestPath,
+            luckyPath: luckyPath,
             medianPath: medianPath,
-            worstPath: worstPath,
+            unluckyPath: unluckyPath,
+            veryWorstPath: veryWorstPath,
             deterministicPath: deterministicPath,
             totalSimulations: simulationCount
         )

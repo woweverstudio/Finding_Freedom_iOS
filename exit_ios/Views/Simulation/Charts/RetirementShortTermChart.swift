@@ -25,32 +25,34 @@ struct RetirementShortTermChart: View {
     // 단기 데이터 (0~10년, 최대 11개 포인트)
     private var shortTermYears: Int { 10 }
     
-    private var bestShortTerm: [Double] {
-        Array(result.bestPath.yearlyAssets.prefix(shortTermYears + 1))
+    private var veryBestShortTerm: [Double] {
+        Array(result.veryBestPath.yearlyAssets.prefix(shortTermYears + 1))
+    }
+    
+    private var luckyShortTerm: [Double] {
+        Array(result.luckyPath.yearlyAssets.prefix(shortTermYears + 1))
     }
     
     private var medianShortTerm: [Double] {
         Array(result.medianPath.yearlyAssets.prefix(shortTermYears + 1))
     }
     
-    private var worstShortTerm: [Double] {
-        Array(result.worstPath.yearlyAssets.prefix(shortTermYears + 1))
+    private var unluckyShortTerm: [Double] {
+        Array(result.unluckyPath.yearlyAssets.prefix(shortTermYears + 1))
+    }
+    
+    private var veryWorstShortTerm: [Double] {
+        Array(result.veryWorstPath.yearlyAssets.prefix(shortTermYears + 1))
     }
     
     private var deterministicShortTerm: [Double] {
         Array(result.deterministicPath.yearlyAssets.prefix(shortTermYears + 1))
     }
     
-    // 10년 후 자산 변화율
-    private var medianChangeRate: Double {
-        guard let first = medianShortTerm.first, first > 0,
-              let last = medianShortTerm.last else { return 0 }
-        return (last - first) / first * 100
-    }
-    
-    private var worstChangeRate: Double {
-        guard let first = worstShortTerm.first, first > 0,
-              let last = worstShortTerm.last else { return 0 }
+    // 10년 후 자산 변화율 계산
+    private func changeRate(for data: [Double]) -> Double {
+        guard let first = data.first, first > 0,
+              let last = data.last else { return 0 }
         return (last - first) / first * 100
     }
     
@@ -166,58 +168,99 @@ struct RetirementShortTermChart: View {
         }
     }
     
-    // MARK: - Key Message
+    // MARK: - Key Message (5개 시나리오)
     
     private var keyMessageSection: some View {
-        HStack(spacing: ExitSpacing.md) {
-            // 평균 케이스
-            VStack(spacing: ExitSpacing.xs) {
-                Text("평균적으로")
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
+        VStack(spacing: ExitSpacing.sm) {
+            // 첫 번째 줄: 매우 행운, 행운, 평균
+            HStack(spacing: ExitSpacing.xs) {
+                scenarioCard(
+                    title: "매우 행운",
+                    amount: veryBestShortTerm.last ?? 0,
+                    changeRate: changeRate(for: veryBestShortTerm),
+                    backgroundColor: Color.Exit.positive.opacity(0.15),
+                    accentColor: Color.Exit.positive
+                )
                 
-                Text(formatSimple(medianShortTerm.last ?? 0))
-                    .font(.Exit.body)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.Exit.accent)
+                scenarioCard(
+                    title: "행운",
+                    amount: luckyShortTerm.last ?? 0,
+                    changeRate: changeRate(for: luckyShortTerm),
+                    backgroundColor: Color.Exit.accent.opacity(0.15),
+                    accentColor: Color.Exit.accent
+                )
                 
-                Text(medianChangeRate >= 0 ? "+\(String(format: "%.0f", medianChangeRate))%" : "\(String(format: "%.0f", medianChangeRate))%")
-                    .font(.Exit.caption)
-                    .foregroundStyle(medianChangeRate >= 0 ? Color.Exit.positive : Color.Exit.caution)
+                scenarioCard(
+                    title: "평균",
+                    amount: medianShortTerm.last ?? 0,
+                    changeRate: changeRate(for: medianShortTerm),
+                    backgroundColor: Color.Exit.primaryText.opacity(0.1),
+                    accentColor: Color.Exit.primaryText
+                )
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, ExitSpacing.md)
-            .background(Color.Exit.accent.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             
-            // 불운 케이스
-            VStack(spacing: ExitSpacing.xs) {
-                Text("불운하면")
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
+            // 두 번째 줄: 불운, 매우 불운
+            HStack(spacing: ExitSpacing.xs) {
+                scenarioCard(
+                    title: "불운",
+                    amount: unluckyShortTerm.last ?? 0,
+                    changeRate: changeRate(for: unluckyShortTerm),
+                    backgroundColor: Color.Exit.caution.opacity(0.15),
+                    accentColor: Color.Exit.caution
+                )
                 
-                Text(formatSimple(worstShortTerm.last ?? 0))
-                    .font(.Exit.body)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.Exit.caution)
-                
-                Text(worstChangeRate >= 0 ? "+\(String(format: "%.0f", worstChangeRate))%" : "\(String(format: "%.0f", worstChangeRate))%")
-                    .font(.Exit.caption)
-                    .foregroundStyle(worstChangeRate >= 0 ? Color.Exit.positive : Color.Exit.caution)
+                scenarioCard(
+                    title: "매우 불운",
+                    amount: veryWorstShortTerm.last ?? 0,
+                    changeRate: changeRate(for: veryWorstShortTerm),
+                    backgroundColor: Color.Exit.warning.opacity(0.15),
+                    accentColor: Color.Exit.warning
+                )
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, ExitSpacing.md)
-            .background(Color.Exit.caution.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
+    }
+    
+    private func scenarioCard(title: String, amount: Double, changeRate: Double, backgroundColor: Color, accentColor: Color) -> some View {
+        VStack(spacing: ExitSpacing.xs) {
+            Text(title)
+                .font(.Exit.caption2)
+                .foregroundStyle(Color.Exit.tertiaryText)
+            
+            Text(formatSimple(amount))
+                .font(.Exit.caption)
+                .fontWeight(.bold)
+                .foregroundStyle(accentColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            
+            Text(changeRate >= 0 ? "+\(String(format: "%.0f", changeRate))%" : "\(String(format: "%.0f", changeRate))%")
+                .font(.Exit.caption2)
+                .foregroundStyle(changeRate >= 0 ? Color.Exit.positive : Color.Exit.warning)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, ExitSpacing.sm)
+        .background(backgroundColor)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
     }
     
     // MARK: - Chart
     
     private var shortTermChart: some View {
         Chart {
-            // 불운 경로
-            ForEach(Array(worstShortTerm.enumerated()), id: \.offset) { index, asset in
+            // 매우 불운 경로 (하위 10%) - 빨간색
+            ForEach(Array(veryWorstShortTerm.enumerated()), id: \.offset) { index, asset in
+                LineMark(
+                    x: .value("년", index),
+                    y: .value("자산", asset),
+                    series: .value("시나리오", "매우불운")
+                )
+                .foregroundStyle(Color.Exit.warning)
+                .lineStyle(StrokeStyle(lineWidth: 2))
+                .interpolationMethod(.catmullRom)
+            }
+            
+            // 불운 경로 (70%) - 노란색
+            ForEach(Array(unluckyShortTerm.enumerated()), id: \.offset) { index, asset in
                 LineMark(
                     x: .value("년", index),
                     y: .value("자산", asset),
@@ -228,7 +271,7 @@ struct RetirementShortTermChart: View {
                 .interpolationMethod(.catmullRom)
             }
             
-            // 기존 예측
+            // 기존 예측 - 회색 점선
             ForEach(Array(deterministicShortTerm.enumerated()), id: \.offset) { index, asset in
                 LineMark(
                     x: .value("년", index),
@@ -240,15 +283,39 @@ struct RetirementShortTermChart: View {
                 .interpolationMethod(.catmullRom)
             }
             
-            // 평균 경로 (마지막에 그려서 위에 표시)
+            // 평균 경로 (50%) - 흰색/회색
             ForEach(Array(medianShortTerm.enumerated()), id: \.offset) { index, asset in
                 LineMark(
                     x: .value("년", index),
                     y: .value("자산", asset),
                     series: .value("시나리오", "평균")
                 )
+                .foregroundStyle(Color.Exit.primaryText.opacity(0.7))
+                .lineStyle(StrokeStyle(lineWidth: 2.5))
+                .interpolationMethod(.catmullRom)
+            }
+            
+            // 행운 경로 (30%) - 엑센트
+            ForEach(Array(luckyShortTerm.enumerated()), id: \.offset) { index, asset in
+                LineMark(
+                    x: .value("년", index),
+                    y: .value("자산", asset),
+                    series: .value("시나리오", "행운")
+                )
                 .foregroundStyle(Color.Exit.accent)
-                .lineStyle(StrokeStyle(lineWidth: 3))
+                .lineStyle(StrokeStyle(lineWidth: 2))
+                .interpolationMethod(.catmullRom)
+            }
+            
+            // 매우 행운 경로 (10%) - 초록색
+            ForEach(Array(veryBestShortTerm.enumerated()), id: \.offset) { index, asset in
+                LineMark(
+                    x: .value("년", index),
+                    y: .value("자산", asset),
+                    series: .value("시나리오", "매우행운")
+                )
+                .foregroundStyle(Color.Exit.positive)
+                .lineStyle(StrokeStyle(lineWidth: 2))
                 .interpolationMethod(.catmullRom)
             }
             
@@ -257,7 +324,7 @@ struct RetirementShortTermChart: View {
                 .foregroundStyle(Color.Exit.accent)
                 .symbolSize(80)
         }
-        .frame(height: 180)
+        .frame(height: 200)
         .chartXAxis {
             AxisMarks(values: Array(0...10)) { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
@@ -286,13 +353,23 @@ struct RetirementShortTermChart: View {
         }
     }
     
-    // MARK: - Legend
+    // MARK: - Legend (2줄)
     
     private var legendSection: some View {
-        HStack(spacing: ExitSpacing.lg) {
-            legendItem(color: Color.Exit.accent, label: "평균(50%)", isDashed: false)
-            legendItem(color: Color.Exit.caution, label: "불운(하위10%)", isDashed: false)
-            legendItem(color: Color.Exit.tertiaryText, label: "기존예측", isDashed: true)
+        VStack(spacing: ExitSpacing.xs) {
+            // 첫 번째 줄
+            HStack(spacing: ExitSpacing.md) {
+                legendItem(color: Color.Exit.positive, label: "매우행운(10%)", isDashed: false)
+                legendItem(color: Color.Exit.accent, label: "행운(30%)", isDashed: false)
+                legendItem(color: Color.Exit.primaryText.opacity(0.7), label: "평균(50%)", isDashed: false)
+            }
+            
+            // 두 번째 줄
+            HStack(spacing: ExitSpacing.md) {
+                legendItem(color: Color.Exit.caution, label: "불운(70%)", isDashed: false)
+                legendItem(color: Color.Exit.warning, label: "매우불운(90%)", isDashed: false)
+                legendItem(color: Color.Exit.tertiaryText, label: "기존예측", isDashed: true)
+            }
         }
     }
     
@@ -322,7 +399,7 @@ struct RetirementShortTermChart: View {
     
     private var yearlyDetailSection: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            Text("연도별 예상 자산")
+            Text("연도별 예상 자산 (평균)")
                 .font(.Exit.caption)
                 .fontWeight(.medium)
                 .foregroundStyle(Color.Exit.secondaryText)
