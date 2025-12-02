@@ -13,32 +13,68 @@ struct DistributionChart: View {
     let yearDistributionData: [(year: Int, count: Int)]
     let result: MonteCarloResult
     
-    // Computed properties로 분리
-    private var maxCount: Int {
-        yearDistributionData.map(\.count).max() ?? 1
+    // 총 성공 횟수
+    private var totalSuccess: Int {
+        yearDistributionData.reduce(0) { $0 + $1.count }
     }
     
-    private var minYear: Int {
-        yearDistributionData.map(\.year).min() ?? 0
+    // 확률로 변환된 데이터
+    private var probabilityData: [(year: Int, probability: Double)] {
+        guard totalSuccess > 0 else { return [] }
+        return yearDistributionData.map { (year: $0.year, probability: Double($0.count) / Double(totalSuccess) * 100) }
     }
     
-    private var maxYear: Int {
-        yearDistributionData.map(\.year).max() ?? 10
+    // 가장 가능성 높은 연도
+    private var mostLikelyYear: Int {
+        yearDistributionData.max(by: { $0.count < $1.count })?.year ?? 0
+    }
+    
+    // 가장 가능성 높은 확률
+    private var mostLikelyProbability: Double {
+        probabilityData.max(by: { $0.probability < $1.probability })?.probability ?? 0
+    }
+    
+    // 80% 확률 구간 계산
+    private var probabilityRange: (start: Int, end: Int) {
+        guard totalSuccess > 0 else { return (0, 0) }
+        
+        let sortedData = yearDistributionData.sorted(by: { $0.year < $1.year })
+        var cumulative = 0
+        var startYear = sortedData.first?.year ?? 0
+        var endYear = sortedData.last?.year ?? 0
+        
+        // 10% 지점 찾기
+        for data in sortedData {
+            cumulative += data.count
+            if Double(cumulative) / Double(totalSuccess) >= 0.1 {
+                startYear = data.year
+                break
+            }
+        }
+        
+        // 90% 지점 찾기
+        cumulative = 0
+        for data in sortedData {
+            cumulative += data.count
+            if Double(cumulative) / Double(totalSuccess) >= 0.9 {
+                endYear = data.year
+                break
+            }
+        }
+        
+        return (startYear, endYear)
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            headerView
+        VStack(alignment: .leading, spacing: ExitSpacing.lg) {
+            // 핵심 메시지
+            keyMessageSection
             
-            Divider()
-                .background(Color.Exit.divider)
+            // 시각적 타임라인
+            timelineVisualization
             
-            descriptionText
-            
-            if !yearDistributionData.isEmpty {
-                chartView
-                footerView
-            }
+            // 해석 도움말
+            interpretationHelp
         }
         .padding(ExitSpacing.lg)
         .background(Color.Exit.cardBackground)
@@ -46,88 +82,155 @@ struct DistributionChart: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
-    // MARK: - Subviews
+    // MARK: - Key Message Section
     
-    private var headerView: some View {
-        HStack {
-            Image(systemName: "chart.bar.fill")
-                .foregroundStyle(Color.Exit.accent)
-            Text("목표 달성 시점 분포")
-                .font(.Exit.title3)
-                .foregroundStyle(Color.Exit.primaryText)
+    private var keyMessageSection: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.md) {
+            HStack {
+                Image(systemName: "target")
+                    .foregroundStyle(Color.Exit.accent)
+                Text("언제 달성할 가능성이 높을까?")
+                    .font(.Exit.title3)
+                    .foregroundStyle(Color.Exit.primaryText)
+            }
             
-            Spacer()
-            
-            Text("\(result.successCount.formatted())건 성공")
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.secondaryText)
-        }
-    }
-    
-    private var descriptionText: some View {
-        Text("10,000번 시뮬레이션에서 몇 년 차에 목표를 달성했는지 분포")
-            .font(.Exit.caption)
-            .foregroundStyle(Color.Exit.secondaryText)
-            .padding(.bottom, ExitSpacing.xs)
-    }
-    
-    private var chartView: some View {
-        Chart {
-            ForEach(yearDistributionData, id: \.year) { data in
-                BarMark(
-                    x: .value("연도", data.year),
-                    y: .value("성공 횟수", data.count)
-                )
-                .foregroundStyle(
-                    data.count == maxCount ?
-                    Color.Exit.accent.gradient :
-                    Color.Exit.accent.opacity(0.6).gradient
-                )
-                .cornerRadius(4)
+            // 핵심 수치
+            HStack(alignment: .bottom, spacing: ExitSpacing.sm) {
+                Text("\(mostLikelyYear)년차")
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.Exit.accent)
+                
+                Text("에 달성할 가능성이 가장 높아요")
+                    .font(.Exit.body)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                    .padding(.bottom, 4)
             }
         }
-        .frame(height: 240)
-        .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 6)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                    .foregroundStyle(Color.Exit.divider)
-                AxisValueLabel {
-                    if let year = value.as(Int.self) {
-                        Text("\(year)년")
-                            .font(.Exit.caption2)
-                            .foregroundStyle(Color.Exit.secondaryText)
+    }
+    
+    // MARK: - Timeline Visualization
+    
+    private var timelineVisualization: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            // 간단한 확률 바 차트
+            Chart {
+                ForEach(probabilityData, id: \.year) { data in
+                    BarMark(
+                        x: .value("연도", data.year),
+                        y: .value("확률", data.probability)
+                    )
+                    .foregroundStyle(
+                        data.year == mostLikelyYear ?
+                        Color.Exit.accent.gradient :
+                        Color.Exit.accent.opacity(0.4).gradient
+                    )
+                    .cornerRadius(4)
+                }
+                
+                // 가장 가능성 높은 연도 강조
+                if mostLikelyYear > 0 {
+                    RuleMark(x: .value("최다", mostLikelyYear))
+                        .foregroundStyle(Color.Exit.accent.opacity(0.3))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                }
+            }
+            .frame(height: 140)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 5)) { value in
+                    AxisValueLabel {
+                        if let year = value.as(Int.self) {
+                            Text("\(year)년")
+                                .font(.Exit.caption2)
+                                .foregroundStyle(Color.Exit.tertiaryText)
+                        }
                     }
                 }
             }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                    .foregroundStyle(Color.Exit.divider)
-                AxisValueLabel {
-                    if let count = value.as(Int.self) {
-                        Text("\(count)회")
-                            .font(.Exit.caption2)
-                            .foregroundStyle(Color.Exit.secondaryText)
+            .chartYAxis {
+                AxisMarks(position: .leading, values: [0, 10, 20, 30]) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                        .foregroundStyle(Color.Exit.divider)
+                    AxisValueLabel {
+                        if let prob = value.as(Int.self) {
+                            Text("\(prob)%")
+                                .font(.Exit.caption2)
+                                .foregroundStyle(Color.Exit.tertiaryText)
+                        }
                     }
                 }
             }
+            
+            // 범위 표시
+            HStack(spacing: ExitSpacing.lg) {
+                rangeIndicator(
+                    icon: "clock",
+                    label: "빠르면",
+                    value: "\(probabilityRange.start)년",
+                    color: Color.Exit.positive
+                )
+                
+                rangeIndicator(
+                    icon: "target",
+                    label: "대부분",
+                    value: "\(mostLikelyYear)년",
+                    color: Color.Exit.accent
+                )
+                
+                rangeIndicator(
+                    icon: "clock.badge.exclamationmark",
+                    label: "늦으면",
+                    value: "\(probabilityRange.end)년",
+                    color: Color.Exit.caution
+                )
+            }
         }
-        .chartXScale(domain: .automatic(includesZero: false))
     }
     
-    private var footerView: some View {
-        HStack(spacing: ExitSpacing.xs) {
-            Image(systemName: "info.circle.fill")
-                .font(.system(size: 12))
-                .foregroundStyle(Color.Exit.accent)
+    private func rangeIndicator(icon: String, label: String, value: String, color: Color) -> some View {
+        VStack(spacing: ExitSpacing.xs) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundStyle(color)
             
-            Text("가장 많이 나온 결과: \(result.medianMonths / 12)년 (\(maxCount)회)")
+            Text(label)
                 .font(.Exit.caption2)
-                .foregroundStyle(Color.Exit.secondaryText)
+                .foregroundStyle(Color.Exit.tertiaryText)
+            
+            Text(value)
+                .font(.Exit.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(color)
         }
-        .padding(.top, ExitSpacing.sm)
+        .frame(maxWidth: .infinity)
     }
     
+    // MARK: - Interpretation Help
+    
+    private var interpretationHelp: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            Divider()
+                .background(Color.Exit.divider)
+            
+            HStack(alignment: .top, spacing: ExitSpacing.sm) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.Exit.accent)
+                
+                VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                    Text("이 그래프가 알려주는 것")
+                        .font(.Exit.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                    
+                    Text("막대가 높을수록 그 시점에 목표를 달성할 확률이 높아요. 대부분(\(Int(80))%)은 \(probabilityRange.start)~\(probabilityRange.end)년 사이에 달성해요.")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(ExitSpacing.sm)
+            .background(Color.Exit.secondaryCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+        }
+    }
 }
-

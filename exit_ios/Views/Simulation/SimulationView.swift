@@ -51,6 +51,11 @@ struct SimulationView: View {
                 .fontWeight(.bold)
                 .foregroundStyle(Color.Exit.primaryText)
             
+            // 시뮬레이션 단계
+            Text(viewModel.simulationPhase.description)
+                .font(.Exit.body)
+                .foregroundStyle(Color.Exit.secondaryText)
+            
             // 진행률 바
             VStack(spacing: ExitSpacing.sm) {
                 GeometryReader { geometry in
@@ -78,7 +83,7 @@ struct SimulationView: View {
             .padding(.horizontal, ExitSpacing.xxl)
             
             // 설명
-            Text("10,000가지 미래를 시뮬레이션하고 있습니다")
+            Text("20,000가지 미래를 시뮬레이션하고 있습니다")
                 .font(.Exit.caption)
                 .foregroundStyle(Color.Exit.secondaryText)
             
@@ -115,7 +120,13 @@ struct SimulationView: View {
                     result: result
                 )
                 
-                // 4. 시뮬레이션 상세 카드
+                // 4. 은퇴 후 자산 변화 예측
+                if let retirementResult = viewModel.retirementResult,
+                   let scenario = viewModel.activeScenario {
+                    RetirementProjectionChart(result: retirementResult, scenario: scenario)
+                }
+                
+                // 5. 시뮬레이션 상세 카드
                 if let scenario = viewModel.activeScenario {
                     StatisticsCard(
                         result: result,
@@ -124,7 +135,7 @@ struct SimulationView: View {
                     )
                 }
                 
-                // 5. 시뮬레이션 정보 카드
+                // 6. 시뮬레이션 정보 카드
                 if let scenario = viewModel.activeScenario {
                     SimulationInfoCard(
                         scenario: scenario,
@@ -134,7 +145,7 @@ struct SimulationView: View {
                     )
                 }
                 
-                // 6. 액션 버튼들
+                // 7. 액션 버튼들
                 actionButtons                
             }
             .padding(.vertical, ExitSpacing.lg)

@@ -158,7 +158,7 @@ struct AssetPathChart: View {
     
     private func timelineSection(result: MonteCarloResult) -> some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            Text("FIRE 달성 시점")
+            Text("목표 자산 달성 시점")
                 .font(.Exit.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(Color.Exit.primaryText)

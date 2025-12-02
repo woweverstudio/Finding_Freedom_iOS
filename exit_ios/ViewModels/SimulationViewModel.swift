@@ -23,14 +23,20 @@ final class SimulationViewModel {
     /// 활성 시나리오
     var activeScenario: Scenario?
     
-    /// 몬테카를로 시뮬레이션 결과
+    /// 몬테카를로 시뮬레이션 결과 (목표 달성까지)
     var monteCarloResult: MonteCarloResult?
+    
+    /// 은퇴 후 시뮬레이션 결과
+    var retirementResult: RetirementSimulationResult?
     
     /// 시뮬레이션 진행 중 여부
     var isSimulating: Bool = false
     
     /// 시뮬레이션 진행률 (0.0 ~ 1.0)
     var simulationProgress: Double = 0.0
+    
+    /// 현재 시뮬레이션 단계 설명
+    var simulationPhase: SimulationPhase = .idle
     
     /// 시뮬레이션 횟수 (사용자가 조정 가능)
     var simulationCount: Int = 10_000
@@ -40,6 +46,22 @@ final class SimulationViewModel {
     
     /// 실패 조건 배수 (기본값 1.1 = 목표 기간의 110%)
     var failureThresholdMultiplier: Double = 1.1
+    
+    // MARK: - Simulation Phase
+    
+    enum SimulationPhase {
+        case idle
+        case preRetirement  // 목표 달성까지 시뮬레이션
+        case postRetirement // 은퇴 후 시뮬레이션
+        
+        var description: String {
+            switch self {
+            case .idle: return ""
+            case .preRetirement: return "목표 달성까지 시뮬레이션 중..."
+            case .postRetirement: return "은퇴 후 시뮬레이션 중..."
+            }
+        }
+    }
     
     // MARK: - Computed Properties
     
@@ -84,11 +106,21 @@ final class SimulationViewModel {
         guard let result = monteCarloResult else { return [] }
         
         return [
-            PercentilePoint(label: "최선 10%", months: result.bestCase10Percent, percentile: 10),
+            PercentilePoint(label: "행운 10%", months: result.bestCase10Percent, percentile: 10),
             PercentilePoint(label: "평균", months: Int(result.averageMonthsToSuccess), percentile: 50),
             PercentilePoint(label: "중앙값", months: result.medianMonths, percentile: 50),
-            PercentilePoint(label: "최악 10%", months: result.worstCase10Percent, percentile: 90)
+            PercentilePoint(label: "불운 10%", months: result.worstCase10Percent, percentile: 90)
         ]
+    }
+    
+    /// 목표 자산
+    var targetAsset: Double {
+        guard let scenario = activeScenario else { return 0 }
+        return RetirementCalculator.calculateTargetAssets(
+            desiredMonthlyIncome: scenario.desiredMonthlyIncome,
+            postRetirementReturnRate: scenario.postRetirementReturnRate,
+            inflationRate: scenario.inflationRate
+        )
     }
     
     // MARK: - Initialization
@@ -117,15 +149,15 @@ final class SimulationViewModel {
     
     // MARK: - Simulation
     
-    /// 몬테카를로 시뮬레이션 실행 (Fire-and-Forget 방식)
-    /// UI가 즉시 업데이트되도록 await 없이 백그라운드 작업 시작
+    /// 모든 시뮬레이션 실행 (목표 달성 + 은퇴 후)
     @MainActor
-    func runMonteCarloSimulation() {
+    func runAllSimulations() {
         guard let scenario = activeScenario else { return }
         
         // 상태 변경
         isSimulating = true
         simulationProgress = 0.0
+        simulationPhase = .preRetirement
         
         // 메인 스레드에서 모든 값을 미리 캡처 (SwiftData @Model 접근)
         let currentAsset = self.currentAssetAmount
@@ -158,7 +190,8 @@ final class SimulationViewModel {
         
         // 백그라운드 작업 시작
         Task.detached(priority: .userInitiated) { [weak self] in
-            let result = MonteCarloSimulator.simulate(
+            // Phase 1: 목표 달성까지 시뮬레이션
+            let monteCarloResult = MonteCarloSimulator.simulate(
                 initialAsset: effectiveAsset,
                 monthlyInvestment: monthlyInvestment,
                 targetAsset: targetAsset,
@@ -168,8 +201,28 @@ final class SimulationViewModel {
                 maxMonths: maxMonthsForSimulation,
                 trackPaths: true,
                 progressCallback: { @Sendable completed, _, _ in
-                    // 진행률만 업데이트
-                    let progress = Double(completed) / Double(simCount)
+                    let progress = Double(completed) / Double(simCount) * 0.5 // 전체의 50%
+                    DispatchQueue.main.async {
+                        self?.simulationProgress = progress
+                    }
+                }
+            )
+            
+            // 메인 스레드에서 Phase 1 결과 저장 및 Phase 2 시작
+            await MainActor.run {
+                self?.monteCarloResult = monteCarloResult
+                self?.simulationPhase = .postRetirement
+            }
+            
+            // Phase 2: 은퇴 후 시뮬레이션
+            let retirementResult = RetirementSimulator.simulate(
+                initialAsset: targetAsset,
+                monthlySpending: desiredMonthlyIncome,
+                annualReturn: postRetirementReturnRate,
+                volatility: volatility,
+                simulationCount: simCount,
+                progressCallback: { @Sendable completed in
+                    let progress = 0.5 + Double(completed) / Double(simCount) * 0.5 // 50~100%
                     DispatchQueue.main.async {
                         self?.simulationProgress = progress
                     }
@@ -177,8 +230,9 @@ final class SimulationViewModel {
             )
             
             // 완료 후 메인 스레드에서 결과 업데이트
-            DispatchQueue.main.async {
-                self?.monteCarloResult = result
+            await MainActor.run {
+                self?.retirementResult = retirementResult
+                self?.simulationPhase = .idle
                 self?.isSimulating = false
             }
         }
@@ -187,7 +241,7 @@ final class SimulationViewModel {
     /// 시뮬레이션 다시 실행
     @MainActor
     func refreshSimulation() {
-        runMonteCarloSimulation()
+        runAllSimulations()
     }
     
     /// 시뮬레이션 횟수 변경
