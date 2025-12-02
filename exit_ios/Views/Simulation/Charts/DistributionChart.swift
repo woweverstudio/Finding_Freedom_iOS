@@ -13,6 +13,11 @@ struct DistributionChart: View {
     let yearDistributionData: [(year: Int, count: Int)]
     let result: MonteCarloResult
     
+    // 시뮬레이션 조건 표시용
+    var scenario: Scenario? = nil
+    var currentAssetAmount: Double = 0
+    var effectiveVolatility: Double = 0
+    
     // 총 성공 횟수
     private var totalSuccess: Int {
         yearDistributionData.reduce(0) { $0 + $1.count }
@@ -75,11 +80,56 @@ struct DistributionChart: View {
             
             // 해석 도움말
             interpretationHelp
+            
+            // 시뮬레이션 조건
+            if let scenario = scenario {
+                simulationConditionSection(scenario: scenario)
+            }
         }
         .padding(ExitSpacing.lg)
         .background(Color.Exit.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         .padding(.horizontal, ExitSpacing.md)
+    }
+    
+    // MARK: - Simulation Condition
+    
+    private func simulationConditionSection(scenario: Scenario) -> some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            Divider()
+                .background(Color.Exit.divider)
+            
+            Text("📊 시뮬레이션 조건")
+                .font(.Exit.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Exit.secondaryText)
+            
+            let targetAsset = RetirementCalculator.calculateTargetAssets(
+                desiredMonthlyIncome: scenario.desiredMonthlyIncome,
+                postRetirementReturnRate: scenario.postRetirementReturnRate,
+                inflationRate: scenario.inflationRate
+            )
+            
+            HStack(spacing: ExitSpacing.md) {
+                dataItem(label: "현재 자산", value: ExitNumberFormatter.formatChartAxis(currentAssetAmount))
+                dataItem(label: "목표 자산", value: ExitNumberFormatter.formatChartAxis(targetAsset))
+                dataItem(label: "월 투자", value: ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
+                dataItem(label: "변동성", value: String(format: "%.0f%%", effectiveVolatility))
+            }
+        }
+    }
+    
+    private func dataItem(label: String, value: String) -> some View {
+        VStack(spacing: 2) {
+            Text(label)
+                .font(.Exit.caption2)
+                .foregroundStyle(Color.Exit.tertiaryText)
+            Text(value)
+                .font(.Exit.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Exit.primaryText)
+        }
+        .frame(maxWidth: .infinity)
     }
     
     // MARK: - Key Message Section

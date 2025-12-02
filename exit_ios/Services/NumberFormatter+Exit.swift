@@ -66,6 +66,31 @@ enum ExitNumberFormatter {
         return "0"
     }
     
+    /// 원 단위를 차트 Y축용 간결한 형식으로 변환
+    /// - Parameter value: 원 단위 금액
+    /// - Returns: 포맷된 문자열 (예: "3.5억", "0.7억", "500만")
+    nonisolated static func formatChartAxis(_ value: Double) -> String {
+        if value <= 0 { return "0" }
+        
+        let eok = value / 100_000_000
+        
+        if eok >= 1 {
+            // 1억 이상: "3억", "3.5억" 형식
+            if eok == floor(eok) {
+                return String(format: "%.0f억", eok)
+            } else {
+                return String(format: "%.1f억", eok)
+            }
+        } else if eok >= 0.1 {
+            // 0.1억(1000만원) 이상: "0.5억" 형식
+            return String(format: "%.1f억", eok)
+        } else {
+            // 1000만원 미만: "500만" 형식
+            let man = value / 10_000
+            return String(format: "%.0f만", man)
+        }
+    }
+    
     /// 축약된 금액 표시 (홈화면용)
     /// - Parameter value: 원 단위 금액
     /// - Returns: 포맷된 문자열 (예: "7,500만원 / 4억 2,750만원")

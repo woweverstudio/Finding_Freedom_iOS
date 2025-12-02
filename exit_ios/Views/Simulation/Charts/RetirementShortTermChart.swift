@@ -85,11 +85,47 @@ struct RetirementShortTermChart: View {
             
             // 해석 도움말
             interpretationSection
+            
+            // 시뮬레이션 조건
+            simulationConditionSection
         }
         .padding(ExitSpacing.lg)
         .background(Color.Exit.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         .padding(.horizontal, ExitSpacing.md)
+    }
+    
+    // MARK: - Simulation Condition
+    
+    private var simulationConditionSection: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            Divider()
+                .background(Color.Exit.divider)
+            
+            Text("📊 시뮬레이션 조건")
+                .font(.Exit.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Exit.secondaryText)
+            
+            HStack(spacing: ExitSpacing.lg) {
+                dataItem(label: "목표 자산", value: ExitNumberFormatter.formatChartAxis(targetAsset))
+                dataItem(label: "월 지출", value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
+                dataItem(label: "수익률", value: String(format: "%.1f%%", scenario.postRetirementReturnRate))
+            }
+        }
+    }
+    
+    private func dataItem(label: String, value: String) -> some View {
+        VStack(spacing: 2) {
+            Text(label)
+                .font(.Exit.caption2)
+                .foregroundStyle(Color.Exit.tertiaryText)
+            Text(value)
+                .font(.Exit.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Exit.primaryText)
+        }
+        .frame(maxWidth: .infinity)
     }
     
     // MARK: - Header
@@ -221,7 +257,7 @@ struct RetirementShortTermChart: View {
                     .foregroundStyle(Color.Exit.divider)
                 AxisValueLabel {
                     if let amount = value.as(Double.self) {
-                        Text(ExitNumberFormatter.formatToEokManWon(amount))
+                        Text(ExitNumberFormatter.formatChartAxis(amount))
                             .font(.Exit.caption2)
                             .foregroundStyle(Color.Exit.tertiaryText)
                     }

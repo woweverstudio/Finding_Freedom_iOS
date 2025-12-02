@@ -100,7 +100,10 @@ struct SimulationView: View {
                 SuccessRateCard(
                     result: result,
                     originalDDayMonths: viewModel.originalDDayMonths,
-                    failureThresholdMultiplier: viewModel.failureThresholdMultiplier
+                    failureThresholdMultiplier: viewModel.failureThresholdMultiplier,
+                    scenario: viewModel.activeScenario,
+                    currentAssetAmount: viewModel.currentAssetAmount,
+                    effectiveVolatility: viewModel.effectiveVolatility
                 )
                 
                 // 2. 자산 변화 예측 차트 + FIRE 달성 시점 비교
@@ -110,14 +113,19 @@ struct SimulationView: View {
                         paths: paths,
                         scenario: scenario,
                         result: result,
-                        originalDDayMonths: viewModel.originalDDayMonths
+                        originalDDayMonths: viewModel.originalDDayMonths,
+                        currentAssetAmount: viewModel.currentAssetAmount,
+                        effectiveVolatility: viewModel.effectiveVolatility
                     )
                 }
                 
                 // 3. 목표 달성 시점 분포 차트
                 DistributionChart(
                     yearDistributionData: viewModel.yearDistributionData,
-                    result: result
+                    result: result,
+                    scenario: viewModel.activeScenario,
+                    currentAssetAmount: viewModel.currentAssetAmount,
+                    effectiveVolatility: viewModel.effectiveVolatility
                 )
                 
                 // 4. 은퇴 후 단기(1~10년) 자산 변화

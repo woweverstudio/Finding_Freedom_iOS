@@ -15,11 +15,17 @@ struct AssetPathChart: View {
     let result: MonteCarloResult?
     let originalDDayMonths: Int
     
-    init(paths: RepresentativePaths, scenario: Scenario, result: MonteCarloResult? = nil, originalDDayMonths: Int = 0) {
+    // 시뮬레이션 조건 표시용
+    var currentAssetAmount: Double = 0
+    var effectiveVolatility: Double = 0
+    
+    init(paths: RepresentativePaths, scenario: Scenario, result: MonteCarloResult? = nil, originalDDayMonths: Int = 0, currentAssetAmount: Double = 0, effectiveVolatility: Double = 0) {
         self.paths = paths
         self.scenario = scenario
         self.result = result
         self.originalDDayMonths = originalDDayMonths
+        self.currentAssetAmount = currentAssetAmount
+        self.effectiveVolatility = effectiveVolatility
     }
     
     var body: some View {
@@ -46,11 +52,56 @@ struct AssetPathChart: View {
                 
                 timelineSection(result: result)
             }
+            
+            // 시뮬레이션 조건
+            if currentAssetAmount > 0 {
+                simulationConditionSection
+            }
         }
         .padding(ExitSpacing.lg)
         .background(Color.Exit.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         .padding(.horizontal, ExitSpacing.md)
+    }
+    
+    // MARK: - Simulation Condition
+    
+    private var simulationConditionSection: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            Divider()
+                .background(Color.Exit.divider)
+            
+            Text("📊 시뮬레이션 조건")
+                .font(.Exit.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Exit.secondaryText)
+            
+            let targetAsset = RetirementCalculator.calculateTargetAssets(
+                desiredMonthlyIncome: scenario.desiredMonthlyIncome,
+                postRetirementReturnRate: scenario.postRetirementReturnRate,
+                inflationRate: scenario.inflationRate
+            )
+            
+            HStack(spacing: ExitSpacing.md) {
+                dataItem(label: "현재 자산", value: ExitNumberFormatter.formatChartAxis(currentAssetAmount))
+                dataItem(label: "목표 자산", value: ExitNumberFormatter.formatChartAxis(targetAsset))
+                dataItem(label: "수익률", value: String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                dataItem(label: "변동성", value: String(format: "%.0f%%", effectiveVolatility))
+            }
+        }
+    }
+    
+    private func dataItem(label: String, value: String) -> some View {
+        VStack(spacing: 2) {
+            Text(label)
+                .font(.Exit.caption2)
+                .foregroundStyle(Color.Exit.tertiaryText)
+            Text(value)
+                .font(.Exit.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Exit.primaryText)
+        }
+        .frame(maxWidth: .infinity)
     }
     
     // MARK: - Asset Chart
@@ -123,7 +174,7 @@ struct AssetPathChart: View {
                 AxisGridLine()
                 AxisValueLabel {
                     if let amount = value.as(Double.self) {
-                        Text(ExitNumberFormatter.formatToEokManWon(amount))
+                        Text(ExitNumberFormatter.formatChartAxis(amount))
                             .font(.Exit.caption2)
                             .foregroundStyle(Color.Exit.tertiaryText)
                     }

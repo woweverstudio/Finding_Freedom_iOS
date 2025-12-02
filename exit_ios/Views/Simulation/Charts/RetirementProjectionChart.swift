@@ -235,7 +235,7 @@ struct RetirementProjectionChart: View {
                     .foregroundStyle(Color.Exit.divider)
                 AxisValueLabel {
                     if let amount = value.as(Double.self) {
-                        Text(ExitNumberFormatter.formatToEokManWon(amount))
+                        Text(ExitNumberFormatter.formatChartAxis(amount))
                             .font(.Exit.caption2)
                             .foregroundStyle(Color.Exit.tertiaryText)
                     }
