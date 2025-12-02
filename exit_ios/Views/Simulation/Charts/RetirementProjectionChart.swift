@@ -22,15 +22,34 @@ struct RetirementProjectionChart: View {
         )
     }
     
+    // 행운 케이스 최종 자산
+    private var bestFinalAsset: Double {
+        result.bestPath.finalAsset
+    }
+    
+    // 금액 간략 포맷 (억 단위만)
+    private func formatSimple(_ amount: Double) -> String {
+        if amount <= 0 {
+            return "0원"
+        }
+        let eok = amount / 100_000_000
+        if eok >= 1 {
+            return String(format: "약 %.0f억", eok)
+        } else {
+            let man = amount / 10_000
+            return String(format: "약 %.0f만원", man)
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.lg) {
             // 헤더
             headerSection
             
-            // 핵심 메시지
-            keyMessageSection
+            // 핵심 메시지 (테이블 형식)
+            keyMessageTable
             
-            // 차트
+            // 차트 (평균, 불운, 기존예측만)
             projectionChart
             
             // 범례
@@ -57,99 +76,98 @@ struct RetirementProjectionChart: View {
         }
     }
     
-    // MARK: - Key Message
+    // MARK: - Key Message Table
     
-    private var keyMessageSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            // 평균 케이스
-            HStack(spacing: ExitSpacing.sm) {
-                Text("📊")
-                    .font(.system(size: 16))
+    private var keyMessageTable: some View {
+        VStack(spacing: 0) {
+            // 헤더 행
+            HStack {
+                Text("시나리오")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .frame(width: 70, alignment: .leading)
                 
-                Text("평균적으로")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
+                Text("결과")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 
-                if let years = result.medianDepletionYear {
-                    Text("\(years)년 후 소진")
-                        .font(.Exit.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.accent)
-                } else {
-                    Text("40년 이상 유지")
-                        .font(.Exit.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.positive)
-                }
+                Text("40년 후")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .frame(width: 80, alignment: .trailing)
             }
+            .padding(.horizontal, ExitSpacing.md)
+            .padding(.vertical, ExitSpacing.sm)
+            .background(Color.Exit.divider.opacity(0.5))
             
-            // 불운 케이스
-            HStack(spacing: ExitSpacing.sm) {
-                Text("🌧️")
-                    .font(.system(size: 16))
-                
-                Text("불운하면")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                
-                if let years = result.worstDepletionYear {
-                    Text("\(years)년 후 소진")
-                        .font(.Exit.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.caution)
-                } else {
-                    Text("그래도 유지")
-                        .font(.Exit.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.positive)
-                }
-            }
+            // 행운 행
+            tableRow(
+                icon: "🍀",
+                label: "행운",
+                result: result.bestPath.depletionYear != nil ? "\(result.bestPath.depletionYear!)년 후 소진" : "자산 유지",
+                detail: formatSimple(result.bestPath.finalAsset),
+                color: Color.Exit.positive
+            )
             
-            // 행운 케이스
-            HStack(spacing: ExitSpacing.sm) {
-                Text("🍀")
-                    .font(.system(size: 16))
-                
-                Text("행운이면")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                
-                if (result.bestPath.last ?? 0) > targetAsset {
-                    Text("자산 오히려 증가!")
-                        .font(.Exit.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.positive)
-                } else {
-                    Text("오래 유지")
-                        .font(.Exit.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.positive)
-                }
-            }
+            Divider().background(Color.Exit.divider)
+            
+            // 평균 행
+            tableRow(
+                icon: "📊",
+                label: "평균",
+                result: result.medianPath.depletionYear != nil ? "\(result.medianPath.depletionYear!)년 후 소진" : "자산 유지",
+                detail: formatSimple(result.medianPath.finalAsset),
+                color: Color.Exit.accent
+            )
+            
+            Divider().background(Color.Exit.divider)
+            
+            // 불운 행
+            tableRow(
+                icon: "🌧️",
+                label: "불운",
+                result: result.worstPath.depletionYear != nil ? "\(result.worstPath.depletionYear!)년 후 소진" : "자산 유지",
+                detail: formatSimple(result.worstPath.finalAsset),
+                color: Color.Exit.caution
+            )
         }
-        .padding(ExitSpacing.md)
         .background(Color.Exit.secondaryCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
     }
     
-    // MARK: - Chart
+    private func tableRow(icon: String, label: String, result: String, detail: String, color: Color) -> some View {
+        HStack {
+            HStack(spacing: ExitSpacing.xs) {
+                Text(icon)
+                    .font(.system(size: 14))
+                Text(label)
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+            }
+            .frame(width: 70, alignment: .leading)
+            
+            Text(result)
+                .font(.Exit.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(color)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            Text(detail)
+                .font(.Exit.caption2)
+                .foregroundStyle(Color.Exit.tertiaryText)
+                .frame(width: 80, alignment: .trailing)
+        }
+        .padding(.horizontal, ExitSpacing.md)
+        .padding(.vertical, ExitSpacing.sm)
+    }
+    
+    // MARK: - Chart (행운 제외)
     
     private var projectionChart: some View {
         Chart {
-            // 행운 경로 (상위 10%)
-            ForEach(Array(result.bestPath.enumerated()), id: \.offset) { index, asset in
-                LineMark(
-                    x: .value("년", index),
-                    y: .value("자산", max(0, asset)),
-                    series: .value("시나리오", "행운")
-                )
-                .foregroundStyle(Color.Exit.positive)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-                .interpolationMethod(.catmullRom)
-            }
-            
             // 불운 경로 (하위 10%)
-            ForEach(Array(result.worstPath.enumerated()), id: \.offset) { index, asset in
+            ForEach(Array(result.worstPath.yearlyAssets.enumerated()), id: \.offset) { index, asset in
                 LineMark(
                     x: .value("년", index),
                     y: .value("자산", max(0, asset)),
@@ -160,20 +178,8 @@ struct RetirementProjectionChart: View {
                 .interpolationMethod(.catmullRom)
             }
             
-            // 평균 경로 (중앙값)
-            ForEach(Array(result.medianPath.enumerated()), id: \.offset) { index, asset in
-                LineMark(
-                    x: .value("년", index),
-                    y: .value("자산", max(0, asset)),
-                    series: .value("시나리오", "평균")
-                )
-                .foregroundStyle(Color.Exit.accent)
-                .lineStyle(StrokeStyle(lineWidth: 3))
-                .interpolationMethod(.catmullRom)
-            }
-            
             // 기존 예측 (변동성 없음)
-            ForEach(Array(result.deterministicPath.enumerated()), id: \.offset) { index, asset in
+            ForEach(Array(result.deterministicPath.yearlyAssets.enumerated()), id: \.offset) { index, asset in
                 LineMark(
                     x: .value("년", index),
                     y: .value("자산", max(0, asset)),
@@ -181,6 +187,18 @@ struct RetirementProjectionChart: View {
                 )
                 .foregroundStyle(Color.Exit.tertiaryText)
                 .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 5]))
+                .interpolationMethod(.catmullRom)
+            }
+            
+            // 평균 경로 (중앙값) - 마지막에 그려서 위에 표시
+            ForEach(Array(result.medianPath.yearlyAssets.enumerated()), id: \.offset) { index, asset in
+                LineMark(
+                    x: .value("년", index),
+                    y: .value("자산", max(0, asset)),
+                    series: .value("시나리오", "평균")
+                )
+                .foregroundStyle(Color.Exit.accent)
+                .lineStyle(StrokeStyle(lineWidth: 3))
                 .interpolationMethod(.catmullRom)
             }
             
@@ -226,14 +244,13 @@ struct RetirementProjectionChart: View {
         }
     }
     
-    // MARK: - Legend
+    // MARK: - Legend (행운 제외)
     
     private var legendSection: some View {
-        HStack(spacing: ExitSpacing.md) {
-            legendItem(color: Color.Exit.positive, label: "🍀 행운", isDashed: false)
-            legendItem(color: Color.Exit.accent, label: "📊 평균", isDashed: false)
-            legendItem(color: Color.Exit.caution, label: "🌧️ 불운", isDashed: false)
-            legendItem(color: Color.Exit.tertiaryText, label: "📌 기존", isDashed: true)
+        HStack(spacing: ExitSpacing.lg) {
+            legendItem(color: Color.Exit.accent, label: "평균(50%)", isDashed: false)
+            legendItem(color: Color.Exit.caution, label: "불운(하위10%)", isDashed: false)
+            legendItem(color: Color.Exit.tertiaryText, label: "기존예측", isDashed: true)
         }
     }
     
@@ -262,12 +279,12 @@ struct RetirementProjectionChart: View {
     // MARK: - Interpretation
     
     private var interpretationSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+        VStack(alignment: .leading, spacing: ExitSpacing.md) {
             Divider()
                 .background(Color.Exit.divider)
             
             // 데이터 요약
-            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
                 Text("📊 시뮬레이션 조건")
                     .font(.Exit.caption)
                     .fontWeight(.medium)

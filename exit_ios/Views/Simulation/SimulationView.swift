@@ -120,13 +120,19 @@ struct SimulationView: View {
                     result: result
                 )
                 
-                // 4. 은퇴 후 자산 변화 예측
+                // 4. 은퇴 후 단기(1~10년) 자산 변화
+                if let retirementResult = viewModel.retirementResult,
+                   let scenario = viewModel.activeScenario {
+                    RetirementShortTermChart(result: retirementResult, scenario: scenario)
+                }
+                
+                // 5. 은퇴 후 장기(40년) 자산 변화 예측
                 if let retirementResult = viewModel.retirementResult,
                    let scenario = viewModel.activeScenario {
                     RetirementProjectionChart(result: retirementResult, scenario: scenario)
                 }
                 
-                // 5. 시뮬레이션 상세 카드
+                // 6. 시뮬레이션 상세 카드
                 if let scenario = viewModel.activeScenario {
                     StatisticsCard(
                         result: result,
@@ -135,7 +141,7 @@ struct SimulationView: View {
                     )
                 }
                 
-                // 6. 시뮬레이션 정보 카드
+                // 7. 시뮬레이션 정보 카드
                 if let scenario = viewModel.activeScenario {
                     SimulationInfoCard(
                         scenario: scenario,
@@ -145,7 +151,7 @@ struct SimulationView: View {
                     )
                 }
                 
-                // 7. 액션 버튼들
+                // 8. 액션 버튼들
                 actionButtons                
             }
             .padding(.vertical, ExitSpacing.lg)

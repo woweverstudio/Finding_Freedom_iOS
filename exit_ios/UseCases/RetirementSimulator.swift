@@ -8,28 +8,36 @@
 
 import Foundation
 
+/// 단일 시뮬레이션 경로 (경로 + 소진 연도)
+struct RetirementPath {
+    let yearlyAssets: [Double]  // 연도별 자산
+    let depletionYear: Int?     // 소진 연도 (없으면 nil)
+    
+    var finalAsset: Double {
+        yearlyAssets.last ?? 0
+    }
+}
+
 /// 은퇴 후 시뮬레이션 결과
 struct RetirementSimulationResult {
-    /// 행운 경로 (상위 10%) - 연도별 자산
-    let bestPath: [Double]
+    /// 행운 경로 (상위 10%)
+    let bestPath: RetirementPath
     
-    /// 평균 경로 (중앙값) - 연도별 자산
-    let medianPath: [Double]
+    /// 평균 경로 (중앙값)
+    let medianPath: RetirementPath
     
-    /// 불운 경로 (하위 10%) - 연도별 자산
-    let worstPath: [Double]
+    /// 불운 경로 (하위 10%)
+    let worstPath: RetirementPath
     
-    /// 기존 예측 경로 (변동성 없음) - 연도별 자산
-    let deterministicPath: [Double]
-    
-    /// 평균 자산 소진 연도 (소진되지 않으면 nil)
-    let medianDepletionYear: Int?
-    
-    /// 불운 시 자산 소진 연도 (소진되지 않으면 nil)
-    let worstDepletionYear: Int?
+    /// 기존 예측 경로 (변동성 없음)
+    let deterministicPath: RetirementPath
     
     /// 시뮬레이션 횟수
     let totalSimulations: Int
+    
+    // 편의 프로퍼티
+    var medianDepletionYear: Int? { medianPath.depletionYear }
+    var worstDepletionYear: Int? { worstPath.depletionYear }
 }
 
 /// 은퇴 후 자산 변화 시뮬레이터
@@ -59,8 +67,7 @@ enum RetirementSimulator {
         progressCallback: ProgressCallback? = nil
     ) -> RetirementSimulationResult {
         
-        var allPaths: [[Double]] = []
-        var depletionYears: [Int?] = []
+        var allPaths: [RetirementPath] = []
         
         // 월 수익률 파라미터 (로그 정규분포)
         let monthlyMean = log(1 + annualReturn / 100) / 12.0
@@ -70,7 +77,7 @@ enum RetirementSimulator {
         let updateInterval = 200
         
         for i in 0..<simulationCount {
-            let (path, depleted) = runSingleSimulation(
+            let path = runSingleSimulation(
                 initialAsset: initialAsset,
                 monthlySpending: monthlySpending,
                 monthlyMean: monthlyMean,
@@ -79,7 +86,6 @@ enum RetirementSimulator {
             )
             
             allPaths.append(path)
-            depletionYears.append(depleted)
             
             // 진행률 콜백
             if (i + 1) % updateInterval == 0 || i == simulationCount - 1 {
@@ -96,23 +102,18 @@ enum RetirementSimulator {
         )
         
         // 대표 경로 추출 (최종 자산 기준으로 정렬)
-        let sortedByFinalAsset = allPaths.sorted { ($0.last ?? 0) > ($1.last ?? 0) }
-        let bestPath = sortedByFinalAsset[simulationCount / 10] // 상위 10%
-        let medianPath = sortedByFinalAsset[simulationCount / 2] // 중앙값
-        let worstPath = sortedByFinalAsset[simulationCount * 9 / 10] // 하위 10%
+        // 최종 자산이 높은 순서로 정렬 (상위 = 행운, 하위 = 불운)
+        let sortedPaths = allPaths.sorted { $0.finalAsset > $1.finalAsset }
         
-        // 소진 연도 계산
-        let validDepletions = depletionYears.compactMap { $0 }.sorted()
-        let medianDepletion: Int? = validDepletions.isEmpty ? nil : validDepletions[validDepletions.count / 2]
-        let worstDepletion: Int? = validDepletions.isEmpty ? nil : validDepletions[min(validDepletions.count * 9 / 10, validDepletions.count - 1)]
+        let bestPath = sortedPaths[simulationCount / 10]           // 상위 10%
+        let medianPath = sortedPaths[simulationCount / 2]          // 중앙값
+        let worstPath = sortedPaths[simulationCount * 9 / 10]      // 하위 10%
         
         return RetirementSimulationResult(
             bestPath: bestPath,
             medianPath: medianPath,
             worstPath: worstPath,
             deterministicPath: deterministicPath,
-            medianDepletionYear: medianDepletion,
-            worstDepletionYear: worstDepletion,
             totalSimulations: simulationCount
         )
     }
@@ -120,16 +121,15 @@ enum RetirementSimulator {
     // MARK: - Single Simulation
     
     /// 단일 시뮬레이션 실행
-    /// - Returns: (연도별 자산 경로, 소진 연도)
     nonisolated private static func runSingleSimulation(
         initialAsset: Double,
         monthlySpending: Double,
         monthlyMean: Double,
         monthlyVolatility: Double,
         years: Int
-    ) -> (path: [Double], depletionYear: Int?) {
+    ) -> RetirementPath {
         
-        var path: [Double] = [initialAsset]
+        var yearlyAssets: [Double] = [initialAsset]
         var currentAsset = initialAsset
         var depletionYear: Int? = nil
         
@@ -149,7 +149,7 @@ enum RetirementSimulator {
                 currentAsset -= monthlySpending
             }
             
-            path.append(max(0, currentAsset))
+            yearlyAssets.append(max(0, currentAsset))
             
             // 자산 소진 체크
             if currentAsset <= 0 && depletionYear == nil {
@@ -157,7 +157,7 @@ enum RetirementSimulator {
             }
         }
         
-        return (path, depletionYear)
+        return RetirementPath(yearlyAssets: yearlyAssets, depletionYear: depletionYear)
     }
     
     // MARK: - Deterministic Calculation
@@ -168,20 +168,25 @@ enum RetirementSimulator {
         monthlySpending: Double,
         annualReturn: Double,
         years: Int
-    ) -> [Double] {
-        var path: [Double] = [initialAsset]
+    ) -> RetirementPath {
+        var yearlyAssets: [Double] = [initialAsset]
         var currentAsset = initialAsset
         let monthlyReturn = annualReturn / 100 / 12
+        var depletionYear: Int? = nil
         
-        for _ in 1...years {
+        for year in 1...years {
             for _ in 1...12 {
                 currentAsset *= (1 + monthlyReturn)
                 currentAsset -= monthlySpending
             }
-            path.append(max(0, currentAsset))
+            yearlyAssets.append(max(0, currentAsset))
+            
+            if currentAsset <= 0 && depletionYear == nil {
+                depletionYear = year
+            }
         }
         
-        return path
+        return RetirementPath(yearlyAssets: yearlyAssets, depletionYear: depletionYear)
     }
     
     // MARK: - Random Sampling
@@ -223,4 +228,3 @@ enum RetirementSimulator {
         )
     }
 }
-

@@ -136,9 +136,9 @@ struct AssetPathChart: View {
     
     private var legendView: some View {
         HStack(spacing: ExitSpacing.lg) {
-            legendItem(color: Color.Exit.positive, label: "🍀 행운")
-            legendItem(color: Color.Exit.accent, label: "📊 평균")
-            legendItem(color: Color.Exit.caution, label: "🌧️ 불운")
+            legendItem(color: Color.Exit.positive, label: "행운(상위10%)")
+            legendItem(color: Color.Exit.accent, label: "평균(50%)")
+            legendItem(color: Color.Exit.caution, label: "불운(하위10%)")
         }
     }
     
@@ -149,7 +149,7 @@ struct AssetPathChart: View {
                 .frame(width: 16, height: 3)
             
             Text(label)
-                .font(.Exit.caption)
+                .font(.Exit.caption2)
                 .foregroundStyle(Color.Exit.secondaryText)
         }
     }
