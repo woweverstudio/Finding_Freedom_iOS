@@ -11,10 +11,11 @@ import SwiftUI
 struct SuccessRateCard: View {
     let result: MonteCarloResult
     let originalDDayMonths: Int  // 기존 D-Day
+    var failureThresholdMultiplier: Double = 1.5  // 실패 조건 배수 (기본값 1.5)
     
-    /// 실패 기준 기간 (기존 D-Day * 1.5)
+    /// 실패 기준 기간 (기존 D-Day * multiplier)
     private var failureThresholdMonths: Int {
-        Int(Double(originalDDayMonths) * 1.5)
+        Int(Double(originalDDayMonths) * failureThresholdMultiplier)
     }
     
     private var failureThresholdText: String {
@@ -48,6 +49,11 @@ struct SuccessRateCard: View {
         } else {
             return "\(months)개월"
         }
+    }
+    
+    private var failurePercentText: String {
+        let percent = Int((failureThresholdMultiplier - 1) * 100)
+        return "\(percent)%"
     }
     
     var body: some View {
@@ -95,7 +101,7 @@ struct SuccessRateCard: View {
                         .font(.Exit.caption2)
                         .foregroundStyle(Color.Exit.tertiaryText)
                     
-                    Text("여기서는 원래 목표보다 \(extraTimeText) 더 걸리면 (총 \(failureThresholdText)) '실패'로 봤어요. 계획보다 50% 넘게 늦어지면 많이 어긋난 거니까요.")
+                    Text("여기서는 원래 목표보다 \(extraTimeText) 더 걸리면 (총 \(failureThresholdText)) '실패'로 봤어요. 계획보다 \(failurePercentText) 넘게 늦어지면 많이 어긋난 거니까요.")
                         .font(.Exit.caption2)
                         .foregroundStyle(Color.Exit.tertiaryText)
                 }
@@ -131,4 +137,3 @@ struct SuccessRateCard: View {
         }
     }
 }
-

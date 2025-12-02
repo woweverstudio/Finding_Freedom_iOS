@@ -35,8 +35,11 @@ final class SimulationViewModel {
     /// 시뮬레이션 횟수 (사용자가 조정 가능)
     var simulationCount: Int = 10_000
     
-    /// 변동성 조정 (사용자가 조정 가능, Pro 기능)
+    /// 변동성 조정 (사용자가 조정 가능)
     var customVolatility: Double?
+    
+    /// 실패 조건 배수 (기본값 1.5 = 목표 기간의 150%)
+    var failureThresholdMultiplier: Double = 1.5
     
     // MARK: - Computed Properties
     
@@ -60,6 +63,11 @@ final class SimulationViewModel {
         guard let scenario = activeScenario else { return 0 }
         let result = RetirementCalculator.calculate(from: scenario, currentAsset: currentAssetAmount)
         return result.monthsToRetirement
+    }
+    
+    /// 실패 기준 개월 수
+    var failureThresholdMonths: Int {
+        Int(Double(originalDDayMonths) * failureThresholdMultiplier)
     }
     
     /// 차트용 연도 분포 데이터
@@ -127,8 +135,9 @@ final class SimulationViewModel {
         let inflationRate = scenario.inflationRate
         let monthlyInvestment = scenario.monthlyInvestment
         let preRetirementReturnRate = scenario.preRetirementReturnRate
-        let returnRateVolatility = scenario.returnRateVolatility
+        let volatility = self.effectiveVolatility
         let effectiveAsset = scenario.effectiveAsset(with: currentAsset)
+        let failureMultiplier = self.failureThresholdMultiplier
         
         let targetAsset = RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome: desiredMonthlyIncome,
@@ -144,8 +153,8 @@ final class SimulationViewModel {
             annualReturnRate: preRetirementReturnRate
         )
         
-        // 실패 조건: 목표 D-Day * 1.5 (예: 8년 → 12년)
-        let maxMonthsForSimulation = Int(Double(originalDDay) * 1.5)
+        // 실패 조건: 목표 D-Day * failureMultiplier
+        let maxMonthsForSimulation = Int(Double(originalDDay) * failureMultiplier)
         
         // 백그라운드 작업 시작
         Task.detached(priority: .userInitiated) { [weak self] in
@@ -154,7 +163,7 @@ final class SimulationViewModel {
                 monthlyInvestment: monthlyInvestment,
                 targetAsset: targetAsset,
                 meanReturn: preRetirementReturnRate,
-                volatility: returnRateVolatility,
+                volatility: volatility,
                 simulationCount: simCount,
                 maxMonths: maxMonthsForSimulation,
                 trackPaths: true,
@@ -190,13 +199,27 @@ final class SimulationViewModel {
     /// 변동성 변경
     func updateVolatility(_ volatility: Double) {
         customVolatility = volatility
-        refreshSimulation()
     }
     
     /// 변동성 초기화 (시나리오 기본값으로)
     func resetVolatility() {
         customVolatility = nil
-        refreshSimulation()
+    }
+    
+    /// 실패 조건 배수 변경
+    func updateFailureThreshold(_ multiplier: Double) {
+        failureThresholdMultiplier = multiplier
+    }
+    
+    /// 실패 조건 초기화
+    func resetFailureThreshold() {
+        failureThresholdMultiplier = 1.5
+    }
+    
+    /// 모든 설정 초기화
+    func resetAllSettings() {
+        resetVolatility()
+        resetFailureThreshold()
     }
 }
 
@@ -222,4 +245,3 @@ struct PercentilePoint: Identifiable {
         }
     }
 }
-
