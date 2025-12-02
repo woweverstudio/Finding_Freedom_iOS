@@ -12,7 +12,17 @@ import SwiftData
 enum MainTab: String, CaseIterable {
     case dashboard = "홈"
     case record = "기록"
-    case simulation = "시뮬레이션"
+    case simulation = "분석"
+    case menu = "메뉴"
+    
+    var icon: String {
+        switch self {
+        case .dashboard: return "house.fill"
+        case .record: return "calendar"
+        case .simulation: return "chart.line.uptrend.xyaxis"
+        case .menu: return "line.3.horizontal"
+        }
+    }
 }
 
 /// 앱 메인 컨텐츠 뷰
@@ -38,7 +48,7 @@ struct ContentView: View {
     }
 }
 
-/// 메인 탭 뷰 (대시보드 + 기록 + 시뮬레이션)
+/// 메인 탭 뷰 (대시보드 + 기록 + 시뮬레이션 + 메뉴)
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = HomeViewModel()
@@ -47,32 +57,40 @@ struct MainTabView: View {
     @State private var hideAmounts = false
     @State private var selectedTab: MainTab = .dashboard
     @State private var shouldNavigateToWelcome = false
-    @State private var showSettings = false
     
     var body: some View {
         ZStack {
-            // 배경
-            LinearGradient.exitBackground
-                .ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                // 커스텀 탭 바
-                customTabBar
+            TabView(selection: $selectedTab) {
+                DashboardView(viewModel: viewModel, hideAmounts: $hideAmounts)
+                    .tabItem {
+                        Image(systemName: MainTab.dashboard.icon)
+                        Text(MainTab.dashboard.rawValue)
+                    }
+                    .tag(MainTab.dashboard)
                 
-                // 탭 컨텐츠
-                TabView(selection: $selectedTab) {
-                    DashboardView(viewModel: viewModel, hideAmounts: $hideAmounts)
-                        .tag(MainTab.dashboard)
-                    
-                    RecordTabView(viewModel: viewModel)
-                        .tag(MainTab.record)
-                    
-                    SimulationView(viewModel: simulationViewModel)
-                        .tag(MainTab.simulation)
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(.none, value: selectedTab)
+                RecordTabView(viewModel: viewModel)
+                    .tabItem {
+                        Image(systemName: MainTab.record.icon)
+                        Text(MainTab.record.rawValue)
+                    }
+                    .tag(MainTab.record)
+                
+                SimulationView(viewModel: simulationViewModel)
+                    .tabItem {
+                        Image(systemName: MainTab.simulation.icon)
+                        Text(MainTab.simulation.rawValue)
+                    }
+                    .tag(MainTab.simulation)
+                
+                SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
+                    .tabItem {
+                        Image(systemName: MainTab.menu.icon)
+                        Text(MainTab.menu.rawValue)
+                    }
+                    .tag(MainTab.menu)
             }
+            .tabViewStyle(.sidebarAdaptable)
+            .tint(Color.Exit.accent)
             
             // 입금 완료 후 자산 업데이트 확인 다이얼로그
             if viewModel.showAssetUpdateConfirm {
@@ -83,6 +101,13 @@ struct MainTabView: View {
             viewModel.configure(with: modelContext)
             simulationViewModel.configure(with: modelContext)
             settingsViewModel.configure(with: modelContext)
+            
+            // TabBar 스타일 설정
+            let appearance = UITabBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundColor = UIColor(Color.Exit.cardBackground)
+            UITabBar.appearance().standardAppearance = appearance
+            UITabBar.appearance().scrollEdgeAppearance = appearance
         }
         .onChange(of: shouldNavigateToWelcome) { _, newValue in
             // 데이터 삭제 후 앱 재시작을 위해 UserProfile을 다시 체크
@@ -96,58 +121,6 @@ struct MainTabView: View {
         }
         .fullScreenCover(isPresented: $viewModel.showScenarioSheet) {
             ScenarioSettingsView(viewModel: viewModel)
-        }
-    }
-    
-    // MARK: - Custom Tab Bar
-    
-    private var customTabBar: some View {
-        HStack(spacing: 0) {
-            // 메인 탭들
-            ForEach(MainTab.allCases, id: \.self) { tab in
-                Button {
-                    selectedTab = tab
-                } label: {
-                    VStack(spacing: ExitSpacing.xs) {
-                        Text(tab.rawValue)
-                            .font(.Exit.body)
-                            .fontWeight(selectedTab == tab ? .bold : .medium)
-                            .foregroundStyle(selectedTab == tab ? Color.Exit.accent : Color.Exit.secondaryText)
-                        
-                        // 인디케이터
-                        Rectangle()
-                            .fill(selectedTab == tab ? Color.Exit.accent : Color.clear)
-                            .frame(height: 3)
-                            .clipShape(Capsule())
-                    }
-                    .frame(maxWidth: .infinity)
-                    .animation(.easeInOut(duration: 0.2), value: selectedTab)
-                }
-                .buttonStyle(.plain)
-            }
-            
-            // 설정 아이콘
-            Button {
-                showSettings = true
-            } label: {
-                VStack(spacing: ExitSpacing.xs) {
-                    Image(systemName: "gearshape.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color.Exit.secondaryText)
-                    
-                    Rectangle()
-                        .fill(Color.clear)
-                        .frame(height: 3)
-                }
-                .frame(width: 60)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, ExitSpacing.md)
-        .padding(.top, ExitSpacing.md)
-        .background(Color.Exit.background)
-        .sheet(isPresented: $showSettings) {
-            SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
         }
     }
     
