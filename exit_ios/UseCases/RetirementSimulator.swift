@@ -99,7 +99,7 @@ enum RetirementSimulator {
         annualReturn: Double,
         volatility: Double,
         years: Int = 40,
-        simulationCount: Int = 10_000,
+        simulationCount: Int = 30_000,
         progressCallback: ProgressCallback? = nil
     ) -> RetirementSimulationResult {
         
@@ -262,7 +262,7 @@ enum RetirementSimulator {
     /// 시나리오 기반 시뮬레이션 (편의 메서드)
     nonisolated static func simulate(
         scenario: Scenario,
-        simulationCount: Int = 10_000,
+        simulationCount: Int = 30_000,
         progressCallback: ProgressCallback? = nil
     ) -> RetirementSimulationResult {
         

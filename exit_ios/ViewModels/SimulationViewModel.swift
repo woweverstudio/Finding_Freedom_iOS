@@ -39,7 +39,7 @@ final class SimulationViewModel {
     var simulationPhase: SimulationPhase = .idle
     
     /// 시뮬레이션 횟수 (사용자가 조정 가능)
-    var simulationCount: Int = 10_000
+    var simulationCount: Int = 30_000
     
     /// 변동성 조정 (사용자가 조정 가능)
     var customVolatility: Double?

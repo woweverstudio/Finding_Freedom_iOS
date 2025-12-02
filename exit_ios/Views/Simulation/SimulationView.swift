@@ -83,7 +83,7 @@ struct SimulationView: View {
             .padding(.horizontal, ExitSpacing.xxl)
             
             // 설명
-            Text("20,000가지 미래를 시뮬레이션하고 있습니다")
+            Text("30,000가지 미래를 시뮬레이션하고 있습니다")
                 .font(.Exit.caption)
                 .foregroundStyle(Color.Exit.secondaryText)
             

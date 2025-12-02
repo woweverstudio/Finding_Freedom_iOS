@@ -114,7 +114,7 @@ enum MonteCarloSimulator {
     ///   - targetAsset: 목표 자산 (원)
     ///   - meanReturn: 평균 연 수익률 (%, 예: 6.5)
     ///   - volatility: 수익률 표준편차 (%, 예: 15)
-    ///   - simulationCount: 시뮬레이션 횟수 (기본 10,000)
+    ///   - simulationCount: 시뮬레이션 횟수 (기본 30,000)
     ///   - maxMonths: 최대 개월 수 (기본 1200개월 = 100년)
     ///   - trackPaths: 자산 경로 추적 여부 (차트용)
     ///   - progressCallback: 진행률 콜백 (completed, successMonths, paths)
@@ -125,7 +125,7 @@ enum MonteCarloSimulator {
         targetAsset: Double,
         meanReturn: Double,
         volatility: Double,
-        simulationCount: Int = 10_000,
+        simulationCount: Int = 30_000,
         maxMonths: Int = 1200,
         trackPaths: Bool = true,
         progressCallback: ProgressCallback? = nil
@@ -312,7 +312,7 @@ enum MonteCarloSimulator {
     nonisolated static func simulate(
         scenario: Scenario,
         currentAsset: Double,
-        simulationCount: Int = 10_000,
+        simulationCount: Int = 30_000,
         trackPaths: Bool = true,
         progressCallback: ProgressCallback? = nil
     ) -> MonteCarloResult {

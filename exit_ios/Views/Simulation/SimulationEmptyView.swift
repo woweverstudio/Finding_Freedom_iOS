@@ -117,7 +117,7 @@ struct SimulationEmptyView: View {
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.Exit.primaryText)
                 
-                Text("10,000가지 미래를 계산해\n당신의 FIRE 확률을 알려드려요")
+                Text("30,000가지 미래를 계산해\n당신의 FIRE 확률을 알려드려요")
                     .font(.Exit.body)
                     .foregroundStyle(Color.Exit.secondaryText)
                     .multilineTextAlignment(.center)
@@ -614,7 +614,7 @@ struct SimulationEmptyView: View {
                     .font(.system(size: 14))
                     .foregroundStyle(Color.Exit.accent)
                 
-                Text("이 데이터로 10,000가지 미래를 계산합니다")
+                Text("이 데이터로 30,000가지 미래를 계산합니다")
                     .font(.Exit.caption)
                     .foregroundStyle(Color.Exit.accent)
             }
