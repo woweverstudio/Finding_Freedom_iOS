@@ -16,24 +16,50 @@ struct RetirementPath {
     var finalAsset: Double {
         yearlyAssets.last ?? 0
     }
+    
+    /// 10년 후 자산 (단기 분석용)
+    var assetAt10Years: Double {
+        yearlyAssets.count > 10 ? yearlyAssets[10] : (yearlyAssets.last ?? 0)
+    }
 }
 
 /// 은퇴 후 시뮬레이션 결과
 struct RetirementSimulationResult {
-    /// 매우 행운 경로 (상위 10%)
+    // MARK: - 장기 (40년 기준) 경로
+    
+    /// 매우 행운 경로 - 40년 기준 (상위 10%)
     let veryBestPath: RetirementPath
     
-    /// 행운 경로 (상위 30%)
+    /// 행운 경로 - 40년 기준 (상위 30%)
     let luckyPath: RetirementPath
     
-    /// 평균 경로 (중앙값 50%)
+    /// 평균 경로 - 40년 기준 (중앙값 50%)
     let medianPath: RetirementPath
     
-    /// 불운 경로 (하위 30%)
+    /// 불운 경로 - 40년 기준 (하위 30%)
     let unluckyPath: RetirementPath
     
-    /// 매우 불운 경로 (하위 10%)
+    /// 매우 불운 경로 - 40년 기준 (하위 10%)
     let veryWorstPath: RetirementPath
+    
+    // MARK: - 단기 (10년 기준) 경로
+    
+    /// 매우 행운 경로 - 10년 기준 (상위 10%)
+    let shortTermVeryBestPath: RetirementPath
+    
+    /// 행운 경로 - 10년 기준 (상위 30%)
+    let shortTermLuckyPath: RetirementPath
+    
+    /// 평균 경로 - 10년 기준 (중앙값 50%)
+    let shortTermMedianPath: RetirementPath
+    
+    /// 불운 경로 - 10년 기준 (하위 30%)
+    let shortTermUnluckyPath: RetirementPath
+    
+    /// 매우 불운 경로 - 10년 기준 (하위 10%)
+    let shortTermVeryWorstPath: RetirementPath
+    
+    // MARK: - 공통
     
     /// 기존 예측 경로 (변동성 없음)
     let deterministicPath: RetirementPath
@@ -111,15 +137,25 @@ enum RetirementSimulator {
             years: years
         )
         
-        // 대표 경로 추출 (최종 자산 기준으로 정렬)
-        // 최종 자산이 높은 순서로 정렬 (상위 = 행운, 하위 = 불운)
-        let sortedPaths = allPaths.sorted { $0.finalAsset > $1.finalAsset }
+        // === 장기 (40년) 기준 정렬 ===
+        // 최종 자산 기준으로 오름차순 정렬
+        let sortedByFinal = allPaths.sorted { $0.finalAsset < $1.finalAsset }
         
-        let veryBestPath = sortedPaths[simulationCount / 10]           // 상위 10%
-        let luckyPath = sortedPaths[simulationCount * 3 / 10]          // 상위 30%
-        let medianPath = sortedPaths[simulationCount / 2]              // 중앙값 50%
-        let unluckyPath = sortedPaths[simulationCount * 7 / 10]        // 하위 30%
-        let veryWorstPath = sortedPaths[simulationCount * 9 / 10]      // 하위 10%
+        let veryWorstPath = sortedByFinal[simulationCount * 10 / 100]
+        let unluckyPath = sortedByFinal[simulationCount * 30 / 100]
+        let medianPath = sortedByFinal[simulationCount * 50 / 100]
+        let luckyPath = sortedByFinal[simulationCount * 70 / 100]
+        let veryBestPath = sortedByFinal[simulationCount * 90 / 100]
+        
+        // === 단기 (10년) 기준 정렬 ===
+        // 10년 후 자산 기준으로 오름차순 정렬
+        let sortedBy10Years = allPaths.sorted { $0.assetAt10Years < $1.assetAt10Years }
+        
+        let shortTermVeryWorstPath = sortedBy10Years[simulationCount * 10 / 100]
+        let shortTermUnluckyPath = sortedBy10Years[simulationCount * 30 / 100]
+        let shortTermMedianPath = sortedBy10Years[simulationCount * 50 / 100]
+        let shortTermLuckyPath = sortedBy10Years[simulationCount * 70 / 100]
+        let shortTermVeryBestPath = sortedBy10Years[simulationCount * 90 / 100]
         
         return RetirementSimulationResult(
             veryBestPath: veryBestPath,
@@ -127,6 +163,11 @@ enum RetirementSimulator {
             medianPath: medianPath,
             unluckyPath: unluckyPath,
             veryWorstPath: veryWorstPath,
+            shortTermVeryBestPath: shortTermVeryBestPath,
+            shortTermLuckyPath: shortTermLuckyPath,
+            shortTermMedianPath: shortTermMedianPath,
+            shortTermUnluckyPath: shortTermUnluckyPath,
+            shortTermVeryWorstPath: shortTermVeryWorstPath,
             deterministicPath: deterministicPath,
             totalSimulations: simulationCount
         )

@@ -25,24 +25,25 @@ struct RetirementShortTermChart: View {
     // 단기 데이터 (0~10년, 최대 11개 포인트)
     private var shortTermYears: Int { 10 }
     
+    // 10년 기준으로 정렬된 경로 사용 (단기 분석에 적합)
     private var veryBestShortTerm: [Double] {
-        Array(result.veryBestPath.yearlyAssets.prefix(shortTermYears + 1))
+        Array(result.shortTermVeryBestPath.yearlyAssets.prefix(shortTermYears + 1))
     }
     
     private var luckyShortTerm: [Double] {
-        Array(result.luckyPath.yearlyAssets.prefix(shortTermYears + 1))
+        Array(result.shortTermLuckyPath.yearlyAssets.prefix(shortTermYears + 1))
     }
     
     private var medianShortTerm: [Double] {
-        Array(result.medianPath.yearlyAssets.prefix(shortTermYears + 1))
+        Array(result.shortTermMedianPath.yearlyAssets.prefix(shortTermYears + 1))
     }
     
     private var unluckyShortTerm: [Double] {
-        Array(result.unluckyPath.yearlyAssets.prefix(shortTermYears + 1))
+        Array(result.shortTermUnluckyPath.yearlyAssets.prefix(shortTermYears + 1))
     }
     
     private var veryWorstShortTerm: [Double] {
-        Array(result.veryWorstPath.yearlyAssets.prefix(shortTermYears + 1))
+        Array(result.shortTermVeryWorstPath.yearlyAssets.prefix(shortTermYears + 1))
     }
     
     private var deterministicShortTerm: [Double] {
@@ -72,6 +73,9 @@ struct RetirementShortTermChart: View {
         VStack(alignment: .leading, spacing: ExitSpacing.lg) {
             // 1. 타이틀 + 설명
             headerSection
+            
+            // 1.5. 기준 설명
+            contextSection
             
             // 2. 차트 및 데이터
             keyMessageSection
@@ -168,6 +172,39 @@ struct RetirementShortTermChart: View {
         }
     }
     
+    // MARK: - Context Section
+    
+    private var contextSection: some View {
+        HStack(spacing: ExitSpacing.md) {
+            VStack(spacing: 2) {
+                Text("은퇴 시점")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                Text(formatSimple(targetAsset))
+                    .font(.Exit.body)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.Exit.accent)
+            }
+            
+            Image(systemName: "arrow.right")
+                .font(.system(size: 16))
+                .foregroundStyle(Color.Exit.secondaryText)
+            
+            VStack(spacing: 2) {
+                Text("10년 후")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                Text("시장 상황에 따라")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+            }
+        }
+        .padding(ExitSpacing.md)
+        .frame(maxWidth: .infinity)
+        .background(Color.Exit.secondaryCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+    }
+    
     // MARK: - Key Message (5개 시나리오)
     
     private var keyMessageSection: some View {
@@ -224,7 +261,7 @@ struct RetirementShortTermChart: View {
         VStack(spacing: ExitSpacing.xs) {
             Text(title)
                 .font(.Exit.caption2)
-                .foregroundStyle(Color.Exit.tertiaryText)
+                .foregroundStyle(Color.Exit.secondaryText)
             
             Text(formatSimple(amount))
                 .font(.Exit.caption)
