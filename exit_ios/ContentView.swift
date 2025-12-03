@@ -11,7 +11,7 @@ import SwiftData
 /// 메인 탭 종류
 enum MainTab: String, CaseIterable {
     case dashboard = "홈"
-    case simulation = "분석"
+    case simulation = "시뮬레이션"
     case record = "기록"
     case menu = "메뉴"
     
@@ -101,13 +101,6 @@ struct MainTabView: View {
             viewModel.configure(with: modelContext)
             simulationViewModel.configure(with: modelContext)
             settingsViewModel.configure(with: modelContext)
-            
-            // TabBar 스타일 설정
-            let appearance = UITabBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            appearance.backgroundColor = UIColor(Color.Exit.cardBackground)
-            UITabBar.appearance().standardAppearance = appearance
-            UITabBar.appearance().scrollEdgeAppearance = appearance
         }
         .onChange(of: shouldNavigateToWelcome) { _, newValue in
             // 데이터 삭제 후 앱 재시작을 위해 UserProfile을 다시 체크
