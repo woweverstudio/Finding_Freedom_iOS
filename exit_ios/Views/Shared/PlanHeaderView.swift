@@ -7,44 +7,6 @@
 
 import SwiftUI
 
-// MARK: - Scroll Offset Preference Key
-
-/// 스크롤 오프셋을 부모 뷰로 전달하기 위한 PreferenceKey
-struct ScrollOffsetPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
-/// 스크롤 오프셋 감지를 위한 뷰 모디파이어
-struct ScrollOffsetModifier: ViewModifier {
-    let coordinateSpace: String
-    @Binding var offset: CGFloat
-    
-    func body(content: Content) -> some View {
-        content
-            .background(
-                GeometryReader { geometry in
-                    Color.clear
-                        .preference(
-                            key: ScrollOffsetPreferenceKey.self,
-                            value: -geometry.frame(in: .named(coordinateSpace)).minY
-                        )
-                }
-            )
-            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                offset = value
-            }
-    }
-}
-
-extension View {
-    func trackScrollOffset(in coordinateSpace: String, offset: Binding<CGFloat>) -> some View {
-        modifier(ScrollOffsetModifier(coordinateSpace: coordinateSpace, offset: offset))
-    }
-}
-
 // MARK: - Plan Header View (통합)
 
 /// 상단 네비게이션 바 - 현재 계획 설정값 표시

@@ -68,21 +68,8 @@ struct MainTabView: View {
     
     var body: some View {
         ZStack {
-            // 메인 레이아웃 (상단 헤더 + 컨텐츠 + 탭바)
-            VStack(spacing: 0) {
-                // 상단: 계획 설정값 헤더 (스크롤에 따라 축소)
-                PlanHeaderView(
-                    scenario: appState.activeScenario,
-                    currentAssetAmount: appState.currentAssetAmount,
-                    hideAmounts: appState.hideAmounts,
-                    isCompact: appState.isHeaderCompact,
-                    onScenarioTap: {
-                        appState.showScenarioSheet = true
-                    }
-                )
-                
-                // 중앙: 탭별 컨텐츠
-                TabView(selection: bindableAppState.selectedTab) {
+            // 탭뷰
+            TabView(selection: bindableAppState.selectedTab) {
                     DashboardView()
                         .tabItem {
                             Image(systemName: MainTab.dashboard.icon)
@@ -110,10 +97,9 @@ struct MainTabView: View {
                             Text(MainTab.menu.rawValue)
                         }
                         .tag(MainTab.menu)
-                }
-                .tabViewStyle(.sidebarAdaptable)
-                .tint(Color.Exit.accent)
             }
+            .tabViewStyle(.sidebarAdaptable)
+            .tint(Color.Exit.accent)
             
             // 입금 완료 후 자산 업데이트 확인 다이얼로그
             if appState.showAssetUpdateConfirm {

@@ -134,19 +134,6 @@ struct RecordTabView: View {
                         .frame(height: 80)
                 }
                 .padding(.vertical, ExitSpacing.lg)
-                .background(
-                    GeometryReader { geometry in
-                        Color.clear
-                            .preference(
-                                key: ScrollOffsetPreferenceKey.self,
-                                value: -geometry.frame(in: .named("recordScroll")).minY
-                            )
-                    }
-                )
-            }
-            .coordinateSpace(name: "recordScroll")
-            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                appState.updateScrollOffset(for: .record, offset: value)
             }
             
             // 플로팅 액션 버튼

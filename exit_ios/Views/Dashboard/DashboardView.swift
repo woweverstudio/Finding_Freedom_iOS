@@ -11,9 +11,27 @@ import SwiftUI
 struct DashboardView: View {
     @Environment(\.appState) private var appState
     @State private var showFormulaSheet = false
+    @State private var scrollOffset: CGFloat = 0
+    
+    /// 스크롤 20pt 이상이면 컴팩트 모드
+    private var isHeaderCompact: Bool {
+        scrollOffset > 20
+    }
     
     var body: some View {
-        ZStack(alignment: .bottom) {
+        VStack(spacing: 0) {
+            // 상단 헤더 (스크롤에 따라 컴팩트 모드 전환)
+            PlanHeaderView(
+                scenario: appState.activeScenario,
+                currentAssetAmount: appState.currentAssetAmount,
+                hideAmounts: appState.hideAmounts,
+                isCompact: isHeaderCompact,
+                onScenarioTap: {
+                    appState.showScenarioSheet = true
+                }
+            )
+            
+            // 스크롤 컨텐츠
             ScrollViewReader { scrollProxy in
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: ExitSpacing.lg) {
@@ -45,19 +63,11 @@ struct DashboardView: View {
                         calculateFomulaButton
                     }
                     .padding(.vertical, ExitSpacing.lg)
-                    .background(
-                        GeometryReader { geometry in
-                            Color.clear
-                                .preference(
-                                    key: ScrollOffsetPreferenceKey.self,
-                                    value: -geometry.frame(in: .named("dashboardScroll")).minY
-                                )
-                        }
-                    )
                 }
-                .coordinateSpace(name: "dashboardScroll")
-                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                    appState.updateScrollOffset(for: .dashboard, offset: value)
+                .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                    geometry.contentOffset.y
+                } action: { _, newValue in
+                    scrollOffset = newValue
                 }
                 .onChange(of: appState.showScenarioSheet) { _, isShowing in
                     // 시나리오 시트가 닫힐 때 스크롤 최상단으로

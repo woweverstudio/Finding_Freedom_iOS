@@ -12,22 +12,42 @@ struct SimulationView: View {
     @Environment(\.appState) private var appState
     @Bindable var viewModel: SimulationViewModel
     @State private var showSettingsSheet = false
+    @State private var scrollOffset: CGFloat = 0
+    
+    /// 스크롤 20pt 이상이면 컴팩트 모드
+    private var isHeaderCompact: Bool {
+        scrollOffset > 20
+    }
     
     var body: some View {
-        ZStack {
-            if viewModel.isSimulating {
-                // 로딩 화면
-                loadingView
-            } else if let result = viewModel.displayResult {
-                // 결과 화면
-                resultsView(result: result)
-            } else {
-                // 초기 화면
-                SimulationEmptyView(
-                    scenario: viewModel.activeScenario,
-                    currentAssetAmount: viewModel.currentAssetAmount,
-                    onStart: { viewModel.refreshSimulation() }
-                )
+        VStack(spacing: 0) {
+            // 상단 헤더 (스크롤에 따라 컴팩트 모드 전환)
+            PlanHeaderView(
+                scenario: appState.activeScenario,
+                currentAssetAmount: appState.currentAssetAmount,
+                hideAmounts: appState.hideAmounts,
+                isCompact: isHeaderCompact,
+                onScenarioTap: {
+                    appState.showScenarioSheet = true
+                }
+            )
+            
+            // 메인 컨텐츠
+            ZStack {
+                if viewModel.isSimulating {
+                    // 로딩 화면
+                    loadingView
+                } else if let result = viewModel.displayResult {
+                    // 결과 화면
+                    resultsView(result: result)
+                } else {
+                    // 초기 화면
+                    SimulationEmptyView(
+                        scenario: viewModel.activeScenario,
+                        currentAssetAmount: viewModel.currentAssetAmount,
+                        onStart: { viewModel.refreshSimulation() }
+                    )
+                }
             }
         }
         .sheet(isPresented: $showSettingsSheet) {
@@ -164,19 +184,11 @@ struct SimulationView: View {
                 actionButtons                
             }
             .padding(.vertical, ExitSpacing.lg)
-            .background(
-                GeometryReader { geometry in
-                    Color.clear
-                        .preference(
-                            key: ScrollOffsetPreferenceKey.self,
-                            value: -geometry.frame(in: .named("simulationScroll")).minY
-                        )
-                }
-            )
         }
-        .coordinateSpace(name: "simulationScroll")
-        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-            appState.updateScrollOffset(for: .simulation, offset: value)
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            geometry.contentOffset.y
+        } action: { _, newValue in
+            scrollOffset = newValue
         }
     }
     

@@ -40,19 +40,6 @@ struct SettingsView: View {
                     }
                     .padding(.horizontal, ExitSpacing.md)
                     .padding(.vertical, ExitSpacing.lg)
-                    .background(
-                        GeometryReader { geometry in
-                            Color.clear
-                                .preference(
-                                    key: ScrollOffsetPreferenceKey.self,
-                                    value: -geometry.frame(in: .named("settingsScroll")).minY
-                                )
-                        }
-                    )
-                }
-                .coordinateSpace(name: "settingsScroll")
-                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                    appState.updateScrollOffset(for: .menu, offset: value)
                 }
             }
         }

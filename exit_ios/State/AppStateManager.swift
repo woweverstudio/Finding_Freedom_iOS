@@ -49,27 +49,6 @@ final class AppStateManager {
     /// 금액 숨김 여부
     var hideAmounts: Bool = false
     
-    /// 각 탭별 스크롤 오프셋
-    var dashboardScrollOffset: CGFloat = 0
-    var simulationScrollOffset: CGFloat = 0
-    var recordScrollOffset: CGFloat = 0
-    var settingsScrollOffset: CGFloat = 0
-    
-    /// 현재 탭의 스크롤 오프셋
-    var currentScrollOffset: CGFloat {
-        switch selectedTab {
-        case .dashboard: return dashboardScrollOffset
-        case .simulation: return simulationScrollOffset
-        case .record: return recordScrollOffset
-        case .menu: return settingsScrollOffset
-        }
-    }
-    
-    /// 헤더 컴팩트 모드 여부 (스크롤 20pt 이상)
-    var isHeaderCompact: Bool {
-        currentScrollOffset > 20
-    }
-    
     // MARK: - Sheet States
     
     /// 입금 시트 표시
@@ -437,21 +416,6 @@ final class AppStateManager {
             selectedAssetTypes.remove(type)
         } else {
             selectedAssetTypes.insert(type)
-        }
-    }
-    
-    // MARK: - Scroll Offset Updates
-    
-    func updateScrollOffset(for tab: MainTab, offset: CGFloat) {
-        switch tab {
-        case .dashboard:
-            dashboardScrollOffset = offset
-        case .simulation:
-            simulationScrollOffset = offset
-        case .record:
-            recordScrollOffset = offset
-        case .menu:
-            settingsScrollOffset = offset
         }
     }
 }
