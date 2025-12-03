@@ -10,6 +10,7 @@ import SwiftUI
 /// 기록 탭 전체 뷰
 struct RecordTabView: View {
     @Bindable var viewModel: HomeViewModel
+    @Binding var scrollOffset: CGFloat
     @State private var selectedYear: Int = Calendar.current.component(.year, from: Date())
     @State private var updateToDelete: MonthlyUpdate?
     @State private var showDeleteConfirmation: Bool = false
@@ -134,7 +135,9 @@ struct RecordTabView: View {
                         .frame(height: 80)
                 }
                 .padding(.vertical, ExitSpacing.lg)
+                .trackScrollOffset(in: "recordScroll", offset: $scrollOffset)
             }
+            .coordinateSpace(name: "recordScroll")
             
             // 플로팅 액션 버튼
             FloatingActionButtons(viewModel: viewModel)
@@ -600,7 +603,7 @@ struct RecordTabView: View {
 #Preview {
     ZStack {
         Color.Exit.background.ignoresSafeArea()
-        RecordTabView(viewModel: HomeViewModel())
+        RecordTabView(viewModel: HomeViewModel(), scrollOffset: .constant(0))
     }
     .preferredColorScheme(.dark)
 }

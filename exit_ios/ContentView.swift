@@ -59,18 +59,37 @@ struct MainTabView: View {
     @State private var selectedTab: MainTab = .dashboard
     @State private var shouldNavigateToWelcome = false
     
-    /// 스크롤 오프셋 추적 (추후 헤더 축소에 사용)
-    @State private var scrollOffset: CGFloat = 0
+    /// 각 탭별 스크롤 오프셋
+    @State private var dashboardScrollOffset: CGFloat = 0
+    @State private var simulationScrollOffset: CGFloat = 0
+    @State private var recordScrollOffset: CGFloat = 0
+    @State private var settingsScrollOffset: CGFloat = 0
+    
+    /// 현재 탭의 스크롤 오프셋
+    private var currentScrollOffset: CGFloat {
+        switch selectedTab {
+        case .dashboard: return dashboardScrollOffset
+        case .simulation: return simulationScrollOffset
+        case .record: return recordScrollOffset
+        case .menu: return settingsScrollOffset
+        }
+    }
+    
+    /// 컴팩트 모드 여부 (스크롤 20pt 이상이면 컴팩트)
+    private var isHeaderCompact: Bool {
+        currentScrollOffset > 20
+    }
     
     var body: some View {
         ZStack {
             // 메인 레이아웃 (상단 헤더 + 컨텐츠 + 탭바)
             VStack(spacing: 0) {
-                // 상단: 계획 설정값 헤더 (항상 표시)
+                // 상단: 계획 설정값 헤더 (스크롤에 따라 축소)
                 PlanHeaderView(
                     scenario: viewModel.activeScenario,
                     currentAssetAmount: viewModel.currentAssetAmount,
                     hideAmounts: hideAmounts,
+                    isCompact: isHeaderCompact,
                     onScenarioTap: {
                         viewModel.showScenarioSheet = true
                     }
@@ -78,28 +97,28 @@ struct MainTabView: View {
                 
                 // 중앙: 탭별 컨텐츠
                 TabView(selection: $selectedTab) {
-                    DashboardView(viewModel: viewModel, hideAmounts: $hideAmounts)
+                    DashboardView(viewModel: viewModel, hideAmounts: $hideAmounts, scrollOffset: $dashboardScrollOffset)
                         .tabItem {
                             Image(systemName: MainTab.dashboard.icon)
                             Text(MainTab.dashboard.rawValue)
                         }
                         .tag(MainTab.dashboard)
                     
-                    SimulationView(viewModel: simulationViewModel)
+                    SimulationView(viewModel: simulationViewModel, scrollOffset: $simulationScrollOffset)
                         .tabItem {
                             Image(systemName: MainTab.simulation.icon)
                             Text(MainTab.simulation.rawValue)
                         }
                         .tag(MainTab.simulation)
                     
-                    RecordTabView(viewModel: viewModel)
+                    RecordTabView(viewModel: viewModel, scrollOffset: $recordScrollOffset)
                         .tabItem {
                             Image(systemName: MainTab.record.icon)
                             Text(MainTab.record.rawValue)
                         }
                         .tag(MainTab.record)
                     
-                    SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
+                    SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome, scrollOffset: $settingsScrollOffset)
                         .tabItem {
                             Image(systemName: MainTab.menu.icon)
                             Text(MainTab.menu.rawValue)

@@ -12,6 +12,7 @@ import SwiftData
 struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
     @Binding var shouldNavigateToWelcome: Bool
+    @Binding var scrollOffset: CGFloat
     
     var body: some View {
         ZStack {
@@ -20,7 +21,7 @@ struct SettingsView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     VStack(spacing: ExitSpacing.lg) {
                         // 공지사항 섹션
                         announcementSection
@@ -39,7 +40,9 @@ struct SettingsView: View {
                     }
                     .padding(.horizontal, ExitSpacing.md)
                     .padding(.vertical, ExitSpacing.lg)
+                    .trackScrollOffset(in: "settingsScroll", offset: $scrollOffset)
                 }
+                .coordinateSpace(name: "settingsScroll")
             }
         }
         .sheet(isPresented: $viewModel.showReminderSheet) {
@@ -693,7 +696,8 @@ struct ReminderEditSheet: View {
 #Preview {
     SettingsView(
         viewModel: SettingsViewModel(),
-        shouldNavigateToWelcome: .constant(false)
+        shouldNavigateToWelcome: .constant(false),
+        scrollOffset: .constant(0)
     )
     .preferredColorScheme(.dark)
 }

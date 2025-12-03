@@ -11,6 +11,7 @@ import SwiftUI
 struct DashboardView: View {
     @Bindable var viewModel: HomeViewModel
     @Binding var hideAmounts: Bool
+    @Binding var scrollOffset: CGFloat
     @State private var showFormulaSheet = false
     
     var body: some View {
@@ -46,7 +47,9 @@ struct DashboardView: View {
                         calculateFomulaButton
                     }
                     .padding(.vertical, ExitSpacing.lg)
+                    .trackScrollOffset(in: "dashboardScroll", offset: $scrollOffset)
                 }
+                .coordinateSpace(name: "dashboardScroll")
                 .onChange(of: viewModel.showScenarioSheet) { _, isShowing in
                     // 시나리오 시트가 닫힐 때 스크롤 최상단으로
                     if !isShowing {
@@ -382,7 +385,7 @@ struct DashboardView: View {
 #Preview {
     ZStack {
         Color.Exit.background.ignoresSafeArea()
-        DashboardView(viewModel: HomeViewModel(), hideAmounts: .constant(false))
+        DashboardView(viewModel: HomeViewModel(), hideAmounts: .constant(false), scrollOffset: .constant(0))
     }
     .preferredColorScheme(.dark)
 }
