@@ -257,14 +257,14 @@ struct SimulationEmptyView: View {
                     icon: "calendar.badge.clock",
                     iconColor: Color.Exit.positive,
                     title: "예상 달성 시점",
-                    description: "행운이면 8년, 평균 12년, 불운이면 18년... 다양한 시나리오를 한눈에!"
+                    description: "행운이면 8년, 평균 12년, 불행이면 18년... 다양한 시나리오를 한눈에!"
                 )
                 
                 featureCard(
                     icon: "chart.xyaxis.line",
                     iconColor: Color(hex: "FF9500"),
                     title: "자산 변화 예측 그래프",
-                    description: "시간에 따라 내 자산이 어떻게 변할지 3가지 경우(행운/평균/불운)로 시각화해요."
+                    description: "시간에 따라 내 자산이 어떻게 변할지 3가지 경우(행운/평균/불행)로 시각화해요."
                 )
                 
                 featureCard(
@@ -424,12 +424,12 @@ struct SimulationEmptyView: View {
                     .interpolationMethod(.catmullRom)
                 }
                 
-                // 불운
+                // 불행
                 ForEach(demoChartData.worst.indices, id: \.self) { index in
                     LineMark(
                         x: .value("년", index),
                         y: .value("자산", demoChartData.worst[index]),
-                        series: .value("시나리오", "불운")
+                        series: .value("시나리오", "불행")
                     )
                     .foregroundStyle(Color.Exit.caution)
                     .lineStyle(StrokeStyle(lineWidth: 2))
@@ -467,7 +467,7 @@ struct SimulationEmptyView: View {
             HStack(spacing: ExitSpacing.md) {
                 legendItem(color: Color.Exit.positive, label: "🍀 행운")
                 legendItem(color: Color.Exit.accent, label: "📊 평균")
-                legendItem(color: Color.Exit.caution, label: "🌧️ 불운")
+                legendItem(color: Color.Exit.caution, label: "🌧️ 불행")
             }
         }
         .padding(ExitSpacing.lg)

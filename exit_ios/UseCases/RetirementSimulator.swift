@@ -36,10 +36,10 @@ struct RetirementSimulationResult {
     /// 평균 경로 - 40년 기준 (중앙값 50%)
     let medianPath: RetirementPath
     
-    /// 불운 경로 - 40년 기준 (하위 30%)
+    /// 불행 경로 - 40년 기준 (하위 30%)
     let unluckyPath: RetirementPath
     
-    /// 매우 불운 경로 - 40년 기준 (하위 10%)
+    /// 매우 불행 경로 - 40년 기준 (하위 10%)
     let veryWorstPath: RetirementPath
     
     // MARK: - 단기 (10년 기준) 경로
@@ -53,10 +53,10 @@ struct RetirementSimulationResult {
     /// 평균 경로 - 10년 기준 (중앙값 50%)
     let shortTermMedianPath: RetirementPath
     
-    /// 불운 경로 - 10년 기준 (하위 30%)
+    /// 불행 경로 - 10년 기준 (하위 30%)
     let shortTermUnluckyPath: RetirementPath
     
-    /// 매우 불운 경로 - 10년 기준 (하위 10%)
+    /// 매우 불행 경로 - 10년 기준 (하위 10%)
     let shortTermVeryWorstPath: RetirementPath
     
     // MARK: - 공통

@@ -178,10 +178,10 @@ struct RetirementProjectionChart: View {
                 )
             }
             
-            // 두 번째 줄: 불운, 매우 불운
+            // 두 번째 줄: 불행, 매우 불행
             HStack(spacing: ExitSpacing.xs) {
                 scenarioCard(
-                    title: "불운",
+                    title: "불행",
                     amount: unluckyPath.last ?? 0,
                     changeRate: changeRate(for: unluckyPath),
                     depletionYear: result.unluckyPath.depletionYear,
@@ -190,7 +190,7 @@ struct RetirementProjectionChart: View {
                 )
                 
                 scenarioCard(
-                    title: "매우 불운",
+                    title: "매우 불행",
                     amount: veryWorstPath.last ?? 0,
                     changeRate: changeRate(for: veryWorstPath),
                     depletionYear: result.veryWorstPath.depletionYear,
@@ -241,24 +241,24 @@ struct RetirementProjectionChart: View {
     
     private var projectionChart: some View {
         Chart {
-            // 매우 불운 경로 (하위 10%) - 빨간색
+            // 매우 불행 경로 (하위 10%) - 빨간색
             ForEach(Array(veryWorstPath.enumerated()), id: \.offset) { index, asset in
                 LineMark(
                     x: .value("년", index),
                     y: .value("자산", max(0, asset)),
-                    series: .value("시나리오", "매우불운")
+                    series: .value("시나리오", "매우불행")
                 )
                 .foregroundStyle(Color.Exit.warning)
                 .lineStyle(StrokeStyle(lineWidth: 2))
                 .interpolationMethod(.catmullRom)
             }
             
-            // 불운 경로 (70%) - 노란색
+            // 불행 경로 (70%) - 노란색
             ForEach(Array(unluckyPath.enumerated()), id: \.offset) { index, asset in
                 LineMark(
                     x: .value("년", index),
                     y: .value("자산", max(0, asset)),
-                    series: .value("시나리오", "불운")
+                    series: .value("시나리오", "불행")
                 )
                 .foregroundStyle(Color.Exit.caution)
                 .lineStyle(StrokeStyle(lineWidth: 2))
@@ -366,8 +366,8 @@ struct RetirementProjectionChart: View {
             
             // 두 번째 줄
             HStack(spacing: ExitSpacing.md) {
-                legendItem(color: Color.Exit.caution, label: "불운(70%)", isDashed: false)
-                legendItem(color: Color.Exit.warning, label: "매우불운(90%)", isDashed: false)
+                legendItem(color: Color.Exit.caution, label: "불행(70%)", isDashed: false)
+                legendItem(color: Color.Exit.warning, label: "매우불행(90%)", isDashed: false)
                 legendItem(color: Color.Exit.tertiaryText, label: "기존예측", isDashed: true)
             }
         }
@@ -427,8 +427,8 @@ struct RetirementProjectionChart: View {
                 assetRow(label: "매우행운", data: veryBestPath, color: Color.Exit.positive)
                 assetRow(label: "행운", data: luckyPath, color: Color.Exit.accent)
                 assetRow(label: "평균", data: medianPath, color: Color.Exit.primaryText)
-                assetRow(label: "불운", data: unluckyPath, color: Color.Exit.caution)
-                assetRow(label: "매우불운", data: veryWorstPath, color: Color.Exit.warning)
+                assetRow(label: "불행", data: unluckyPath, color: Color.Exit.caution)
+                assetRow(label: "매우불행", data: veryWorstPath, color: Color.Exit.warning)
             }
             .background(Color.Exit.secondaryCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))

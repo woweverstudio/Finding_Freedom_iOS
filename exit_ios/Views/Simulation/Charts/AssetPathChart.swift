@@ -77,7 +77,7 @@ struct AssetPathChart: View {
                     .fontWeight(.medium)
                     .foregroundStyle(Color.Exit.secondaryText)
                 
-                Text("시장 상황에 따라 자산이 어떻게 변할지 3가지 시나리오로 보여줘요. 행운(상위 10%)부터 불운(하위 10%)까지, 대부분의 경우가 이 범위 안에 들어요.")
+                Text("시장 상황에 따라 자산이 어떻게 변할지 3가지 시나리오로 보여줘요. 행운(상위 10%)부터 불행(하위 10%)까지, 대부분의 경우가 이 범위 안에 들어요.")
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
@@ -142,12 +142,12 @@ struct AssetPathChart: View {
                 .interpolationMethod(.catmullRom)
             }
             
-            // 불운의 경로 (하위 10%)
+            // 불행의 경로 (하위 10%)
             ForEach(Array(paths.worst.monthlyAssets.enumerated()), id: \.offset) { index, amount in
                 LineMark(
                     x: .value("월", index),
                     y: .value("자산", amount),
-                    series: .value("경로", "불운")
+                    series: .value("경로", "불행")
                 )
                 .foregroundStyle(Color.Exit.caution)
                 .lineStyle(StrokeStyle(lineWidth: 2))
@@ -211,7 +211,7 @@ struct AssetPathChart: View {
         HStack(spacing: ExitSpacing.lg) {
             legendItem(color: Color.Exit.positive, label: "행운(상위10%)")
             legendItem(color: Color.Exit.accent, label: "평균(50%)")
-            legendItem(color: Color.Exit.caution, label: "불운(하위10%)")
+            legendItem(color: Color.Exit.caution, label: "불행(하위10%)")
         }
     }
     
@@ -248,7 +248,7 @@ struct AssetPathChart: View {
         let timelineData: [(label: String, months: Int, color: Color, icon: String)] = [
             ("행운", result.bestCase10Percent, Color.Exit.positive, "🍀"),
             ("평균", result.medianMonths, Color.Exit.accent, "📊"),
-            ("불운", result.worstCase10Percent, Color.Exit.caution, "🌧️"),
+            ("불행", result.worstCase10Percent, Color.Exit.caution, "🌧️"),
             ("기존 예측", originalDDayMonths, Color.Exit.tertiaryText, "📌")
         ]
         

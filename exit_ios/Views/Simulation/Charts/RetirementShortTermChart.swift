@@ -112,7 +112,7 @@ struct RetirementShortTermChart: View {
                     .fontWeight(.medium)
                     .foregroundStyle(Color.Exit.secondaryText)
                 
-                Text("은퇴 직후 시장이 하락하면(불운) 회복할 시간이 부족해요. 반면 처음 몇 년이 좋으면 여유가 생겨요. 이를 '시퀀스 리스크'라고 해요.")
+                Text("은퇴 직후 시장이 하락하면(불행) 회복할 시간이 부족해요. 반면 처음 몇 년이 좋으면 여유가 생겨요. 이를 '시퀀스 리스크'라고 해요.")
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
@@ -236,10 +236,10 @@ struct RetirementShortTermChart: View {
                 )
             }
             
-            // 두 번째 줄: 불운, 매우 불운
+            // 두 번째 줄: 불행, 매우 불행
             HStack(spacing: ExitSpacing.xs) {
                 scenarioCard(
-                    title: "불운",
+                    title: "불행",
                     amount: unluckyShortTerm.last ?? 0,
                     changeRate: changeRate(for: unluckyShortTerm),
                     backgroundColor: Color.Exit.caution.opacity(0.15),
@@ -247,7 +247,7 @@ struct RetirementShortTermChart: View {
                 )
                 
                 scenarioCard(
-                    title: "매우 불운",
+                    title: "매우 불행",
                     amount: veryWorstShortTerm.last ?? 0,
                     changeRate: changeRate(for: veryWorstShortTerm),
                     backgroundColor: Color.Exit.warning.opacity(0.15),
@@ -284,24 +284,24 @@ struct RetirementShortTermChart: View {
     
     private var shortTermChart: some View {
         Chart {
-            // 매우 불운 경로 (하위 10%) - 빨간색
+            // 매우 불행 경로 (하위 10%) - 빨간색
             ForEach(Array(veryWorstShortTerm.enumerated()), id: \.offset) { index, asset in
                 LineMark(
                     x: .value("년", index),
                     y: .value("자산", asset),
-                    series: .value("시나리오", "매우불운")
+                    series: .value("시나리오", "매우불행")
                 )
                 .foregroundStyle(Color.Exit.warning)
                 .lineStyle(StrokeStyle(lineWidth: 2))
                 .interpolationMethod(.catmullRom)
             }
             
-            // 불운 경로 (70%) - 노란색
+            // 불행 경로 (70%) - 노란색
             ForEach(Array(unluckyShortTerm.enumerated()), id: \.offset) { index, asset in
                 LineMark(
                     x: .value("년", index),
                     y: .value("자산", asset),
-                    series: .value("시나리오", "불운")
+                    series: .value("시나리오", "불행")
                 )
                 .foregroundStyle(Color.Exit.caution)
                 .lineStyle(StrokeStyle(lineWidth: 2))
@@ -403,8 +403,8 @@ struct RetirementShortTermChart: View {
             
             // 두 번째 줄
             HStack(spacing: ExitSpacing.md) {
-                legendItem(color: Color.Exit.caution, label: "불운(70%)", isDashed: false)
-                legendItem(color: Color.Exit.warning, label: "매우불운(90%)", isDashed: false)
+                legendItem(color: Color.Exit.caution, label: "불행(70%)", isDashed: false)
+                legendItem(color: Color.Exit.warning, label: "매우불행(90%)", isDashed: false)
                 legendItem(color: Color.Exit.tertiaryText, label: "기존예측", isDashed: true)
             }
         }

@@ -109,7 +109,7 @@ final class SimulationViewModel {
             PercentilePoint(label: "행운 10%", months: result.bestCase10Percent, percentile: 10),
             PercentilePoint(label: "평균", months: Int(result.averageMonthsToSuccess), percentile: 50),
             PercentilePoint(label: "중앙값", months: result.medianMonths, percentile: 50),
-            PercentilePoint(label: "불운 10%", months: result.worstCase10Percent, percentile: 90)
+            PercentilePoint(label: "불행 10%", months: result.worstCase10Percent, percentile: 90)
         ]
     }
     
