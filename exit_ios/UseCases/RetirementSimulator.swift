@@ -139,7 +139,16 @@ enum RetirementSimulator {
         
         // === 장기 (40년) 기준 정렬 ===
         // 최종 자산 기준으로 오름차순 정렬
-        let sortedByFinal = allPaths.sorted { $0.finalAsset < $1.finalAsset }
+        // 2차 정렬: finalAsset이 같으면 (특히 둘 다 소진된 경우), 더 빨리 소진된 게 더 나쁨
+        let sortedByFinal = allPaths.sorted { path0, path1 in
+            if path0.finalAsset != path1.finalAsset {
+                return path0.finalAsset < path1.finalAsset
+            }
+            // finalAsset이 같으면 소진 연도로 2차 정렬 (빨리 소진 = 더 나쁨 = 앞에 위치)
+            let dep0 = path0.depletionYear ?? Int.max
+            let dep1 = path1.depletionYear ?? Int.max
+            return dep0 < dep1
+        }
         
         let veryWorstPath = sortedByFinal[simulationCount * 10 / 100]
         let unluckyPath = sortedByFinal[simulationCount * 30 / 100]
@@ -149,7 +158,15 @@ enum RetirementSimulator {
         
         // === 단기 (10년) 기준 정렬 ===
         // 10년 후 자산 기준으로 오름차순 정렬
-        let sortedBy10Years = allPaths.sorted { $0.assetAt10Years < $1.assetAt10Years }
+        // 2차 정렬: 자산이 같으면 소진 연도로 정렬
+        let sortedBy10Years = allPaths.sorted { path0, path1 in
+            if path0.assetAt10Years != path1.assetAt10Years {
+                return path0.assetAt10Years < path1.assetAt10Years
+            }
+            let dep0 = path0.depletionYear ?? Int.max
+            let dep1 = path1.depletionYear ?? Int.max
+            return dep0 < dep1
+        }
         
         let shortTermVeryWorstPath = sortedBy10Years[simulationCount * 10 / 100]
         let shortTermUnluckyPath = sortedBy10Years[simulationCount * 30 / 100]

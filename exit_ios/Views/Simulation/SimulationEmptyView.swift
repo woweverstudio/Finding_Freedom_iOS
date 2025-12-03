@@ -40,6 +40,9 @@ struct SimulationEmptyView: View {
                 // 왜 필요한가? 섹션
                 whyNeedSection
                 
+                // 어떻게 작동하나? 섹션
+                howItWorksSection
+                
                 // 무엇을 알 수 있는가? 섹션
                 whatYouGetSection
                 
@@ -177,6 +180,7 @@ struct SimulationEmptyView: View {
     
     private var comparisonView: some View {
         HStack(spacing: ExitSpacing.md) {
+            Spacer()
             // 단순 계산
             VStack(spacing: ExitSpacing.sm) {
                 Text("단순 계산")
@@ -234,8 +238,346 @@ struct SimulationEmptyView: View {
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.accent)
             }
+            Spacer()
         }
         .padding(.vertical, ExitSpacing.sm)
+    }
+    
+    // MARK: - How It Works Section
+    
+    private var howItWorksSection: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.lg) {
+            sectionHeader(icon: "gearshape.2.fill", title: "어떻게 작동하나요?")
+            
+            VStack(alignment: .leading, spacing: ExitSpacing.xl) {
+                // 1. 난수 생성 원리
+                VStack(alignment: .leading, spacing: ExitSpacing.md) {
+                    stepHeader(number: "1", title: "컴퓨터가 무작위 숫자를 만들어요")
+                    
+                    VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                        Text("주식 시장의 수익률은 예측할 수 없어요. 올해 +20%일 수도 있고, 내년에 -15%일 수도 있죠.")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                        
+                        Text("그래서 컴퓨터가 \"난수(무작위 숫자)\"를 이용해서 매년 수익률을 무작위로 정해요. 마치 주사위를 굴리는 것처럼요!")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    
+                    // 난수 시각화
+                    randomNumberVisualization
+                }
+                
+                // 2. 30,000번 반복
+                VStack(alignment: .leading, spacing: ExitSpacing.md) {
+                    stepHeader(number: "2", title: "이걸 30,000번 반복해요")
+                    
+                    VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                        Text("한 번만 시뮬레이션하면 우연히 좋은 결과나 나쁜 결과가 나올 수 있어요.")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                        
+                        Text("그래서 30,000번이나 반복해요! 그러면 \"대부분의 경우\"와 \"특별히 운이 좋거나 나쁜 경우\"를 모두 볼 수 있어요.")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    
+                    // 반복 시각화
+                    repetitionVisualization
+                }
+                
+                // 3. 결과 정렬
+                VStack(alignment: .leading, spacing: ExitSpacing.md) {
+                    stepHeader(number: "3", title: "결과를 순서대로 줄 세워요")
+                    
+                    VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                        Text("30,000개의 결과를 \"목표 달성이 빠른 순서\"로 정렬해요.")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                        
+                        Text("학교에서 시험 점수로 등수를 매기는 것처럼, 30,000개 결과에 1등부터 30,000등까지 순위를 매겨요.")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    
+                    // 정렬 시각화
+                    sortingVisualization
+                }
+                
+                // 4. 대표 시나리오 선택
+                VStack(alignment: .leading, spacing: ExitSpacing.md) {
+                    stepHeader(number: "4", title: "대표 결과 3개를 보여드려요")
+                    
+                    Text("30,000개 전부 보여드리면 너무 많으니까, 대표적인 3개만 골라서 보여드려요:")
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    // 퍼센타일 설명
+                    percentileExplanation
+                }
+                
+                // 5. 결론
+                VStack(alignment: .leading, spacing: ExitSpacing.md) {
+                    stepHeader(number: "5", title: "이렇게 하면 뭐가 좋아요?")
+                    
+                    VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                        bulletPoint(text: "\"딱 10년 후에 2억!\" 같은 확정적인 예측은 거의 틀려요")
+                        bulletPoint(text: "대신 \"빠르면 8년, 보통 12년, 늦으면 16년\"처럼 범위로 알려드려요")
+                        bulletPoint(text: "운이 좋을 때와 나쁠 때 모두 대비할 수 있어요!")
+                    }
+                }
+            }
+            .padding(ExitSpacing.lg)
+            .background(Color.Exit.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+        }
+        .padding(.horizontal, ExitSpacing.md)
+    }
+    
+    private func stepHeader(number: String, title: String) -> some View {
+        HStack(spacing: ExitSpacing.sm) {
+            Text(number)
+                .font(.Exit.caption)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(Color.Exit.accent)
+                .clipShape(Circle())
+            
+            Text(title)
+                .font(.Exit.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.Exit.primaryText)
+        }
+    }
+    
+    private var randomNumberVisualization: some View {
+        VStack(spacing: ExitSpacing.sm) {
+            // 난수 → 수익률 변환 시각화
+            HStack(spacing: ExitSpacing.sm) {
+                // 주사위
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.Exit.secondaryCardBackground)
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: "die.face.5.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(Color.Exit.accent)
+                }
+                
+                Image(systemName: "arrow.right")
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                
+                // 난수
+                VStack(spacing: 2) {
+                    Text("난수")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    Text("0.7234")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Color.Exit.accent)
+                }
+                .padding(.horizontal, ExitSpacing.sm)
+                .padding(.vertical, ExitSpacing.xs)
+                .background(Color.Exit.secondaryCardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                
+                Image(systemName: "arrow.right")
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                
+                // 수익률
+                VStack(spacing: 2) {
+                    Text("올해 수익률")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    Text("+12.3%")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Color.Exit.positive)
+                }
+                .padding(.horizontal, ExitSpacing.sm)
+                .padding(.vertical, ExitSpacing.xs)
+                .background(Color.Exit.positive.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            
+            Text("이렇게 매년 수익률을 무작위로 정해서 10년, 20년 후 자산을 계산해요")
+                .font(.Exit.caption2)
+                .foregroundStyle(Color.Exit.tertiaryText)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+    }
+    
+    private var repetitionVisualization: some View {
+        VStack(spacing: ExitSpacing.sm) {
+            HStack(spacing: ExitSpacing.xs) {
+                ForEach(0..<5, id: \.self) { index in
+                    VStack(spacing: 4) {
+                        Text("#\(index + 1)")
+                            .font(.Exit.caption2)
+                            .foregroundStyle(Color.Exit.tertiaryText)
+                        
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.Exit.accent.opacity(0.3 + Double(index) * 0.1))
+                            .frame(width: 36, height: 36)
+                            .overlay(
+                                Image(systemName: "chart.line.uptrend.xyaxis")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.Exit.accent)
+                            )
+                    }
+                }
+                
+                VStack(spacing: 4) {
+                    Text("...")
+                        .font(.Exit.body)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                }
+                
+                VStack(spacing: 4) {
+                    Text("#30000")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.Exit.accent)
+                        .frame(width: 36, height: 36)
+                        .overlay(
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                .font(.system(size: 14))
+                                .foregroundStyle(.white)
+                        )
+                }
+            }
+            
+            Text("각각의 시뮬레이션이 \"만약 이렇게 되면?\"이라는 하나의 미래예요")
+                .font(.Exit.caption2)
+                .foregroundStyle(Color.Exit.tertiaryText)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+    }
+    
+    private var sortingVisualization: some View {
+        VStack(spacing: ExitSpacing.sm) {
+            HStack(spacing: ExitSpacing.xs) {
+                ForEach(0..<10, id: \.self) { index in
+                    let height = CGFloat(40 - index * 3)
+                    VStack(spacing: 2) {
+                        if index == 0 {
+                            Text("1등")
+                                .font(.system(size: 8))
+                                .foregroundStyle(Color.Exit.positive)
+                        } else if index == 4 {
+                            Text("중간")
+                                .font(.system(size: 8))
+                                .foregroundStyle(Color.Exit.accent)
+                        } else if index == 9 {
+                            Text("꼴등")
+                                .font(.system(size: 8))
+                                .foregroundStyle(Color.Exit.caution)
+                        } else {
+                            Text("임시")
+                                .font(.system(size: 8))
+                                .foregroundStyle(Color.clear)
+                        }
+                        
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                index < 3 ? Color.Exit.positive :
+                                index < 7 ? Color.Exit.accent :
+                                Color.Exit.caution
+                            )
+                            .frame(width: 20, height: height)
+                    }
+                }
+                
+                Text("...")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+            }
+            
+            HStack {
+                Text("🏆 빨리 달성")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.positive)
+                
+                Spacer()
+                
+                Text("⏰ 늦게 달성")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.caution)
+            }
+        }
+    }
+    
+    private var percentileExplanation: some View {
+        VStack(spacing: ExitSpacing.md) {
+            percentileRow(
+                emoji: "🍀",
+                title: "행운 (상위 10%)",
+                subtitle: "3,000등",
+                description: "30,000개 결과 중 3,000등의 결과예요.\n\"운이 좋은 케이스에요.\"",
+                color: Color.Exit.positive
+            )
+            
+            percentileRow(
+                emoji: "📊",
+                title: "평균 (50%)",
+                subtitle: "15,000등",
+                description: "정확히 중간인 15,000등의 결과예요.\n\"가장 가능성 높은, 평범한 경우예요.\"",
+                color: Color.Exit.accent
+            )
+            
+            percentileRow(
+                emoji: "🌧️",
+                title: "불행 (하위 10%)",
+                subtitle: "27,000등",
+                description: "30,000개 결과 중 27,000등의 결과예요.\n\"운이 정말 나쁜 케이스예요.\"",
+                color: Color.Exit.caution
+            )
+        }
+    }
+    
+    private func percentileRow(emoji: String, title: String, subtitle: String, description: String, color: Color) -> some View {
+        HStack(alignment: .top, spacing: ExitSpacing.md) {
+            Text(emoji)
+                .font(.system(size: 28))
+            
+            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                Text(title)
+                    .font(.Exit.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(color)
+                
+                Text(description)
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(ExitSpacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(color.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+    }
+    
+    private func bulletPoint(text: String) -> some View {
+        HStack(alignment: .top, spacing: ExitSpacing.sm) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(Color.Exit.accent)
+            
+            Text(text)
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
     
     // MARK: - What You Get Section
@@ -339,7 +681,7 @@ struct SimulationEmptyView: View {
     // MARK: - Demo Success Rate Card
     
     private var demoSuccessRateCard: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.lg) {
+        VStack(spacing: ExitSpacing.lg) {
             // 타이틀
             HStack {
                 demoBadge
@@ -843,7 +1185,7 @@ struct SimulationEmptyView: View {
                 Text("몬테카를로 시뮬레이션은 월스트리트 투자은행, 연기금 등에서 실제로 사용하는 분석 기법이에요. 복잡한 금융공학을 누구나 쉽게 사용할 수 있도록 만들었어요.")
                     .font(.Exit.caption)
                     .foregroundStyle(Color.Exit.secondaryText)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(ExitSpacing.lg)

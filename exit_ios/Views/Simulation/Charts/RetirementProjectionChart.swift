@@ -208,7 +208,7 @@ struct RetirementProjectionChart: View {
                 .foregroundStyle(Color.Exit.secondaryText)
             
             if let depletion = depletionYear {
-                Text("\(depletion)년 소진")
+                Text("\(depletion)년 뒤 소진")
                     .font(.Exit.caption)
                     .fontWeight(.bold)
                     .foregroundStyle(accentColor)
@@ -301,11 +301,11 @@ struct RetirementProjectionChart: View {
                 .interpolationMethod(.catmullRom)
             }
             
-            // 매우 행운 경로 (10%) - 초록색 (Y축 스케일 때문에 클리핑될 수 있음)
+            // 매우 행운 경로 (10%) - 초록색
             ForEach(Array(veryBestPath.enumerated()), id: \.offset) { index, asset in
                 LineMark(
                     x: .value("년", index),
-                    y: .value("자산", max(0, min(asset, chartYMax))), // 클리핑
+                    y: .value("자산", max(0, asset)),
                     series: .value("시나리오", "매우행운")
                 )
                 .foregroundStyle(Color.Exit.positive)
@@ -325,6 +325,7 @@ struct RetirementProjectionChart: View {
         }
         .frame(height: 200)
         .chartYScale(domain: 0...chartYMax)
+        .clipped()
         .chartXAxis {
             AxisMarks(values: [0, 10, 20, 30, 40]) { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))

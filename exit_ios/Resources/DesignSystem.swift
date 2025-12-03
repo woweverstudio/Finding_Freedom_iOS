@@ -141,7 +141,7 @@ extension Font {
         static let scoreDisplay = Font.system(size: 96, weight: .heavy, design: .default).monospacedDigit()
         
         /// 중형 숫자 (48pt Heavy, Tabular)
-        static let numberDisplay = Font.system(size: 48, weight: .heavy, design: .default).monospacedDigit()
+        static let numberDisplay = Font.system(size: 42, weight: .heavy, design: .default).monospacedDigit()
         
         /// 숫자 (24pt Semibold, Tabular)
         static let number = Font.system(size: 24, weight: .semibold, design: .default).monospacedDigit()
