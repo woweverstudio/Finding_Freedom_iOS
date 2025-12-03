@@ -49,6 +49,7 @@ struct ContentView: View {
 }
 
 /// 메인 탭 뷰 (대시보드 + 기록 + 시뮬레이션 + 메뉴)
+/// 구조: 상단 PlanHeader + 중앙 컨텐츠(스크롤) + 하단 탭바
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = HomeViewModel()
@@ -58,39 +59,56 @@ struct MainTabView: View {
     @State private var selectedTab: MainTab = .dashboard
     @State private var shouldNavigateToWelcome = false
     
+    /// 스크롤 오프셋 추적 (추후 헤더 축소에 사용)
+    @State private var scrollOffset: CGFloat = 0
+    
     var body: some View {
         ZStack {
-            TabView(selection: $selectedTab) {
-                DashboardView(viewModel: viewModel, hideAmounts: $hideAmounts)
-                    .tabItem {
-                        Image(systemName: MainTab.dashboard.icon)
-                        Text(MainTab.dashboard.rawValue)
+            // 메인 레이아웃 (상단 헤더 + 컨텐츠 + 탭바)
+            VStack(spacing: 0) {
+                // 상단: 계획 설정값 헤더 (항상 표시)
+                PlanHeaderView(
+                    scenario: viewModel.activeScenario,
+                    currentAssetAmount: viewModel.currentAssetAmount,
+                    hideAmounts: hideAmounts,
+                    onScenarioTap: {
+                        viewModel.showScenarioSheet = true
                     }
-                    .tag(MainTab.dashboard)
+                )
                 
-                SimulationView(viewModel: simulationViewModel)
-                    .tabItem {
-                        Image(systemName: MainTab.simulation.icon)
-                        Text(MainTab.simulation.rawValue)
-                    }
-                    .tag(MainTab.simulation)
-                
-                RecordTabView(viewModel: viewModel)
-                    .tabItem {
-                        Image(systemName: MainTab.record.icon)
-                        Text(MainTab.record.rawValue)
-                    }
-                    .tag(MainTab.record)
-                
-                SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
-                    .tabItem {
-                        Image(systemName: MainTab.menu.icon)
-                        Text(MainTab.menu.rawValue)
-                    }
-                    .tag(MainTab.menu)
+                // 중앙: 탭별 컨텐츠
+                TabView(selection: $selectedTab) {
+                    DashboardView(viewModel: viewModel, hideAmounts: $hideAmounts)
+                        .tabItem {
+                            Image(systemName: MainTab.dashboard.icon)
+                            Text(MainTab.dashboard.rawValue)
+                        }
+                        .tag(MainTab.dashboard)
+                    
+                    SimulationView(viewModel: simulationViewModel)
+                        .tabItem {
+                            Image(systemName: MainTab.simulation.icon)
+                            Text(MainTab.simulation.rawValue)
+                        }
+                        .tag(MainTab.simulation)
+                    
+                    RecordTabView(viewModel: viewModel)
+                        .tabItem {
+                            Image(systemName: MainTab.record.icon)
+                            Text(MainTab.record.rawValue)
+                        }
+                        .tag(MainTab.record)
+                    
+                    SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
+                        .tabItem {
+                            Image(systemName: MainTab.menu.icon)
+                            Text(MainTab.menu.rawValue)
+                        }
+                        .tag(MainTab.menu)
+                }
+                .tabViewStyle(.sidebarAdaptable)
+                .tint(Color.Exit.accent)
             }
-            .tabViewStyle(.sidebarAdaptable)
-            .tint(Color.Exit.accent)
             
             // 입금 완료 후 자산 업데이트 확인 다이얼로그
             if viewModel.showAssetUpdateConfirm {
