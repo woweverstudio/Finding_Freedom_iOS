@@ -11,15 +11,15 @@ import SwiftData
 /// 메인 탭 종류
 enum MainTab: String, CaseIterable {
     case dashboard = "홈"
-    case record = "기록"
     case simulation = "분석"
+    case record = "기록"
     case menu = "메뉴"
     
     var icon: String {
         switch self {
         case .dashboard: return "house.fill"
-        case .record: return "calendar"
         case .simulation: return "chart.line.uptrend.xyaxis"
+        case .record: return "calendar"
         case .menu: return "line.3.horizontal"
         }
     }
@@ -68,19 +68,19 @@ struct MainTabView: View {
                     }
                     .tag(MainTab.dashboard)
                 
-                RecordTabView(viewModel: viewModel)
-                    .tabItem {
-                        Image(systemName: MainTab.record.icon)
-                        Text(MainTab.record.rawValue)
-                    }
-                    .tag(MainTab.record)
-                
                 SimulationView(viewModel: simulationViewModel)
                     .tabItem {
                         Image(systemName: MainTab.simulation.icon)
                         Text(MainTab.simulation.rawValue)
                     }
                     .tag(MainTab.simulation)
+                
+                RecordTabView(viewModel: viewModel)
+                    .tabItem {
+                        Image(systemName: MainTab.record.icon)
+                        Text(MainTab.record.rawValue)
+                    }
+                    .tag(MainTab.record)
                 
                 SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
                     .tabItem {

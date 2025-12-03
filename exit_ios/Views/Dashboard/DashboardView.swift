@@ -87,7 +87,7 @@ struct DashboardView: View {
         Group {
             if let result = viewModel.retirementResult {
                 if result.monthsToRetirement == 0 {
-                    Text("이미 은퇴 가능합니다! 🎉")
+                    Text("은퇴 가능합니다! 🎉")
                         .font(.Exit.title2)
                         .foregroundStyle(Color.Exit.primaryText)
                 } else {
@@ -204,14 +204,13 @@ struct DashboardView: View {
                         HStack(spacing: 0) {
                             Text("연복리 수익률 ")
                                 .foregroundStyle(Color.Exit.secondaryText)
-                            Text(String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                            Text(String(format: "%.1f%%", scenario.postRetirementReturnRate))
                                 .foregroundStyle(Color.Exit.accent)
                                 .fontWeight(.semibold)
                             Text("로 투자해야 합니다.")
                                 .foregroundStyle(Color.Exit.secondaryText)
                         }
                         .font(.Exit.subheadline)
-                        
                     }
                 } else {
                     VStack(alignment: .leading, spacing: ExitSpacing.sm) {
