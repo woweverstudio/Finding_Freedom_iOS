@@ -22,15 +22,17 @@ struct SimulationView: View {
     var body: some View {
         VStack(spacing: 0) {
             // 상단 헤더 (스크롤에 따라 컴팩트 모드 전환)
-            PlanHeaderView(
-                scenario: appState.activeScenario,
-                currentAssetAmount: appState.currentAssetAmount,
-                hideAmounts: appState.hideAmounts,
-                isCompact: isHeaderCompact,
-                onScenarioTap: {
-                    appState.showScenarioSheet = true
-                }
-            )
+            if viewModel.displayResult != nil && viewModel.isSimulating == false {
+                PlanHeaderView(
+                    scenario: appState.activeScenario,
+                    currentAssetAmount: appState.currentAssetAmount,
+                    hideAmounts: appState.hideAmounts,
+                    isCompact: isHeaderCompact,
+                    onScenarioTap: {
+                        appState.showScenarioSheet = true
+                    }
+                )
+            }
             
             // 메인 컨텐츠
             ZStack {

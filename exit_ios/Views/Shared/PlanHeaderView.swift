@@ -28,8 +28,10 @@ struct PlanHeaderView: View {
         VStack(spacing: 0) {
             if isCompact {
                 compactHeader
+                    .transition(.scale)
             } else {
                 expandedHeader
+                    .transition(.scale)
             }
         }
         .background(Color.Exit.background)
