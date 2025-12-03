@@ -9,9 +9,7 @@ import SwiftUI
 
 /// 대시보드 탭 (메인 홈 화면)
 struct DashboardView: View {
-    @Bindable var viewModel: HomeViewModel
-    @Binding var hideAmounts: Bool
-    @Binding var scrollOffset: CGFloat
+    @Environment(\.appState) private var appState
     @State private var showFormulaSheet = false
     
     var body: some View {
@@ -28,15 +26,15 @@ struct DashboardView: View {
                         
                         // 시나리오 탭
                         ScenarioTabBar(
-                            scenarios: viewModel.scenarios,
-                            selectedScenario: viewModel.activeScenario,
+                            scenarios: appState.scenarios,
+                            selectedScenario: appState.activeScenario,
                             onSelect: { scenario in
                                 withAnimation {
-                                    viewModel.selectScenario(scenario)
+                                    appState.selectScenario(scenario)
                                 }
                             },
                             onSettings: {
-                                viewModel.showScenarioSheet = true
+                                appState.showScenarioSheet = true
                             }
                         )
                         
@@ -47,10 +45,21 @@ struct DashboardView: View {
                         calculateFomulaButton
                     }
                     .padding(.vertical, ExitSpacing.lg)
-                    .trackScrollOffset(in: "dashboardScroll", offset: $scrollOffset)
+                    .background(
+                        GeometryReader { geometry in
+                            Color.clear
+                                .preference(
+                                    key: ScrollOffsetPreferenceKey.self,
+                                    value: -geometry.frame(in: .named("dashboardScroll")).minY
+                                )
+                        }
+                    )
                 }
                 .coordinateSpace(name: "dashboardScroll")
-                .onChange(of: viewModel.showScenarioSheet) { _, isShowing in
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    appState.updateScrollOffset(for: .dashboard, offset: value)
+                }
+                .onChange(of: appState.showScenarioSheet) { _, isShowing in
                     // 시나리오 시트가 닫힐 때 스크롤 최상단으로
                     if !isShowing {
                         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
@@ -81,7 +90,7 @@ struct DashboardView: View {
     
     private var dDayMainTitle: some View {
         Group {
-            if let result = viewModel.retirementResult {
+            if let result = appState.retirementResult {
                 if result.monthsToRetirement == 0 {
                     Text("은퇴 가능합니다! 🎉")
                         .font(.Exit.title2)
@@ -115,14 +124,14 @@ struct DashboardView: View {
     private var progressSection: some View {
         VStack(spacing: ExitSpacing.lg) {
             // 진행률 링 차트 + 토글 버튼
-            if let result = viewModel.retirementResult {
+            if let result = appState.retirementResult {
                 ZStack(alignment: .bottom) {
                     ProgressRingView(
-                        progress: viewModel.progressValue,
+                        progress: appState.progressValue,
                         currentAmount: ExitNumberFormatter.formatToEokManWon(result.currentAssets),
                         targetAmount: ExitNumberFormatter.formatToEokManWon(result.targetAssets),
                         percentText: ExitNumberFormatter.formatPercentInt(result.progressPercent),
-                        hideAmounts: hideAmounts
+                        hideAmounts: appState.hideAmounts
                     )
                     .frame(width: 200, height: 200)
                     
@@ -139,7 +148,7 @@ struct DashboardView: View {
         }
         .padding(.horizontal, ExitSpacing.md)
         .sheet(isPresented: $showFormulaSheet) {
-            CalculationFormulaSheet(viewModel: viewModel)
+            CalculationFormulaSheet()
         }
     }
     
@@ -148,13 +157,13 @@ struct DashboardView: View {
     private var amountVisibilityToggle: some View {
         Button {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                hideAmounts.toggle()
+                appState.hideAmounts.toggle()
             }
         } label: {
-            Text(hideAmounts ? "금액 보기" : "금액 숨김")
+            Text(appState.hideAmounts ? "금액 보기" : "금액 숨김")
                 .font(.Exit.caption2)
                 .fontWeight(.medium)
-                .foregroundStyle(hideAmounts ? Color.Exit.accent : Color.Exit.tertiaryText)
+                .foregroundStyle(appState.hideAmounts ? Color.Exit.accent : Color.Exit.tertiaryText)
                 .padding(.horizontal, ExitSpacing.md)
                 .padding(.vertical, ExitSpacing.sm)
                 .background(
@@ -162,7 +171,7 @@ struct DashboardView: View {
                         .fill(Color.Exit.cardBackground)
                         .overlay(
                             Capsule()
-                                .stroke(hideAmounts ? Color.Exit.accent : Color.Exit.divider, lineWidth: 1)
+                                .stroke(appState.hideAmounts ? Color.Exit.accent : Color.Exit.divider, lineWidth: 1)
                         )
                 )
         }
@@ -171,13 +180,13 @@ struct DashboardView: View {
     
     private var detailedCalculationCard: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            if let scenario = viewModel.activeScenario, let result = viewModel.retirementResult {
+            if let scenario = appState.activeScenario, let result = appState.retirementResult {
                 // 현재 자산 / 목표 자산 (1줄 유지, 자동 축소)
                 AssetProgressRow(
                     currentAssets: ExitNumberFormatter.formatToEokManWon(result.currentAssets),
                     targetAssets: ExitNumberFormatter.formatToEokManWon(result.targetAssets),
                     percent: ExitNumberFormatter.formatPercentInt(result.progressPercent),
-                    isHidden: hideAmounts
+                    isHidden: appState.hideAmounts
                 )
                 
                 Divider()
@@ -259,7 +268,7 @@ struct DashboardView: View {
     
     private var scenarioSettingsCard: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            if let scenario = viewModel.activeScenario, let result = viewModel.retirementResult {
+            if let scenario = appState.activeScenario, let result = appState.retirementResult {
                 // 헤더
                 HStack {
                     Text("시나리오")
@@ -294,15 +303,15 @@ struct DashboardView: View {
                     ScenarioSettingRow(
                         label: "현재 순자산",
                         value: ExitNumberFormatter.formatToEokManWon(result.currentAssets),
-                        isHidden: hideAmounts
+                        isHidden: appState.hideAmounts
                     )
                     
                     // 가정 금액이 있으면 상세 표시
                     if scenario.assetOffset != 0 {
                         ScenarioSettingRow(
                             label: "  └ 실제 자산",
-                            value: ExitNumberFormatter.formatToEokManWon(viewModel.currentAssetAmount),
-                            isHidden: hideAmounts,
+                            value: ExitNumberFormatter.formatToEokManWon(appState.currentAssetAmount),
+                            isHidden: appState.hideAmounts,
                             valueColor: Color.Exit.secondaryText
                         )
                         ScenarioSettingRow(
@@ -342,7 +351,7 @@ struct DashboardView: View {
                 
                 // 시나리오 수정 버튼
                 Button {
-                    viewModel.showScenarioSheet = true
+                    appState.showScenarioSheet = true
                 } label: {
                     HStack(spacing: ExitSpacing.sm) {
                         Image(systemName: "slider.horizontal.3")
@@ -385,7 +394,8 @@ struct DashboardView: View {
 #Preview {
     ZStack {
         Color.Exit.background.ignoresSafeArea()
-        DashboardView(viewModel: HomeViewModel(), hideAmounts: .constant(false), scrollOffset: .constant(0))
+        DashboardView()
     }
     .preferredColorScheme(.dark)
+    .environment(\.appState, AppStateManager())
 }

@@ -9,8 +9,8 @@ import SwiftUI
 
 /// 시뮬레이션 탭 메인 뷰
 struct SimulationView: View {
+    @Environment(\.appState) private var appState
     @Bindable var viewModel: SimulationViewModel
-    @Binding var scrollOffset: CGFloat
     @State private var showSettingsSheet = false
     
     var body: some View {
@@ -164,9 +164,20 @@ struct SimulationView: View {
                 actionButtons                
             }
             .padding(.vertical, ExitSpacing.lg)
-            .trackScrollOffset(in: "simulationScroll", offset: $scrollOffset)
+            .background(
+                GeometryReader { geometry in
+                    Color.clear
+                        .preference(
+                            key: ScrollOffsetPreferenceKey.self,
+                            value: -geometry.frame(in: .named("simulationScroll")).minY
+                        )
+                }
+            )
         }
         .coordinateSpace(name: "simulationScroll")
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+            appState.updateScrollOffset(for: .simulation, offset: value)
+        }
     }
     
     // MARK: - Action Buttons
@@ -613,7 +624,8 @@ struct SimulationSettingsSheet: View {
 #Preview {
     ZStack {
         Color.Exit.background.ignoresSafeArea()
-        SimulationView(viewModel: SimulationViewModel(), scrollOffset: .constant(0))
+        SimulationView(viewModel: SimulationViewModel())
     }
     .preferredColorScheme(.dark)
+    .environment(\.appState, AppStateManager())
 }

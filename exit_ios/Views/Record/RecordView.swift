@@ -9,8 +9,7 @@ import SwiftUI
 
 /// 기록 탭 전체 뷰
 struct RecordTabView: View {
-    @Bindable var viewModel: HomeViewModel
-    @Binding var scrollOffset: CGFloat
+    @Environment(\.appState) private var appState
     @State private var selectedYear: Int = Calendar.current.component(.year, from: Date())
     @State private var updateToDelete: MonthlyUpdate?
     @State private var showDeleteConfirmation: Bool = false
@@ -30,7 +29,7 @@ struct RecordTabView: View {
         var years = Set<Int>()
         years.insert(currentYear)
         
-        for update in viewModel.monthlyUpdates {
+        for update in appState.monthlyUpdates {
             if update.yearMonth.count >= 4,
                let year = Int(String(update.yearMonth.prefix(4))) {
                 years.insert(year)
@@ -42,7 +41,7 @@ struct RecordTabView: View {
     
     /// 선택한 년도의 입금 기록
     private var filteredUpdates: [MonthlyUpdate] {
-        viewModel.monthlyUpdates.filter { update in
+        appState.monthlyUpdates.filter { update in
             guard update.yearMonth.count >= 4,
                   let year = Int(String(update.yearMonth.prefix(4))) else { return false }
             return year == selectedYear
@@ -135,12 +134,23 @@ struct RecordTabView: View {
                         .frame(height: 80)
                 }
                 .padding(.vertical, ExitSpacing.lg)
-                .trackScrollOffset(in: "recordScroll", offset: $scrollOffset)
+                .background(
+                    GeometryReader { geometry in
+                        Color.clear
+                            .preference(
+                                key: ScrollOffsetPreferenceKey.self,
+                                value: -geometry.frame(in: .named("recordScroll")).minY
+                            )
+                    }
+                )
             }
             .coordinateSpace(name: "recordScroll")
+            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                appState.updateScrollOffset(for: .record, offset: value)
+            }
             
             // 플로팅 액션 버튼
-            FloatingActionButtons(viewModel: viewModel)
+            FloatingActionButtons()
         }
         .onAppear {
             startEntryAnimation()
@@ -227,7 +237,7 @@ struct RecordTabView: View {
     // MARK: - "내 계획" 시나리오 찾기
     
     private var myPlanScenario: Scenario? {
-        viewModel.scenarios.first { $0.isSystemScenario } ?? viewModel.activeScenario
+        appState.scenarios.first { $0.isSystemScenario } ?? appState.activeScenario
     }
     
     /// 입금 달성도 점수 (0~100)
@@ -550,8 +560,8 @@ struct RecordTabView: View {
                         DepositHistoryRow(
                             update: update,
                             onEdit: {
-                                viewModel.editingYearMonth = update.yearMonth
-                                viewModel.showDepositSheet = true
+                                appState.editingYearMonth = update.yearMonth
+                                appState.showDepositSheet = true
                             },
                             onDelete: {
                                 updateToDelete = update
@@ -575,7 +585,7 @@ struct RecordTabView: View {
             Button("삭제", role: .destructive) {
                 if let update = updateToDelete {
                     withAnimation {
-                        viewModel.deleteMonthlyUpdate(update)
+                        appState.deleteMonthlyUpdate(update)
                     }
                     updateToDelete = nil
                 }
@@ -603,8 +613,8 @@ struct RecordTabView: View {
 #Preview {
     ZStack {
         Color.Exit.background.ignoresSafeArea()
-        RecordTabView(viewModel: HomeViewModel(), scrollOffset: .constant(0))
+        RecordTabView()
     }
     .preferredColorScheme(.dark)
+    .environment(\.appState, AppStateManager())
 }
-

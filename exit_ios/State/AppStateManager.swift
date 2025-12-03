@@ -1,5 +1,5 @@
 //
-//  HomeViewModel.swift
+//  AppStateManager.swift
 //  exit_ios
 //
 //  Created by Exit on 2025.
@@ -10,18 +10,20 @@ import SwiftData
 import Observation
 import SwiftUI
 
+/// 앱 전역 상태 관리자
+/// Environment로 주입되어 모든 View에서 접근 가능
 @Observable
-final class HomeViewModel {
+final class AppStateManager {
     // MARK: - Dependencies
     
     private var modelContext: ModelContext?
     
-    // MARK: - State
+    // MARK: - Data State (DB에서 로드)
     
     /// 현재 자산 (앱 전체 단일)
     var currentAsset: Asset?
     
-    /// 현재 활성 시나리오
+    /// 활성 시나리오
     var activeScenario: Scenario?
     
     /// 모든 시나리오
@@ -36,8 +38,37 @@ final class HomeViewModel {
     /// 자산 스냅샷 히스토리
     var assetSnapshots: [AssetSnapshot] = []
     
-    /// 은퇴 계산 결과
+    /// 은퇴 계산 결과 (자동 계산)
     var retirementResult: RetirementCalculationResult?
+    
+    // MARK: - UI State
+    
+    /// 현재 선택된 탭
+    var selectedTab: MainTab = .dashboard
+    
+    /// 금액 숨김 여부
+    var hideAmounts: Bool = false
+    
+    /// 각 탭별 스크롤 오프셋
+    var dashboardScrollOffset: CGFloat = 0
+    var simulationScrollOffset: CGFloat = 0
+    var recordScrollOffset: CGFloat = 0
+    var settingsScrollOffset: CGFloat = 0
+    
+    /// 현재 탭의 스크롤 오프셋
+    var currentScrollOffset: CGFloat {
+        switch selectedTab {
+        case .dashboard: return dashboardScrollOffset
+        case .simulation: return simulationScrollOffset
+        case .record: return recordScrollOffset
+        case .menu: return settingsScrollOffset
+        }
+    }
+    
+    /// 헤더 컴팩트 모드 여부 (스크롤 20pt 이상)
+    var isHeaderCompact: Bool {
+        currentScrollOffset > 20
+    }
     
     // MARK: - Sheet States
     
@@ -50,11 +81,11 @@ final class HomeViewModel {
     /// 시나리오 설정 시트 표시
     var showScenarioSheet: Bool = false
     
-    /// 수정할 월 (nil이면 새로 입력, 값이 있으면 해당 월 수정)
-    var editingYearMonth: String? = nil
-    
     /// 입금 완료 후 자산 업데이트 확인 표시
     var showAssetUpdateConfirm: Bool = false
+    
+    /// 수정할 월 (nil이면 새로 입력, 값이 있으면 해당 월 수정)
+    var editingYearMonth: String? = nil
     
     // MARK: - Input States
     
@@ -72,45 +103,9 @@ final class HomeViewModel {
     
     // MARK: - Computed Properties
     
-    /// 현재 자산 금액 (Asset.amount)
+    /// 현재 자산 금액
     var currentAssetAmount: Double {
         currentAsset?.amount ?? 0
-    }
-    
-    /// D-DAY 메인 텍스트
-    var dDayMainText: String {
-        guard let result = retirementResult else {
-            return "계산 중..."
-        }
-        if result.monthsToRetirement == 0 {
-            return "이미 은퇴 가능합니다! 🎉"
-        }
-        return "회사 탈출까지 \(result.dDayString) 남았습니다."
-    }
-    
-    /// D-DAY 서브 텍스트
-    var dDaySubText: String {
-        guard let scenario = activeScenario, let result = retirementResult else {
-            return ""
-        }
-        let monthlyFormatted = ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment)
-        let incomeFormatted = ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome)
-        
-        if result.monthsToRetirement == 0 {
-            return "축하합니다! 목표 달성!"
-        }
-        return "매월 \(monthlyFormatted)씩 넣으면\n\(result.dDayString) 후 일 안하고 월 \(incomeFormatted) 놀고먹기 가능"
-    }
-    
-    /// 진행률 표시 텍스트
-    var progressText: String {
-        guard let result = retirementResult else {
-            return "0만원 / 0만원 (0%)"
-        }
-        let current = ExitNumberFormatter.formatToEokManWon(result.currentAssets)
-        let target = ExitNumberFormatter.formatToEokManWon(result.targetAssets)
-        let percent = ExitNumberFormatter.formatPercentInt(result.progressPercent)
-        return "\(current) / \(target) (\(percent))"
     }
     
     /// 진행률 (0~1)
@@ -188,6 +183,7 @@ final class HomeViewModel {
     // MARK: - Initialization
     
     func configure(with context: ModelContext) {
+        guard modelContext == nil else { return }
         self.modelContext = context
         loadData()
     }
@@ -242,14 +238,13 @@ final class HomeViewModel {
     func calculateResults() {
         guard let scenario = activeScenario else { return }
         
-        // 은퇴 계산 (현재 자산 + 시나리오 오프셋 적용)
         retirementResult = RetirementCalculator.calculate(
             from: scenario,
             currentAsset: currentAssetAmount
         )
     }
     
-    // MARK: - Actions
+    // MARK: - Scenario Actions
     
     /// 시나리오 선택
     func selectScenario(_ scenario: Scenario) {
@@ -260,164 +255,6 @@ final class HomeViewModel {
         calculateResults()
     }
     
-    /// 입금 처리 (레거시)
-    /// - Parameters:
-    ///   - isPassiveIncome: 패시브인컴 여부 (배당금, 이자, 월세 등)
-    ///   - depositType: 입금 유형 이름 (기록용)
-    func submitDeposit(isPassiveIncome: Bool = false, depositType: String = "") {
-        guard let context = modelContext else { return }
-        
-        // 입금 날짜 기준 연월
-        let yearMonth = MonthlyUpdate.yearMonth(from: depositDate)
-        
-        if let existingUpdate = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) {
-            // 기존 기록 업데이트
-            if isPassiveIncome {
-                existingUpdate.passiveIncome += depositAmount
-            } else {
-                existingUpdate.depositAmount += depositAmount
-            }
-            existingUpdate.totalAssets = currentAssetAmount + depositAmount
-            existingUpdate.depositDate = depositDate
-            existingUpdate.recordedAt = Date()
-        } else {
-            // 새 기록 생성
-            let newUpdate = MonthlyUpdate(
-                yearMonth: yearMonth,
-                depositAmount: isPassiveIncome ? 0 : depositAmount,
-                passiveIncome: isPassiveIncome ? depositAmount : 0,
-                totalAssets: currentAssetAmount + depositAmount,
-                assetTypes: Array(selectedAssetTypes),
-                depositDate: depositDate
-            )
-            context.insert(newUpdate)
-        }
-        
-        try? context.save()
-        
-        // 초기화 및 재계산
-        depositAmount = 0
-        depositDate = Date()
-        loadData()
-        showDepositSheet = false
-    }
-    
-    /// 카테고리별 입금 처리 (신규)
-    /// - Parameters:
-    ///   - yearMonth: 연월 문자열 (yyyyMM)
-    ///   - salaryAmount: 월급/보너스
-    ///   - dividendAmount: 배당금
-    ///   - interestAmount: 이자 수입
-    ///   - rentAmount: 월세/임대료
-    ///   - otherAmount: 기타 입금
-    func submitCategoryDeposit(
-        yearMonth: String,
-        salaryAmount: Double,
-        dividendAmount: Double,
-        interestAmount: Double,
-        rentAmount: Double,
-        otherAmount: Double
-    ) {
-        guard let context = modelContext else { return }
-        
-        if let existingUpdate = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) {
-            // 카테고리별 금액 업데이트
-            existingUpdate.salaryAmount = salaryAmount
-            existingUpdate.dividendAmount = dividendAmount
-            existingUpdate.interestAmount = interestAmount
-            existingUpdate.rentAmount = rentAmount
-            existingUpdate.otherAmount = otherAmount
-            
-            // 레거시 필드 동기화
-            existingUpdate.depositAmount = salaryAmount + otherAmount
-            existingUpdate.passiveIncome = dividendAmount + interestAmount + rentAmount
-            
-            // 총 자산은 현재 Asset 값으로 기록
-            existingUpdate.totalAssets = currentAssetAmount
-            existingUpdate.recordedAt = Date()
-        } else {
-            // 새 기록 생성
-            let newUpdate = MonthlyUpdate(
-                yearMonth: yearMonth,
-                salaryAmount: salaryAmount,
-                dividendAmount: dividendAmount,
-                interestAmount: interestAmount,
-                rentAmount: rentAmount,
-                otherAmount: otherAmount,
-                totalAssets: currentAssetAmount,
-                assetTypes: Array(selectedAssetTypes)
-            )
-            context.insert(newUpdate)
-        }
-        
-        try? context.save()
-        
-        // 데이터 리로드
-        loadData()
-        
-        // 시트 닫고 자산 업데이트 확인 표시
-        showDepositSheet = false
-        
-        // 약간의 딜레이 후 자산 업데이트 확인 표시
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            self?.showAssetUpdateConfirm = true
-        }
-    }
-    
-    /// 자산 변동 업데이트
-    func submitAssetUpdate() {
-        guard let context = modelContext else { return }
-        
-        let yearMonth = AssetSnapshot.currentYearMonth()
-        
-        // Asset 업데이트 또는 생성
-        if let asset = currentAsset {
-            asset.update(amount: totalAssetsInput, assetTypes: Array(selectedAssetTypes))
-        } else {
-            let newAsset = Asset(amount: totalAssetsInput, assetTypes: Array(selectedAssetTypes))
-            context.insert(newAsset)
-            currentAsset = newAsset
-        }
-        
-        // AssetSnapshot 업데이트 또는 생성
-        if let existingSnapshot = assetSnapshots.first(where: { $0.yearMonth == yearMonth }) {
-            existingSnapshot.amount = totalAssetsInput
-            existingSnapshot.assetTypes = Array(selectedAssetTypes)
-            existingSnapshot.snapshotDate = Date()
-        } else {
-            let newSnapshot = AssetSnapshot(
-                yearMonth: yearMonth,
-                amount: totalAssetsInput,
-                assetTypes: Array(selectedAssetTypes)
-            )
-            context.insert(newSnapshot)
-        }
-        
-        // MonthlyUpdate의 totalAssets도 동기화 (있으면)
-        if let existingUpdate = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) {
-            existingUpdate.totalAssets = totalAssetsInput
-            existingUpdate.assetTypes = Array(selectedAssetTypes)
-            existingUpdate.recordedAt = Date()
-        }
-        
-        try? context.save()
-        
-        loadData()
-        showAssetUpdateSheet = false
-        showAssetUpdateConfirm = false
-    }
-    
-    /// 자산 종류 토글
-    func toggleAssetType(_ type: String) {
-        if selectedAssetTypes.contains(type) {
-            selectedAssetTypes.remove(type)
-        } else {
-            selectedAssetTypes.insert(type)
-        }
-    }
-    
-    // MARK: - Scenario Management
-    
     /// 시나리오 복제
     func duplicateScenario(_ scenario: Scenario) {
         guard let context = modelContext else { return }
@@ -427,7 +264,6 @@ final class HomeViewModel {
     }
     
     /// 시나리오 삭제
-    /// - Note: "내 계획" 시나리오는 삭제 불가
     func deleteScenario(_ scenario: Scenario) {
         guard let context = modelContext, scenarios.count > 1, scenario.isDeletable else { return }
         ScenarioManager.deleteScenario(scenario, from: scenarios, context: context)
@@ -464,17 +300,172 @@ final class HomeViewModel {
         }
     }
     
-    // MARK: - Monthly Update Management
+    // MARK: - Deposit Actions
+    
+    /// 입금 처리 (레거시)
+    func submitDeposit(isPassiveIncome: Bool = false, depositType: String = "") {
+        guard let context = modelContext else { return }
+        
+        let yearMonth = MonthlyUpdate.yearMonth(from: depositDate)
+        
+        if let existingUpdate = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) {
+            if isPassiveIncome {
+                existingUpdate.passiveIncome += depositAmount
+            } else {
+                existingUpdate.depositAmount += depositAmount
+            }
+            existingUpdate.totalAssets = currentAssetAmount + depositAmount
+            existingUpdate.depositDate = depositDate
+            existingUpdate.recordedAt = Date()
+        } else {
+            let newUpdate = MonthlyUpdate(
+                yearMonth: yearMonth,
+                depositAmount: isPassiveIncome ? 0 : depositAmount,
+                passiveIncome: isPassiveIncome ? depositAmount : 0,
+                totalAssets: currentAssetAmount + depositAmount,
+                assetTypes: Array(selectedAssetTypes),
+                depositDate: depositDate
+            )
+            context.insert(newUpdate)
+        }
+        
+        try? context.save()
+        
+        depositAmount = 0
+        depositDate = Date()
+        loadData()
+        showDepositSheet = false
+    }
+    
+    /// 카테고리별 입금 처리
+    func submitCategoryDeposit(
+        yearMonth: String,
+        salaryAmount: Double,
+        dividendAmount: Double,
+        interestAmount: Double,
+        rentAmount: Double,
+        otherAmount: Double
+    ) {
+        guard let context = modelContext else { return }
+        
+        if let existingUpdate = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) {
+            existingUpdate.salaryAmount = salaryAmount
+            existingUpdate.dividendAmount = dividendAmount
+            existingUpdate.interestAmount = interestAmount
+            existingUpdate.rentAmount = rentAmount
+            existingUpdate.otherAmount = otherAmount
+            existingUpdate.depositAmount = salaryAmount + otherAmount
+            existingUpdate.passiveIncome = dividendAmount + interestAmount + rentAmount
+            existingUpdate.totalAssets = currentAssetAmount
+            existingUpdate.recordedAt = Date()
+        } else {
+            let newUpdate = MonthlyUpdate(
+                yearMonth: yearMonth,
+                salaryAmount: salaryAmount,
+                dividendAmount: dividendAmount,
+                interestAmount: interestAmount,
+                rentAmount: rentAmount,
+                otherAmount: otherAmount,
+                totalAssets: currentAssetAmount,
+                assetTypes: Array(selectedAssetTypes)
+            )
+            context.insert(newUpdate)
+        }
+        
+        try? context.save()
+        loadData()
+        showDepositSheet = false
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.showAssetUpdateConfirm = true
+        }
+    }
     
     /// 입금 기록 삭제
     func deleteMonthlyUpdate(_ update: MonthlyUpdate) {
         guard let context = modelContext else { return }
-        
-        // 삭제
         context.delete(update)
         try? context.save()
-        
-        // 데이터 다시 로드
         loadData()
     }
+    
+    // MARK: - Asset Actions
+    
+    /// 자산 변동 업데이트
+    func submitAssetUpdate() {
+        guard let context = modelContext else { return }
+        
+        let yearMonth = AssetSnapshot.currentYearMonth()
+        
+        if let asset = currentAsset {
+            asset.update(amount: totalAssetsInput, assetTypes: Array(selectedAssetTypes))
+        } else {
+            let newAsset = Asset(amount: totalAssetsInput, assetTypes: Array(selectedAssetTypes))
+            context.insert(newAsset)
+            currentAsset = newAsset
+        }
+        
+        if let existingSnapshot = assetSnapshots.first(where: { $0.yearMonth == yearMonth }) {
+            existingSnapshot.amount = totalAssetsInput
+            existingSnapshot.assetTypes = Array(selectedAssetTypes)
+            existingSnapshot.snapshotDate = Date()
+        } else {
+            let newSnapshot = AssetSnapshot(
+                yearMonth: yearMonth,
+                amount: totalAssetsInput,
+                assetTypes: Array(selectedAssetTypes)
+            )
+            context.insert(newSnapshot)
+        }
+        
+        if let existingUpdate = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) {
+            existingUpdate.totalAssets = totalAssetsInput
+            existingUpdate.assetTypes = Array(selectedAssetTypes)
+            existingUpdate.recordedAt = Date()
+        }
+        
+        try? context.save()
+        
+        loadData()
+        showAssetUpdateSheet = false
+        showAssetUpdateConfirm = false
+    }
+    
+    /// 자산 종류 토글
+    func toggleAssetType(_ type: String) {
+        if selectedAssetTypes.contains(type) {
+            selectedAssetTypes.remove(type)
+        } else {
+            selectedAssetTypes.insert(type)
+        }
+    }
+    
+    // MARK: - Scroll Offset Updates
+    
+    func updateScrollOffset(for tab: MainTab, offset: CGFloat) {
+        switch tab {
+        case .dashboard:
+            dashboardScrollOffset = offset
+        case .simulation:
+            simulationScrollOffset = offset
+        case .record:
+            recordScrollOffset = offset
+        case .menu:
+            settingsScrollOffset = offset
+        }
+    }
 }
+
+// MARK: - Environment Key
+
+struct AppStateManagerKey: EnvironmentKey {
+    static let defaultValue: AppStateManager = AppStateManager()
+}
+
+extension EnvironmentValues {
+    var appState: AppStateManager {
+        get { self[AppStateManagerKey.self] }
+        set { self[AppStateManagerKey.self] = newValue }
+    }
+}
+

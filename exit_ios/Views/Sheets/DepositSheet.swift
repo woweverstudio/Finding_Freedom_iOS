@@ -65,7 +65,7 @@ enum DepositStep: Int, CaseIterable {
 
 /// 입금 시트
 struct DepositSheet: View {
-    @Bindable var viewModel: HomeViewModel
+    @Environment(\.appState) private var appState
     @Environment(\.dismiss) private var dismiss
     
     @State private var currentStep: DepositStep = .selectMonth
@@ -103,7 +103,7 @@ struct DepositSheet: View {
     
     /// 기존 기록이 있는 월들의 Set
     private var existingMonthsSet: Set<String> {
-        Set(viewModel.monthlyUpdates.map { $0.yearMonth })
+        Set(appState.monthlyUpdates.map { $0.yearMonth })
     }
     
     /// 현재 선택된 월에 기존 기록이 있는지
@@ -175,13 +175,13 @@ struct DepositSheet: View {
         }
         .onDisappear {
             // 시트가 닫힐 때 editingYearMonth 초기화
-            viewModel.editingYearMonth = nil
+            appState.editingYearMonth = nil
         }
     }
     
     /// 수정 모드 설정
     private func setupEditMode() {
-        if let editingYearMonth = viewModel.editingYearMonth,
+        if let editingYearMonth = appState.editingYearMonth,
            editingYearMonth.count >= 6,
            let year = Int(String(editingYearMonth.prefix(4))),
            let month = Int(String(editingYearMonth.suffix(2))) {
@@ -276,7 +276,7 @@ struct DepositSheet: View {
     
     /// 기존 기록 불러오기
     private func loadExistingRecord() {
-        if let existingUpdate = viewModel.monthlyUpdates.first(where: { $0.yearMonth == selectedYearMonth }) {
+        if let existingUpdate = appState.monthlyUpdates.first(where: { $0.yearMonth == selectedYearMonth }) {
             salaryAmount = existingUpdate.salaryAmount
             dividendAmount = existingUpdate.dividendAmount
             interestAmount = existingUpdate.interestAmount
@@ -330,7 +330,7 @@ struct DepositSheet: View {
     
     /// 입금 제출
     private func submitDeposit() {
-        viewModel.submitCategoryDeposit(
+        appState.submitCategoryDeposit(
             yearMonth: selectedYearMonth,
             salaryAmount: salaryAmount,
             dividendAmount: dividendAmount,
@@ -344,7 +344,7 @@ struct DepositSheet: View {
 // MARK: - Preview
 
 #Preview {
-    DepositSheet(viewModel: HomeViewModel())
+    DepositSheet()
         .preferredColorScheme(.dark)
+        .environment(\.appState, AppStateManager())
 }
-

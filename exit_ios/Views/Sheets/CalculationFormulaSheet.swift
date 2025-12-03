@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct CalculationFormulaSheet: View {
-    @Bindable var viewModel: HomeViewModel
+    @Environment(\.appState) private var appState
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -88,7 +88,7 @@ struct CalculationFormulaSheet: View {
             .padding(.vertical, ExitSpacing.md)
             
             // 현재 값 예시
-            if let scenario = viewModel.activeScenario, let result = viewModel.retirementResult {
+            if let scenario = appState.activeScenario, let result = appState.retirementResult {
                 VStack(alignment: .leading, spacing: ExitSpacing.sm) {
                     Text("현재 설정값:")
                         .font(.Exit.caption)
@@ -159,7 +159,7 @@ struct CalculationFormulaSheet: View {
             .padding(.vertical, ExitSpacing.sm)
             
             // 현재 값 예시
-            if let scenario = viewModel.activeScenario, let result = viewModel.retirementResult {
+            if let scenario = appState.activeScenario, let result = appState.retirementResult {
                 VStack(alignment: .leading, spacing: ExitSpacing.sm) {
                     Text("현재 설정값:")
                         .font(.Exit.caption)
@@ -280,7 +280,7 @@ private struct FormulaSheetNoteItem: View {
 // MARK: - Preview
 
 #Preview {
-    CalculationFormulaSheet(viewModel: HomeViewModel())
+    CalculationFormulaSheet()
         .preferredColorScheme(.dark)
+        .environment(\.appState, AppStateManager())
 }
-

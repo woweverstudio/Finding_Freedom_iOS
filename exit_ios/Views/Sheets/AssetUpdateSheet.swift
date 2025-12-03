@@ -9,8 +9,13 @@ import SwiftUI
 
 /// 자산 변동 업데이트 시트
 struct AssetUpdateSheet: View {
-    @Bindable var viewModel: HomeViewModel
+    @Environment(\.appState) private var appState
     @Environment(\.dismiss) private var dismiss
+    
+    // @Observable 객체에서 바인딩을 사용하려면 @Bindable 필요
+    private var bindableAppState: Bindable<AppStateManager> {
+        Bindable(appState)
+    }
     
     @State private var showAssetTypes = false
     
@@ -29,11 +34,11 @@ struct AssetUpdateSheet: View {
                                 .foregroundStyle(Color.Exit.secondaryText)
                             
                             // 원 단위 (천 단위 콤마)
-                            Text(ExitNumberFormatter.formatToWon(viewModel.totalAssetsInput))
+                            Text(ExitNumberFormatter.formatToWon(appState.totalAssetsInput))
                                 .font(.Exit.numberDisplay)
-                                .foregroundStyle(viewModel.totalAssetsInput < 0 ? Color.Exit.warning : Color.Exit.primaryText)
+                                .foregroundStyle(appState.totalAssetsInput < 0 ? Color.Exit.warning : Color.Exit.primaryText)
                                 .contentTransition(.numericText())
-                                .animation(.easeInOut(duration: 0.1), value: viewModel.totalAssetsInput)
+                                .animation(.easeInOut(duration: 0.1), value: appState.totalAssetsInput)
                         }
                         
                         Button {
@@ -48,7 +53,7 @@ struct AssetUpdateSheet: View {
                                 
                                 Spacer()
                                 
-                                Text("\(viewModel.selectedAssetTypes.count)개 선택")
+                                Text("\(appState.selectedAssetTypes.count)개 선택")
                                     .font(.Exit.caption)
                                     .foregroundStyle(Color.Exit.accent)
                                 
@@ -71,14 +76,14 @@ struct AssetUpdateSheet: View {
                 
                 if !showAssetTypes {
                     CustomNumberKeyboard(
-                        value: $viewModel.totalAssetsInput,
+                        value: bindableAppState.totalAssetsInput,
                         showNegativeToggle: true
                     )
                     .transition(.scale)
                 }
                 
                 Button {
-                    viewModel.submitAssetUpdate()
+                    appState.submitAssetUpdate()
                 } label: {
                     Text("업데이트 완료")
                         .exitPrimaryButton()
@@ -97,22 +102,22 @@ struct AssetUpdateSheet: View {
         ], spacing: ExitSpacing.md) {
             ForEach(UserProfile.availableAssetTypes, id: \.self) { type in
                 Button {
-                    viewModel.toggleAssetType(type)
+                    appState.toggleAssetType(type)
                 } label: {
                     HStack {
                         Text(type)
                             .font(.Exit.body)
                         Spacer()
-                        if viewModel.selectedAssetTypes.contains(type) {
+                        if appState.selectedAssetTypes.contains(type) {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 12, weight: .bold))
                         }
                     }
-                    .foregroundStyle(viewModel.selectedAssetTypes.contains(type) ? Color.Exit.primaryText : Color.Exit.secondaryText)
+                    .foregroundStyle(appState.selectedAssetTypes.contains(type) ? Color.Exit.primaryText : Color.Exit.secondaryText)
                     .padding(ExitSpacing.md)
                     .background(
                         RoundedRectangle(cornerRadius: ExitRadius.sm)
-                            .fill(viewModel.selectedAssetTypes.contains(type) ? Color.Exit.accent.opacity(0.2) : Color.Exit.secondaryCardBackground)
+                            .fill(appState.selectedAssetTypes.contains(type) ? Color.Exit.accent.opacity(0.2) : Color.Exit.secondaryCardBackground)
                     )
                 }
                 .buttonStyle(.plain)
@@ -147,4 +152,3 @@ struct AssetUpdateSheet: View {
         .padding(.top, ExitSpacing.lg)
     }
 }
-

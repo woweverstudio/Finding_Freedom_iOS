@@ -10,7 +10,7 @@ import SwiftData
 
 /// 시나리오 설정 풀스크린 시트
 struct ScenarioSettingsView: View {
-    @Bindable var viewModel: HomeViewModel
+    @Environment(\.appState) private var appState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
@@ -71,7 +71,7 @@ struct ScenarioSettingsView: View {
             }
         }
         .onAppear {
-            selectedScenario = viewModel.activeScenario ?? viewModel.scenarios.first
+            selectedScenario = appState.activeScenario ?? appState.scenarios.first
         }
         .alert("새 시나리오", isPresented: $showNewScenarioAlert) {
             TextField("시나리오 이름", text: $newScenarioName)
@@ -80,8 +80,8 @@ struct ScenarioSettingsView: View {
             }
             Button("생성") {
                 if !newScenarioName.isEmpty {
-                    viewModel.createNewScenario(name: newScenarioName)
-                    viewModel.loadData()
+                    appState.createNewScenario(name: newScenarioName)
+                    appState.loadData()
                     newScenarioName = ""
                 }
             }
@@ -93,7 +93,7 @@ struct ScenarioSettingsView: View {
             }
             Button("변경") {
                 if let scenario = selectedScenario, !renameText.isEmpty {
-                    viewModel.renameScenario(scenario, to: renameText)
+                    appState.renameScenario(scenario, to: renameText)
                     renameText = ""
                 }
             }
@@ -102,8 +102,8 @@ struct ScenarioSettingsView: View {
             Button("취소", role: .cancel) {}
             Button("삭제", role: .destructive) {
                 if let scenario = selectedScenario {
-                    viewModel.deleteScenario(scenario)
-                    selectedScenario = viewModel.scenarios.first
+                    appState.deleteScenario(scenario)
+                    selectedScenario = appState.scenarios.first
                 }
             }
         } message: {
@@ -145,7 +145,7 @@ struct ScenarioSettingsView: View {
     private var scenarioTabs: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: ExitSpacing.sm) {
-                ForEach(viewModel.scenarios, id: \.id) { scenario in
+                ForEach(appState.scenarios, id: \.id) { scenario in
                     ScenarioTab(
                         name: scenario.name,
                         isSelected: scenario.id == selectedScenario?.id,
@@ -158,7 +158,7 @@ struct ScenarioSettingsView: View {
                 }
                 
                 // 새 시나리오 버튼
-                if viewModel.scenarios.count < ScenarioManager.maxScenarios {
+                if appState.scenarios.count < ScenarioManager.maxScenarios {
                     Button {
                         showNewScenarioAlert = true
                     } label: {
@@ -202,7 +202,7 @@ struct ScenarioSettingsView: View {
                     .foregroundStyle(Color.Exit.secondaryText)
                 
                 HStack {
-                    Text(ExitNumberFormatter.formatToEokManWon(viewModel.currentAssetAmount))
+                    Text(ExitNumberFormatter.formatToEokManWon(appState.currentAssetAmount))
                         .font(.Exit.body)
                         .foregroundStyle(Color.Exit.primaryText)
                     
@@ -240,7 +240,7 @@ struct ScenarioSettingsView: View {
                     .foregroundStyle(Color.Exit.secondaryText)
                 
                 HStack {
-                    let effectiveAsset = scenario.effectiveAsset(with: viewModel.currentAssetAmount)
+                    let effectiveAsset = scenario.effectiveAsset(with: appState.currentAssetAmount)
                     Text(ExitNumberFormatter.formatToEokManWon(effectiveAsset))
                         .font(.Exit.body)
                         .fontWeight(.semibold)
@@ -298,8 +298,8 @@ struct ScenarioSettingsView: View {
     private func actionButtons(for scenario: Scenario) -> some View {
         HStack(spacing: ExitSpacing.md) {
             Button {
-                viewModel.duplicateScenario(scenario)
-                viewModel.loadData()
+                appState.duplicateScenario(scenario)
+                appState.loadData()
             } label: {
                 Label("복제하기", systemImage: "doc.on.doc")
                     .font(.Exit.caption)
@@ -308,7 +308,7 @@ struct ScenarioSettingsView: View {
                     .background(Color.Exit.cardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
             }
-            .disabled(viewModel.scenarios.count >= ScenarioManager.maxScenarios)
+            .disabled(appState.scenarios.count >= ScenarioManager.maxScenarios)
             
             Button {
                 renameText = scenario.name
@@ -333,7 +333,7 @@ struct ScenarioSettingsView: View {
                     .background(scenario.isDeletable ? Color.Exit.warning.opacity(0.1) : Color.Exit.secondaryCardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
             }
-            .disabled(viewModel.scenarios.count <= 1 || !scenario.isDeletable)
+            .disabled(appState.scenarios.count <= 1 || !scenario.isDeletable)
             
             Spacer()
         }
@@ -345,8 +345,8 @@ struct ScenarioSettingsView: View {
     private var saveButton: some View {
         Button {
             if let scenario = selectedScenario {
-                viewModel.selectScenario(scenario)
-                viewModel.updateScenario(scenario)
+                appState.selectScenario(scenario)
+                appState.updateScenario(scenario)
             }
             dismiss()
         } label: {
@@ -585,11 +585,12 @@ private struct AmountEditSheet: View {
         container.mainContext.insert(scenario)
     }
     
-    let viewModel = HomeViewModel()
-    viewModel.scenarios = scenarios
-    viewModel.activeScenario = scenarios.first
+    let appState = AppStateManager()
+    appState.scenarios = scenarios
+    appState.activeScenario = scenarios.first
     
-    return ScenarioSettingsView(viewModel: viewModel)
+    return ScenarioSettingsView()
         .modelContainer(container)
         .preferredColorScheme(.dark)
+        .environment(\.appState, appState)
 }

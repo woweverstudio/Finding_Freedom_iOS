@@ -10,9 +10,9 @@ import SwiftData
 
 /// 설정 화면 메인 뷰
 struct SettingsView: View {
+    @Environment(\.appState) private var appState
     @Bindable var viewModel: SettingsViewModel
     @Binding var shouldNavigateToWelcome: Bool
-    @Binding var scrollOffset: CGFloat
     
     var body: some View {
         ZStack {
@@ -40,9 +40,20 @@ struct SettingsView: View {
                     }
                     .padding(.horizontal, ExitSpacing.md)
                     .padding(.vertical, ExitSpacing.lg)
-                    .trackScrollOffset(in: "settingsScroll", offset: $scrollOffset)
+                    .background(
+                        GeometryReader { geometry in
+                            Color.clear
+                                .preference(
+                                    key: ScrollOffsetPreferenceKey.self,
+                                    value: -geometry.frame(in: .named("settingsScroll")).minY
+                                )
+                        }
+                    )
                 }
                 .coordinateSpace(name: "settingsScroll")
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    appState.updateScrollOffset(for: .menu, offset: value)
+                }
             }
         }
         .sheet(isPresented: $viewModel.showReminderSheet) {
@@ -696,9 +707,9 @@ struct ReminderEditSheet: View {
 #Preview {
     SettingsView(
         viewModel: SettingsViewModel(),
-        shouldNavigateToWelcome: .constant(false),
-        scrollOffset: .constant(0)
+        shouldNavigateToWelcome: .constant(false)
     )
     .preferredColorScheme(.dark)
+    .environment(\.appState, AppStateManager())
 }
 

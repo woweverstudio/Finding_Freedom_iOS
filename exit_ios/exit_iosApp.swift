@@ -32,11 +32,15 @@ struct exit_iosApp: App {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
+    
+    /// 전역 앱 상태 관리자
+    @State private var appStateManager = AppStateManager()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .preferredColorScheme(.dark)
+                .environment(\.appState, appStateManager)
         }
         .modelContainer(sharedModelContainer)
     }

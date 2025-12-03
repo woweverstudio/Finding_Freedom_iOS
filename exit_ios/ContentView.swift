@@ -29,6 +29,7 @@ enum MainTab: String, CaseIterable {
 /// 온보딩 완료 여부에 따라 온보딩 또는 메인 탭 화면을 표시
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.appState) private var appState
     @Query private var userProfiles: [UserProfile]
     
     /// 온보딩 완료 여부
@@ -45,6 +46,9 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .onAppear {
+            appState.configure(with: modelContext)
+        }
     }
 }
 
@@ -52,32 +56,14 @@ struct ContentView: View {
 /// 구조: 상단 PlanHeader + 중앙 컨텐츠(스크롤) + 하단 탭바
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var viewModel = HomeViewModel()
+    @Environment(\.appState) private var appState
     @State private var simulationViewModel = SimulationViewModel()
     @State private var settingsViewModel = SettingsViewModel()
-    @State private var hideAmounts = false
-    @State private var selectedTab: MainTab = .dashboard
     @State private var shouldNavigateToWelcome = false
     
-    /// 각 탭별 스크롤 오프셋
-    @State private var dashboardScrollOffset: CGFloat = 0
-    @State private var simulationScrollOffset: CGFloat = 0
-    @State private var recordScrollOffset: CGFloat = 0
-    @State private var settingsScrollOffset: CGFloat = 0
-    
-    /// 현재 탭의 스크롤 오프셋
-    private var currentScrollOffset: CGFloat {
-        switch selectedTab {
-        case .dashboard: return dashboardScrollOffset
-        case .simulation: return simulationScrollOffset
-        case .record: return recordScrollOffset
-        case .menu: return settingsScrollOffset
-        }
-    }
-    
-    /// 컴팩트 모드 여부 (스크롤 20pt 이상이면 컴팩트)
-    private var isHeaderCompact: Bool {
-        currentScrollOffset > 20
+    // @Observable 객체에서 바인딩을 사용하려면 @Bindable 필요
+    private var bindableAppState: Bindable<AppStateManager> {
+        Bindable(appState)
     }
     
     var body: some View {
@@ -86,39 +72,39 @@ struct MainTabView: View {
             VStack(spacing: 0) {
                 // 상단: 계획 설정값 헤더 (스크롤에 따라 축소)
                 PlanHeaderView(
-                    scenario: viewModel.activeScenario,
-                    currentAssetAmount: viewModel.currentAssetAmount,
-                    hideAmounts: hideAmounts,
-                    isCompact: isHeaderCompact,
+                    scenario: appState.activeScenario,
+                    currentAssetAmount: appState.currentAssetAmount,
+                    hideAmounts: appState.hideAmounts,
+                    isCompact: appState.isHeaderCompact,
                     onScenarioTap: {
-                        viewModel.showScenarioSheet = true
+                        appState.showScenarioSheet = true
                     }
                 )
                 
                 // 중앙: 탭별 컨텐츠
-                TabView(selection: $selectedTab) {
-                    DashboardView(viewModel: viewModel, hideAmounts: $hideAmounts, scrollOffset: $dashboardScrollOffset)
+                TabView(selection: bindableAppState.selectedTab) {
+                    DashboardView()
                         .tabItem {
                             Image(systemName: MainTab.dashboard.icon)
                             Text(MainTab.dashboard.rawValue)
                         }
                         .tag(MainTab.dashboard)
                     
-                    SimulationView(viewModel: simulationViewModel, scrollOffset: $simulationScrollOffset)
+                    SimulationView(viewModel: simulationViewModel)
                         .tabItem {
                             Image(systemName: MainTab.simulation.icon)
                             Text(MainTab.simulation.rawValue)
                         }
                         .tag(MainTab.simulation)
                     
-                    RecordTabView(viewModel: viewModel, scrollOffset: $recordScrollOffset)
+                    RecordTabView()
                         .tabItem {
                             Image(systemName: MainTab.record.icon)
                             Text(MainTab.record.rawValue)
                         }
                         .tag(MainTab.record)
                     
-                    SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome, scrollOffset: $settingsScrollOffset)
+                    SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
                         .tabItem {
                             Image(systemName: MainTab.menu.icon)
                             Text(MainTab.menu.rawValue)
@@ -130,12 +116,11 @@ struct MainTabView: View {
             }
             
             // 입금 완료 후 자산 업데이트 확인 다이얼로그
-            if viewModel.showAssetUpdateConfirm {
+            if appState.showAssetUpdateConfirm {
                 assetUpdateConfirmOverlay
             }
         }
         .onAppear {
-            viewModel.configure(with: modelContext)
             simulationViewModel.configure(with: modelContext)
             settingsViewModel.configure(with: modelContext)
         }
@@ -143,14 +128,14 @@ struct MainTabView: View {
             // 데이터 삭제 후 앱 재시작을 위해 UserProfile을 다시 체크
             // ContentView에서 hasCompletedOnboarding을 확인하므로 자동으로 WelcomeView로 이동
         }
-        .fullScreenCover(isPresented: $viewModel.showDepositSheet) {
-            DepositSheet(viewModel: viewModel)
+        .fullScreenCover(isPresented: bindableAppState.showDepositSheet) {
+            DepositSheet()
         }
-        .sheet(isPresented: $viewModel.showAssetUpdateSheet) {
-            AssetUpdateSheet(viewModel: viewModel)
+        .sheet(isPresented: bindableAppState.showAssetUpdateSheet) {
+            AssetUpdateSheet()
         }
-        .fullScreenCover(isPresented: $viewModel.showScenarioSheet) {
-            ScenarioSettingsView(viewModel: viewModel)
+        .fullScreenCover(isPresented: bindableAppState.showScenarioSheet) {
+            ScenarioSettingsView()
         }
     }
     
@@ -163,7 +148,7 @@ struct MainTabView: View {
                 .ignoresSafeArea()
                 .onTapGesture {
                     withAnimation(.spring(response: 0.3)) {
-                        viewModel.showAssetUpdateConfirm = false
+                        appState.showAssetUpdateConfirm = false
                     }
                 }
             
@@ -196,14 +181,14 @@ struct MainTabView: View {
                         Text("현재 기록된 자산:")
                             .font(.Exit.caption)
                             .foregroundStyle(Color.Exit.tertiaryText)
-                        Text(ExitNumberFormatter.formatToEokManWon(viewModel.currentAssetAmount))
+                        Text(ExitNumberFormatter.formatToEokManWon(appState.currentAssetAmount))
                             .font(.Exit.caption)
                             .fontWeight(.semibold)
                             .foregroundStyle(Color.Exit.accent)
                     }
                     
-                    if let asset = viewModel.currentAsset {
-                        Text("(\(viewModel.lastAssetUpdateText) 기준)")
+                    if appState.currentAsset != nil {
+                        Text("(\(appState.lastAssetUpdateText) 기준)")
                             .font(.Exit.caption2)
                             .foregroundStyle(Color.Exit.tertiaryText)
                     }
@@ -214,7 +199,7 @@ struct MainTabView: View {
                     // 나중에 버튼
                     Button {
                         withAnimation(.spring(response: 0.3)) {
-                            viewModel.showAssetUpdateConfirm = false
+                            appState.showAssetUpdateConfirm = false
                         }
                     } label: {
                         Text("나중에")
@@ -231,15 +216,15 @@ struct MainTabView: View {
                     // 자산 업데이트 버튼
                     Button {
                         withAnimation(.spring(response: 0.3)) {
-                            viewModel.showAssetUpdateConfirm = false
+                            appState.showAssetUpdateConfirm = false
                         }
                         // 약간의 딜레이 후 자산 업데이트 시트 표시
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            viewModel.totalAssetsInput = viewModel.currentAssetAmount
-                            if let asset = viewModel.currentAsset {
-                                viewModel.selectedAssetTypes = Set(asset.assetTypes)
+                            appState.totalAssetsInput = appState.currentAssetAmount
+                            if let asset = appState.currentAsset {
+                                appState.selectedAssetTypes = Set(asset.assetTypes)
                             }
-                            viewModel.showAssetUpdateSheet = true
+                            appState.showAssetUpdateSheet = true
                         }
                     } label: {
                         Text("자산 업데이트")
@@ -274,4 +259,5 @@ struct MainTabView: View {
             AssetSnapshot.self,
             DepositReminder.self
         ], inMemory: true)
+        .environment(\.appState, AppStateManager())
 }

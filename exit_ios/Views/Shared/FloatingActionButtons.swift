@@ -9,18 +9,18 @@ import SwiftUI
 
 /// 하단 플로팅 액션 버튼 (자산 업데이트 + 입금하기)
 struct FloatingActionButtons: View {
-    @Bindable var viewModel: HomeViewModel
+    @Environment(\.appState) private var appState
     
     var body: some View {
         HStack(spacing: ExitSpacing.md) {
             // 자산 변동 업데이트 (좌측)
             Button {
                 // 현재 Asset 값으로 초기화
-                viewModel.totalAssetsInput = viewModel.currentAssetAmount
-                if let asset = viewModel.currentAsset {
-                    viewModel.selectedAssetTypes = Set(asset.assetTypes)
+                appState.totalAssetsInput = appState.currentAssetAmount
+                if let asset = appState.currentAsset {
+                    appState.selectedAssetTypes = Set(asset.assetTypes)
                 }
-                viewModel.showAssetUpdateSheet = true
+                appState.showAssetUpdateSheet = true
             } label: {
                 HStack(spacing: ExitSpacing.xs) {
                     Image(systemName: "arrow.triangle.2.circlepath")
@@ -43,9 +43,9 @@ struct FloatingActionButtons: View {
             
             // 입금하기 (우측)
             Button {
-                viewModel.depositAmount = 0
-                viewModel.depositDate = Date()
-                viewModel.showDepositSheet = true
+                appState.depositAmount = 0
+                appState.depositDate = Date()
+                appState.showDepositSheet = true
             } label: {
                 HStack(spacing: ExitSpacing.xs) {
                     Image(systemName: "plus.circle.fill")
@@ -81,9 +81,9 @@ struct FloatingActionButtons: View {
         Color.Exit.background.ignoresSafeArea()
         VStack {
             Spacer()
-            FloatingActionButtons(viewModel: HomeViewModel())
+            FloatingActionButtons()
         }
     }
     .preferredColorScheme(.dark)
+    .environment(\.appState, AppStateManager())
 }
-
