@@ -33,33 +33,27 @@ struct SimulationEmptyView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: ExitSpacing.xxl) {
-                    // Hero 섹션
-                    heroSection
-                    
-                    // 왜 필요한가? 섹션
-                    whyNeedSection
-                    
-                    // 무엇을 알 수 있는가? 섹션
-                    whatYouGetSection
-                    
-                    // 데모 차트 섹션
-                    demoChartSection
-                    
-                    // 가격 및 가치 제안
-                    valuePropositionSection
-                    
-                    // 하단 여백 (플로팅 버튼 공간)
-                    Spacer()
-                        .frame(height: 120)
-                }
-                .padding(.top, ExitSpacing.lg)
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: ExitSpacing.xxl) {
+                // Hero 섹션
+                heroSection
+                
+                // 왜 필요한가? 섹션
+                whyNeedSection
+                
+                // 무엇을 알 수 있는가? 섹션
+                whatYouGetSection
+                
+                // 데모 차트 섹션
+                demoChartSection
+                
+                // 가격 및 가치 제안
+                valuePropositionSection
+                
+                Spacer()
+                    .frame(height: 10)
             }
-            
-            // 플로팅 구매 버튼
-            floatingPurchaseButton
+            .padding(.top, ExitSpacing.lg)
         }
     }
     
@@ -584,6 +578,9 @@ struct SimulationEmptyView: View {
             if let scenario = scenario {
                 currentDataPreview(scenario: scenario)
             }
+            
+            // 플로팅 구매 버튼
+            floatingPurchaseButton
         }
         .padding(.horizontal, ExitSpacing.md)
     }
@@ -641,62 +638,49 @@ struct SimulationEmptyView: View {
     // MARK: - Floating Purchase Button
     
     private var floatingPurchaseButton: some View {
-        VStack(spacing: 0) {
-            // 그라데이션 오버레이
-            LinearGradient(
-                colors: [Color.Exit.background.opacity(0), Color.Exit.background],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 40)
-            
-            VStack(spacing: ExitSpacing.sm) {
-                Button {
-                    onStart()
-                } label: {
-                    HStack(spacing: ExitSpacing.sm) {
-                        if isPurchased {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 16))
-                            Text("시뮬레이션 시작")
-                                .font(.Exit.body)
-                                .fontWeight(.semibold)
-                        } else {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 16))
-                            Text("프리미엄 기능 구매하기")
-                                .font(.Exit.body)
-                                .fontWeight(.semibold)
-                        }
+        VStack(spacing: ExitSpacing.sm) {
+            Button {
+                onStart()
+            } label: {
+                HStack(spacing: ExitSpacing.sm) {
+                    if isPurchased {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 16))
+                        Text("시뮬레이션 시작")
+                            .font(.Exit.body)
+                            .fontWeight(.semibold)
+                    } else {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 16))
+                        Text("프리미엄 기능 구매하기")
+                            .font(.Exit.body)
+                            .fontWeight(.semibold)
                     }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, ExitSpacing.md)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(hex: "00D4AA"), Color(hex: "00B894")],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, ExitSpacing.md)
+                .background(
+                    LinearGradient(
+                        colors: [Color(hex: "00D4AA"), Color(hex: "00B894")],
+                        startPoint: .leading,
+                        endPoint: .trailing
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: ExitRadius.xl))
-                    .shadow(color: Color.Exit.accent.opacity(0.4), radius: 12, x: 0, y: 6)
-                }
-                .buttonStyle(.plain)
-                
-                if !isPurchased {
-                    Text("₩4,900 • 한 번 구매로 평생 사용")
-                        .font(.Exit.caption)
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                } else {
-                    Text("약 3~5초 소요됩니다")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.xl))
+                .shadow(color: Color.Exit.accent.opacity(0.4), radius: 12, x: 0, y: 6)
             }
-            .padding(.horizontal, ExitSpacing.md)
-            .padding(.bottom, ExitSpacing.lg)
-            .background(Color.Exit.background)
+            .buttonStyle(.plain)
+            
+            if !isPurchased {
+                Text("₩4,900 • 한 번 구매로 평생 사용")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+            } else {
+                Text("약 3~5초 소요됩니다")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+            }
         }
     }
     

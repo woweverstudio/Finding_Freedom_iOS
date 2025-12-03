@@ -43,11 +43,7 @@ struct DashboardView: View {
                         scenarioSettingsCard
                         
                         // 계산방법 보기 버튼
-                        calculateFomulaButton                    
-                        
-                        // 플로팅 버튼 공간
-                        Spacer()
-                            .frame(height: 80)
+                        calculateFomulaButton
                     }
                     .padding(.vertical, ExitSpacing.lg)
                 }
@@ -60,9 +56,6 @@ struct DashboardView: View {
                     }
                 }
             }
-            
-            // 플로팅 액션 버튼
-            FloatingActionButtons(viewModel: viewModel)
         }
     }
     
