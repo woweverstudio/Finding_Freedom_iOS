@@ -17,24 +17,6 @@ struct ScenarioTabBar: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: ExitSpacing.sm) {
-                // 시나리오 설정 버튼
-                Button(action: onSettings) {
-                    HStack(spacing: ExitSpacing.xs) {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.Exit.caption)
-                        Text("설정")
-                            .font(.Exit.caption)
-                    }
-                    .foregroundStyle(Color.Exit.secondaryText)
-                    .padding(.horizontal, ExitSpacing.md)
-                    .padding(.vertical, ExitSpacing.sm)
-                    .background(
-                        RoundedRectangle(cornerRadius: ExitRadius.full)
-                            .stroke(Color.Exit.divider, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-                
                 // 시나리오 칩들
                 ForEach(scenarios, id: \.id) { scenario in
                     ScenarioChip(

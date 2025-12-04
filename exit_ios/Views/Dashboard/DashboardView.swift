@@ -42,6 +42,9 @@ struct DashboardView: View {
                         // 진행률 섹션
                         progressSection
                         
+                        // 시나리오 조정 안내 (10년 이상 남았을 때만 표시)
+                        scenarioHintCard
+                        
                         // 시나리오 탭
                         ScenarioTabBar(
                             scenarios: appState.scenarios,
@@ -159,6 +162,60 @@ struct DashboardView: View {
         .padding(.horizontal, ExitSpacing.md)
         .sheet(isPresented: $showFormulaSheet) {
             CalculationFormulaSheet()
+        }
+    }
+    
+    // MARK: - Scenario Hint Card
+    
+    @ViewBuilder
+    private var scenarioHintCard: some View {
+        // 10년(120개월) 이상 남았을 때만 표시
+        if let result = appState.retirementResult, result.monthsToRetirement >= 120 {
+            Button {
+                appState.showScenarioSheet = true
+            } label: {
+                HStack(spacing: ExitSpacing.md) {
+                    // 아이콘
+                    ZStack {
+                        Circle()
+                            .fill(Color.Exit.accent.opacity(0.15))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: "lightbulb.fill")
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color.Exit.accent)
+                    }
+                    
+                    // 텍스트
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("시간을 앞당길 수 있어요!")
+                            .font(.Exit.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.Exit.primaryText)
+                        
+                        Text("시나리오 설정을 조정해서 탈출 시점을 당겨보세요")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                }
+                .padding(ExitSpacing.md)
+                .background(
+                    RoundedRectangle(cornerRadius: ExitRadius.lg)
+                        .fill(Color.Exit.cardBackground)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: ExitRadius.lg)
+                                .stroke(Color.Exit.accent.opacity(0.3), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, ExitSpacing.md)
         }
     }
     

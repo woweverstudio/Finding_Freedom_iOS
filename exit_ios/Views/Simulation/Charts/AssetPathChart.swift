@@ -270,6 +270,7 @@ struct AssetPathChart: View {
                     // 바 차트
                     GeometryReader { geometry in
                         let barWidth = (CGFloat(item.months) / CGFloat(maxMonths)) * geometry.size.width
+                        let showTextInside = barWidth > 80
                         
                         ZStack(alignment: .leading) {
                             // 배경
@@ -280,16 +281,24 @@ struct AssetPathChart: View {
                             // 바
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(item.color.opacity(0.8))
-                                .frame(width: max(barWidth, 40), height: 24)
+                                .frame(width: max(barWidth, 8), height: 24)
                             
-                            // 값 표시
-                            Text(formatYears(item.months))
-                                .font(.Exit.caption2)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(barWidth > 60 ? .white : item.color)
-                                .padding(.horizontal, 8)
-                                .frame(width: max(barWidth, 40), alignment: barWidth > 60 ? .trailing : .leading)
-                                .offset(x: barWidth > 60 ? 0 : max(barWidth, 40))
+                            // 바 안에 값 표시 (바가 충분히 클 때)
+                            if showTextInside {
+                                Text(formatYears(item.months))
+                                    .font(.Exit.caption2)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .frame(width: barWidth, alignment: .trailing)
+                            } else {
+                                Text(formatYears(item.months))
+                                    .font(.Exit.caption2)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.white)
+                                    .padding(.leading, 8)
+                                    .frame(width: geometry.size.width, alignment: .leading)
+                            }
                         }
                     }
                     .frame(height: 24)
