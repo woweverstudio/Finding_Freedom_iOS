@@ -54,9 +54,15 @@ struct PlanHeaderView: View {
             HStack(spacing: ExitSpacing.sm) {
                 // 시나리오 이름
                 Text(scenario?.name ?? "내 계획")
-                    .font(.Exit.caption2)
+                    .font(.Exit.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.Exit.accent)
+                    .padding(.horizontal, ExitSpacing.sm)
+                    .padding(.vertical, ExitSpacing.xs)
+                    .background(
+                        Capsule()
+                            .fill(Color.Exit.accent.opacity(0.15))
+                    )
                 
                 Spacer()
                 
@@ -84,7 +90,7 @@ struct PlanHeaderView: View {
                     Text(String(format: "%.1f%%", scenario?.preRetirementReturnRate ?? 0))
                         .foregroundStyle(Color.Exit.accent)
                 }
-                .font(.Exit.caption2)
+                .font(.Exit.caption)
                 
                 Image(systemName: "chevron.down")
                     .font(.system(size: 8, weight: .bold))
@@ -136,7 +142,7 @@ struct PlanHeaderView: View {
                         .frame(width: 1)
                     
                     tableCell(
-                        label: "목표 월수입",
+                        label: "은퇴 월수입",
                         value: ExitNumberFormatter.formatToManWon(scenario?.desiredMonthlyIncome ?? 0),
                         valueColor: Color.Exit.accent
                     )

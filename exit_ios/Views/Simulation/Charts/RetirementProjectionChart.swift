@@ -410,13 +410,13 @@ struct RetirementProjectionChart: View {
                 HStack(spacing: 0) {
                     Text("시나리오")
                         .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
+                        .foregroundStyle(Color.Exit.secondaryText)
                         .frame(width: 60, alignment: .leading)
                     
                     ForEach([10, 20, 30, 40], id: \.self) { year in
                         Text("\(year)년")
                             .font(.Exit.caption2)
-                            .foregroundStyle(Color.Exit.tertiaryText)
+                            .foregroundStyle(Color.Exit.secondaryText)
                             .frame(maxWidth: .infinity)
                     }
                 }

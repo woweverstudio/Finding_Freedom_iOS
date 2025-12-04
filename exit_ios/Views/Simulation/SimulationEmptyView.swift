@@ -113,7 +113,7 @@ struct SimulationEmptyView: View {
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.Exit.primaryText)
                 
-                Text("30,000가지 미래를 계산해\n당신의 FIRE 확률을 알려드려요")
+                Text("30,000가지 미래를 만들어\n당신의 은퇴계획을 분석해드려요.")
                     .font(.Exit.body)
                     .foregroundStyle(Color.Exit.secondaryText)
                     .multilineTextAlignment(.center)
@@ -149,7 +149,7 @@ struct SimulationEmptyView: View {
                 problemCard(
                     emoji: "🎯",
                     title: "그래서 확률이 중요해요",
-                    description: "\"10년 후에 정확히 2억\"이 아니라 \"10년 후에 2억 달성할 확률 78%\"처럼 현실적으로 알려드려요."
+                    description: "\"10년 후에 정확히 2억\"이 아니라 \"10년 후에 2억 달성할 확률 87%\"처럼 현실적으로 알려드려요."
                 )
             }
             .padding(ExitSpacing.lg)
@@ -326,7 +326,7 @@ struct SimulationEmptyView: View {
                     
                     VStack(alignment: .leading, spacing: ExitSpacing.sm) {
                         bulletPoint(text: "\"딱 10년 후에 2억!\" 같은 확정적인 예측은 거의 틀려요")
-                        bulletPoint(text: "대신 \"빠르면 8년, 보통 12년, 늦으면 16년\"처럼 범위로 알려드려요")
+                        bulletPoint(text: "대신 \"빠르면 10년, 보통 12년, 늦으면 14년\"처럼 범위로 알려드려요")
                         bulletPoint(text: "운이 좋을 때와 나쁠 때 모두 대비할 수 있어요!")
                     }
                 }
@@ -392,7 +392,7 @@ struct SimulationEmptyView: View {
                 
                 // 수익률
                 VStack(spacing: 2) {
-                    Text("올해 수익률")
+                    Text("수익률")
                         .font(.Exit.caption2)
                         .foregroundStyle(Color.Exit.tertiaryText)
                     Text("+12.3%")
@@ -405,7 +405,7 @@ struct SimulationEmptyView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
             
-            Text("이렇게 매년 수익률을 무작위로 정해서 10년, 20년 후 자산을 계산해요")
+            Text("이렇게 매년 수익률을 무작위로 정해서 10년, 20년 후 자산을 예측해요.")
                 .font(.Exit.caption2)
                 .foregroundStyle(Color.Exit.tertiaryText)
                 .multilineTextAlignment(.center)

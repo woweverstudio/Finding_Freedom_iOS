@@ -304,11 +304,6 @@ struct DashboardView: View {
                 
                 // 설정값 테이블
                 VStack(spacing: ExitSpacing.sm) {
-                    ScenarioSettingRow(
-                        label: "은퇴 후 희망 월수입",
-                        value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome)
-                    )
-                    
                     // 현재 순자산 (실제 자산 + 오프셋)
                     ScenarioSettingRow(
                         label: "현재 순자산",
@@ -332,19 +327,25 @@ struct DashboardView: View {
                     }
                     
                     ScenarioSettingRow(
-                        label: "매월 목표 투자금액",
-                        value: ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment)
+                        label: "은퇴 후 희망 월수입",
+                        value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome)
                     )
                     
-                    Divider()
-                        .background(Color.Exit.divider)
-                        .padding(.vertical, ExitSpacing.xs)
+                    ScenarioSettingRow(
+                        label: "매월 목표 투자금액",
+                        value: ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment),
+                        valueColor: Color.Exit.positive
+                    )
                     
                     ScenarioSettingRow(
                         label: "은퇴 전 연 목표 수익률",
                         value: String(format: "%.1f%%", scenario.preRetirementReturnRate),
                         valueColor: Color.Exit.accent
                     )
+                    
+                    Divider()
+                        .background(Color.Exit.divider)
+                        .padding(.vertical, ExitSpacing.xs)
                     
                     ScenarioSettingRow(
                         label: "은퇴 후 연 목표 수익률",
