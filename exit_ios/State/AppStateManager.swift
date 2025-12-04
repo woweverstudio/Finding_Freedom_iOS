@@ -18,6 +18,9 @@ final class AppStateManager {
     
     private var modelContext: ModelContext?
     
+    /// StoreKit 서비스 (인앱결제)
+    let storeKit = StoreKitService()
+    
     // MARK: - Data State (DB에서 로드)
     
     /// 현재 자산 (앱 전체 단일)

@@ -7,17 +7,21 @@
 
 import SwiftUI
 import Charts
+import StoreKit
 
 /// 몬테카를로 시뮬레이션 소개 및 구매 유도 화면
 /// - 유료 기능 소개
 /// - 구매자도 다시 볼 수 있는 팝업으로 사용 가능
 struct SimulationEmptyView: View {
+    @Environment(\.appState) private var appState
+    
     let scenario: Scenario?
     let currentAssetAmount: Double
     let onStart: () -> Void
     let isPurchased: Bool
     
     @State private var animateDemo: Bool = false
+    @State private var isPurchasing: Bool = false
     
     init(
         scenario: Scenario?,
@@ -748,10 +752,32 @@ struct SimulationEmptyView: View {
     private var floatingPurchaseButton: some View {
         VStack(spacing: ExitSpacing.sm) {
             Button {
-                onStart()
+                if isPurchased {
+                    // 이미 구입한 경우 설정 화면으로
+                    onStart()
+                } else {
+                    // 구입 진행
+                    Task {
+                        isPurchasing = true
+                        let success = await appState.storeKit.purchaseMontecarloSimulation()
+                        isPurchasing = false
+                        
+                        // 구입 성공 시 onStart가 SimulationView에서 onChange로 처리됨
+                        if success {
+                            // SimulationView의 onChange가 화면 전환 처리
+                        }
+                    }
+                }
             } label: {
                 HStack(spacing: ExitSpacing.sm) {
-                    if isPurchased {
+                    if isPurchasing {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.9)
+                        Text("구매 중...")
+                            .font(.Exit.body)
+                            .fontWeight(.semibold)
+                    } else if isPurchased {
                         Image(systemName: "play.fill")
                             .font(.system(size: 16))
                         Text("시뮬레이션 시작")
@@ -779,15 +805,44 @@ struct SimulationEmptyView: View {
                 .shadow(color: Color.Exit.accent.opacity(0.4), radius: 12, x: 0, y: 6)
             }
             .buttonStyle(.plain)
+            .disabled(isPurchasing)
             
+            // 가격 표시 또는 복원 버튼
             if !isPurchased {
-                Text("₩4,900 • 한 번 구매로 평생 사용")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.tertiaryText)
+                VStack(spacing: ExitSpacing.xs) {
+                    if let product = appState.storeKit.montecarloProduct {
+                        Text("\(product.displayPrice) • 한 번 구매로 평생 사용")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.tertiaryText)
+                    } else {
+                        Text("₩4,900 • 한 번 구매로 평생 사용")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.tertiaryText)
+                    }
+                    
+                    // 구매 복원 버튼
+                    Button {
+                        Task {
+                            await appState.storeKit.restorePurchases()
+                        }
+                    } label: {
+                        Text("이전 구매 복원")
+                            .font(.Exit.caption2)
+                            .foregroundStyle(Color.Exit.accent)
+                    }
+                }
             } else {
                 Text("약 3~5초 소요됩니다")
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.tertiaryText)
+            }
+            
+            // 에러 메시지
+            if let error = appState.storeKit.errorMessage {
+                Text(error)
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.warning)
+                    .multilineTextAlignment(.center)
             }
         }
     }

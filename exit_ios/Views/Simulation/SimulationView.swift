@@ -11,8 +11,15 @@ import SwiftUI
 struct SimulationView: View {
     @Environment(\.appState) private var appState
     @Bindable var viewModel: SimulationViewModel
-    @State private var showSettingsSheet = false
+    @State private var currentScreen: SimulationScreen = .empty
     @State private var scrollOffset: CGFloat = 0
+    
+    /// 화면 상태
+    enum SimulationScreen {
+        case empty      // 미구입 또는 초기 화면
+        case setup      // 설정 화면
+        case results    // 결과 화면
+    }
     
     /// 스크롤 20pt 이상이면 컴팩트 모드
     private var isHeaderCompact: Bool {
@@ -20,6 +27,65 @@ struct SimulationView: View {
     }
     
     var body: some View {
+        ZStack {
+            // 화면 상태에 따른 뷰 전환
+            switch currentScreen {
+            case .empty:
+                emptyScreenView
+                
+            case .setup:
+                SimulationSetupView(
+                    viewModel: viewModel,
+                    onBack: {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            // 결과가 있으면 결과로, 없으면 empty로
+                            currentScreen = viewModel.displayResult != nil ? .results : .empty
+                        }
+                    },
+                    onStart: {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            currentScreen = .results
+                        }
+                    }
+                )
+                .transition(.move(edge: .trailing))
+                
+            case .results:
+                resultsScreenView
+            }
+        }
+        .onChange(of: appState.storeKit.hasMontecarloSimulation) { _, hasPurchased in
+            // 구입 완료 시 설정 화면으로 이동
+            if hasPurchased && currentScreen == .empty {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    currentScreen = .setup
+                }
+            }
+        }
+    }
+    
+    // MARK: - Empty Screen
+    
+    private var emptyScreenView: some View {
+        SimulationEmptyView(
+            scenario: viewModel.activeScenario,
+            currentAssetAmount: viewModel.currentAssetAmount,
+            onStart: {
+                // 이미 구입한 경우 설정 화면으로
+                if appState.storeKit.hasMontecarloSimulation {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        currentScreen = .setup
+                    }
+                }
+                // 미구입인 경우 EmptyView에서 구입 처리
+            },
+            isPurchased: appState.storeKit.hasMontecarloSimulation
+        )
+    }
+    
+    // MARK: - Results Screen
+    
+    private var resultsScreenView: some View {
         VStack(spacing: 0) {
             // 상단 헤더 (스크롤에 따라 컴팩트 모드 전환)
             if viewModel.displayResult != nil && viewModel.isSimulating == false {
@@ -37,23 +103,14 @@ struct SimulationView: View {
             // 메인 컨텐츠
             ZStack {
                 if viewModel.isSimulating {
-                    // 로딩 화면
                     loadingView
                 } else if let result = viewModel.displayResult {
-                    // 결과 화면
                     resultsView(result: result)
                 } else {
-                    // 초기 화면
-                    SimulationEmptyView(
-                        scenario: viewModel.activeScenario,
-                        currentAssetAmount: viewModel.currentAssetAmount,
-                        onStart: { showSettingsSheet = true }
-                    )
+                    // 결과가 없으면 로딩 화면
+                    loadingView
                 }
             }
-        }
-        .sheet(isPresented: $showSettingsSheet) {
-            SimulationSetupSheet(viewModel: viewModel)
         }
     }
     
@@ -188,457 +245,32 @@ struct SimulationView: View {
     // MARK: - Action Buttons
     
     private var actionButtons: some View {
-        HStack(spacing: ExitSpacing.md) {
-            // 설정 버튼
-            Button {
-                showSettingsSheet = true
-            } label: {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.Exit.accent)
-                    .frame(width: 56, height: 56)
-                    .background(Color.Exit.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: ExitRadius.lg)
-                            .stroke(Color.Exit.accent.opacity(0.3), lineWidth: 1)
-                    )
-            }
-            .buttonStyle(.plain)
-            
-            // 다시 시뮬레이션 버튼
-            Button {
-                showSettingsSheet = true
-            } label: {
-                HStack(spacing: ExitSpacing.sm) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 16, weight: .semibold))
-                    Text("다시 시뮬레이션")
-                        .font(.Exit.body)
-                        .fontWeight(.semibold)
-                }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(
-                    LinearGradient(
-                        colors: [Color(hex: "00D4AA"), Color(hex: "00B894")],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, ExitSpacing.md)
-    }
-}
-
-// MARK: - Simulation Settings Sheet
-
-struct SimulationSettingsSheet: View {
-    @Bindable var viewModel: SimulationViewModel
-    @Environment(\.dismiss) private var dismiss
-    
-    @State private var tempVolatility: Double = 15.0
-    @State private var tempFailureThreshold: Double = 1.1
-    @State private var selectedField: SettingField = .volatility
-    
-    enum SettingField {
-        case volatility
-        case failureThreshold
-    }
-    
-    var body: some View {
-        ZStack {
-            Color.Exit.background.ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                // 헤더
-                header
-                
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: ExitSpacing.xl) {
-                        // 변동성 설정
-                        volatilitySection
-                        
-                        // 실패 조건 설정
-                        failureThresholdSection
-                        
-                        // 퀵 버튼
-                        quickButtons
-                        
-                        // 초기화 버튼
-                        resetButton
-                    }
-                    .padding(.vertical, ExitSpacing.lg)
-                }
-                
-                // 적용 버튼
-                applyButton
-            }
-        }
-        .onAppear {
-            tempVolatility = viewModel.effectiveVolatility
-            tempFailureThreshold = viewModel.failureThresholdMultiplier
-        }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-    }
-    
-    // MARK: - Header
-    
-    private var header: some View {
-        HStack {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.Exit.body)
-                    .foregroundStyle(Color.Exit.secondaryText)
-            }
-            
-            Spacer()
-            
-            Text("시뮬레이션 설정")
-                .font(.Exit.title3)
-                .foregroundStyle(Color.Exit.primaryText)
-            
-            Spacer()
-            
-            // 균형용
-            Image(systemName: "xmark")
-                .font(.Exit.body)
-                .foregroundStyle(.clear)
-        }
-        .padding(.horizontal, ExitSpacing.lg)
-        .padding(.vertical, ExitSpacing.lg)
-    }
-    
-    // MARK: - Volatility Section
-    
-    private var volatilitySection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            // 제목 및 설명
-            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                HStack {
-                    Image(systemName: "waveform.path.ecg")
-                        .foregroundStyle(Color.Exit.accent)
-                    Text("수익률 변동성")
-                        .font(.Exit.title3)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.primaryText)
-                }
-                
-                Text("주식 시장은 매년 수익률이 달라요. 변동성이 높으면 오르락내리락이 심하고, 낮으면 안정적이에요.")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            
-            // 설정 카드
-            settingCard(
-                value: tempVolatility,
-                suffix: "%",
-                isSelected: selectedField == .volatility,
-                onTap: { selectedField = .volatility },
-                onDecrease: {
-                    if tempVolatility > 1 {
-                        tempVolatility -= 1
-                    }
-                },
-                onIncrease: {
-                    if tempVolatility < 50 {
-                        tempVolatility += 1
-                    }
-                }
-            )
-            
-            // 참고 정보
-            referenceInfo(
-                items: [
-                    ("📈 S&P500 역사적 변동성", "약 15~20%"),
-                    ("🏦 채권 중심 포트폴리오", "약 5~10%"),
-                    ("🎢 성장주 중심 포트폴리오", "약 20~30%")
-                ]
-            )
-        }
-        .padding(.horizontal, ExitSpacing.lg)
-    }
-    
-    // MARK: - Failure Threshold Section
-    
-    private var failureThresholdSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            // 제목 및 설명
-            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                HStack {
-                    Image(systemName: "clock.badge.exclamationmark")
-                        .foregroundStyle(Color.Exit.caution)
-                    Text("실패 조건")
-                        .font(.Exit.title3)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.primaryText)
-                }
-                
-                Text("목표 기간보다 얼마나 늦어지면 '실패'로 볼지 정해요. 예를 들어 150%면 10년 목표일 때 15년이 넘으면 실패예요.")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            
-            // 설정 카드
-            settingCard(
-                value: tempFailureThreshold * 100,
-                suffix: "%",
-                isSelected: selectedField == .failureThreshold,
-                onTap: { selectedField = .failureThreshold },
-                onDecrease: {
-                    if tempFailureThreshold > 1.1 {
-                        tempFailureThreshold -= 0.1
-                    }
-                },
-                onIncrease: {
-                    if tempFailureThreshold < 3.0 {
-                        tempFailureThreshold += 0.1
-                    }
-                }
-            )
-            
-            // 현재 적용 예시
-            if viewModel.originalDDayMonths > 0 {
-                let originalYears = viewModel.originalDDayMonths / 12
-                let originalMonths = viewModel.originalDDayMonths % 12
-                let failureMonths = Int(Double(viewModel.originalDDayMonths) * tempFailureThreshold)
-                let failureYears = failureMonths / 12
-                let failureRemainingMonths = failureMonths % 12
-                
-                VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                    HStack(spacing: ExitSpacing.xs) {
-                        Image(systemName: "info.circle.fill")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.Exit.accent)
-                        Text("현재 설정 적용 시")
-                            .font(.Exit.caption2)
-                            .fontWeight(.medium)
-                            .foregroundStyle(Color.Exit.accent)
-                    }
-                    
-                    let originalText = originalMonths > 0 ? "\(originalYears)년 \(originalMonths)개월" : "\(originalYears)년"
-                    let failureText = failureRemainingMonths > 0 ? "\(failureYears)년 \(failureRemainingMonths)개월" : "\(failureYears)년"
-                    
-                    Text("목표: \(originalText) → 실패 기준: \(failureText) 초과")
-                        .font(.Exit.caption)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                }
-                .padding(ExitSpacing.md)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.Exit.accent.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-            }
-        }
-        .padding(.horizontal, ExitSpacing.lg)
-    }
-    
-    // MARK: - Setting Card
-    
-    private func settingCard(
-        value: Double,
-        suffix: String,
-        isSelected: Bool,
-        onTap: @escaping () -> Void,
-        onDecrease: @escaping () -> Void,
-        onIncrease: @escaping () -> Void
-    ) -> some View {
-        HStack {
-            // - 버튼
-            Button(action: onDecrease) {
-                Image(systemName: "minus.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundStyle(Color.Exit.secondaryText)
-            }
-            .buttonStyle(.plain)
-            
-            Spacer()
-            
-            // 값 표시
-            Button(action: onTap) {
-                HStack(alignment: .lastTextBaseline, spacing: 2) {
-                    Text(String(format: "%.0f", value))
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundStyle(isSelected ? Color.Exit.accent : Color.Exit.primaryText)
-                    
-                    Text(suffix)
-                        .font(.Exit.title3)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                }
-            }
-            .buttonStyle(.plain)
-            
-            Spacer()
-            
-            // + 버튼
-            Button(action: onIncrease) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundStyle(Color.Exit.accent)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.vertical, ExitSpacing.lg)
-        .padding(.horizontal, ExitSpacing.xl)
-        .background(
-            RoundedRectangle(cornerRadius: ExitRadius.lg)
-                .fill(Color.Exit.cardBackground)
-                .overlay(
-                    RoundedRectangle(cornerRadius: ExitRadius.lg)
-                        .stroke(isSelected ? Color.Exit.accent : Color.Exit.divider, lineWidth: isSelected ? 2 : 1)
-                )
-        )
-    }
-    
-    // MARK: - Reference Info
-    
-    private func referenceInfo(items: [(String, String)]) -> some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-            ForEach(items, id: \.0) { item in
-                HStack {
-                    Text(item.0)
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                    Spacer()
-                    Text(item.1)
-                        .font(.Exit.caption2)
-                        .fontWeight(.medium)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                }
-            }
-        }
-        .padding(ExitSpacing.md)
-        .background(Color.Exit.secondaryCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-    }
-    
-    // MARK: - Quick Buttons
-    
-    private var quickButtons: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            Text("빠른 조절")
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.secondaryText)
-            
-            HStack(spacing: ExitSpacing.sm) {
-                quickButton("+1%") { adjustSelectedField(by: 1) }
-                quickButton("+5%") { adjustSelectedField(by: 5) }
-                quickButton("+10%") { adjustSelectedField(by: 10) }
-                quickButton("+25%") { adjustSelectedField(by: 25) }
-                quickButton("+50%") { adjustSelectedField(by: 50) }
-            }
-            
-            HStack(spacing: ExitSpacing.sm) {
-                quickButton("-1%") { adjustSelectedField(by: -1) }
-                quickButton("-5%") { adjustSelectedField(by: -5) }
-                quickButton("-10%") { adjustSelectedField(by: -10) }
-                quickButton("-25%") { adjustSelectedField(by: -25) }
-                quickButton("-50%") { adjustSelectedField(by: -50) }
-            }
-        }
-        .padding(.horizontal, ExitSpacing.lg)
-    }
-    
-    private func quickButton(_ label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(.Exit.caption)
-                .fontWeight(.medium)
-                .foregroundStyle(label.hasPrefix("-") ? Color.Exit.warning : Color.Exit.accent)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, ExitSpacing.sm)
-                .background(
-                    (label.hasPrefix("-") ? Color.Exit.warning : Color.Exit.accent).opacity(0.15)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
-        }
-        .buttonStyle(.plain)
-    }
-    
-    private func adjustSelectedField(by percent: Double) {
-        switch selectedField {
-        case .volatility:
-            let newValue = tempVolatility + percent
-            tempVolatility = max(1, min(50, newValue))
-        case .failureThreshold:
-            let newValue = tempFailureThreshold + (percent / 100)
-            tempFailureThreshold = max(1.1, min(3.0, newValue))
-        }
-    }
-    
-    // MARK: - Reset Button
-    
-    private var resetButton: some View {
+        // 다시 시뮬레이션 버튼만 표시
         Button {
-            tempVolatility = viewModel.activeScenario?.returnRateVolatility ?? 15.0
-            tempFailureThreshold = 1.1
-        } label: {
-            HStack(spacing: ExitSpacing.sm) {
-                Image(systemName: "arrow.counterclockwise")
-                    .font(.system(size: 14))
-                Text("기본값으로 초기화")
-                    .font(.Exit.caption)
-            }
-            .foregroundStyle(Color.Exit.secondaryText)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, ExitSpacing.md)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-            .overlay(
-                RoundedRectangle(cornerRadius: ExitRadius.md)
-                    .stroke(Color.Exit.divider, lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, ExitSpacing.lg)
-    }
-    
-    // MARK: - Apply Button
-    
-    private var applyButton: some View {
-        Button {
-            viewModel.updateVolatility(tempVolatility)
-            viewModel.updateFailureThreshold(tempFailureThreshold)
-            dismiss()
-            // 설정 저장 후 시뮬레이션 시작
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                viewModel.refreshSimulation()
+            withAnimation(.easeInOut(duration: 0.25)) {
+                currentScreen = .setup
             }
         } label: {
             HStack(spacing: ExitSpacing.sm) {
-                Image(systemName: "play.fill")
-                    .font(.system(size: 14, weight: .semibold))
-                Text("시뮬레이션 시작")
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 16, weight: .semibold))
+                Text("다시 시뮬레이션")
                     .font(.Exit.body)
                     .fontWeight(.semibold)
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, ExitSpacing.md)
-            .background(LinearGradient.exitAccent)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.xl))
+            .frame(height: 56)
+            .background(
+                LinearGradient(
+                    colors: [Color(hex: "00D4AA"), Color(hex: "00B894")],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, ExitSpacing.lg)
-        .padding(.bottom, ExitSpacing.xl)
+        .padding(.horizontal, ExitSpacing.md)
     }
-}
-
-// MARK: - Preview
-
-#Preview {
-    ZStack {
-        Color.Exit.background.ignoresSafeArea()
-        SimulationView(viewModel: SimulationViewModel())
-    }
-    .preferredColorScheme(.dark)
-    .environment(\.appState, AppStateManager())
 }

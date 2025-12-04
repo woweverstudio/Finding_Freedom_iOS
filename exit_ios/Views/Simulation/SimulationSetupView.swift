@@ -1,5 +1,5 @@
 //
-//  SimulationSetupSheet.swift
+//  SimulationSetupView.swift
 //  exit_ios
 //
 //  Created by Exit on 2025.
@@ -7,11 +7,12 @@
 
 import SwiftUI
 
-/// 시뮬레이션 시작 전 설정 시트
-struct SimulationSetupSheet: View {
+/// 시뮬레이션 시작 전 설정 화면
+struct SimulationSetupView: View {
     @Environment(\.appState) private var appState
-    @Environment(\.dismiss) private var dismiss
     @Bindable var viewModel: SimulationViewModel
+    let onBack: () -> Void
+    let onStart: () -> Void
     
     @State private var selectedScenario: Scenario?
     @State private var failureThreshold: Double = 1.1
@@ -48,8 +49,6 @@ struct SimulationSetupSheet: View {
             selectedScenario = appState.activeScenario ?? appState.scenarios.first
             failureThreshold = viewModel.failureThresholdMultiplier
         }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
     }
     
     // MARK: - Header
@@ -57,9 +56,9 @@ struct SimulationSetupSheet: View {
     private var header: some View {
         HStack {
             Button {
-                dismiss()
+                onBack()
             } label: {
-                Image(systemName: "xmark")
+                Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(Color.Exit.secondaryText)
             }
@@ -74,7 +73,7 @@ struct SimulationSetupSheet: View {
             Spacer()
             
             // 균형용
-            Image(systemName: "xmark")
+            Image(systemName: "chevron.left")
                 .font(.system(size: 16))
                 .foregroundStyle(.clear)
         }
@@ -259,14 +258,12 @@ struct SimulationSetupSheet: View {
                 viewModel.updateVolatility(autoVolatility)
             }
             
-            // 4. 시트 닫기
-            dismiss()
+            // 4. 데이터 로드 및 시뮬레이션 시작
+            viewModel.loadData()
+            viewModel.refreshSimulation()
             
-            // 5. 시뮬레이션 시작
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                viewModel.loadData()
-                viewModel.refreshSimulation()
-            }
+            // 5. 화면 전환
+            onStart()
         } label: {
             HStack(spacing: ExitSpacing.sm) {
                 Image(systemName: "play.fill")
@@ -330,10 +327,3 @@ struct SimulationSetupSheet: View {
         }
     }
 }
-
-#Preview {
-    SimulationSetupSheet(viewModel: SimulationViewModel())
-        .preferredColorScheme(.dark)
-        .environment(\.appState, AppStateManager())
-}
-

@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1F9E0FF52EE1AD8A00B346AC /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F9E0FF42EE1AD8A00B346AC /* StoreKit.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		1F1E49CA2EDADEDB00A35D12 /* exit_ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = exit_ios.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F9E0FF42EE1AD8A00B346AC /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -23,6 +28,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1F9E0FF52EE1AD8A00B346AC /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -33,6 +39,7 @@
 			isa = PBXGroup;
 			children = (
 				1F1E49CC2EDADEDB00A35D12 /* exit_ios */,
+				1F9E0FF32EE1AD8A00B346AC /* Frameworks */,
 				1F1E49CB2EDADEDB00A35D12 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -43,6 +50,14 @@
 				1F1E49CA2EDADEDB00A35D12 /* exit_ios.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		1F9E0FF32EE1AD8A00B346AC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1F9E0FF42EE1AD8A00B346AC /* StoreKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
