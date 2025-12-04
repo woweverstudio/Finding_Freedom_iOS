@@ -77,9 +77,6 @@ final class AppStateManager {
     /// 현재 총 자산 입력
     var totalAssetsInput: Double = 0
     
-    /// 보유 자산 종류
-    var selectedAssetTypes: Set<String> = []
-    
     // MARK: - Computed Properties
     
     /// 현재 자산 금액
@@ -205,10 +202,8 @@ final class AppStateManager {
         // 입력 필드 초기값 설정
         if let asset = currentAsset {
             totalAssetsInput = asset.amount
-            selectedAssetTypes = Set(asset.assetTypes)
         } else if let profile = userProfile {
             totalAssetsInput = profile.currentNetAssets
-            selectedAssetTypes = Set(profile.assetTypes)
         }
     }
     
@@ -302,7 +297,6 @@ final class AppStateManager {
                 depositAmount: isPassiveIncome ? 0 : depositAmount,
                 passiveIncome: isPassiveIncome ? depositAmount : 0,
                 totalAssets: currentAssetAmount + depositAmount,
-                assetTypes: Array(selectedAssetTypes),
                 depositDate: depositDate
             )
             context.insert(newUpdate)
@@ -345,8 +339,7 @@ final class AppStateManager {
                 interestAmount: interestAmount,
                 rentAmount: rentAmount,
                 otherAmount: otherAmount,
-                totalAssets: currentAssetAmount,
-                assetTypes: Array(selectedAssetTypes)
+                totalAssets: currentAssetAmount
             )
             context.insert(newUpdate)
         }
@@ -377,29 +370,26 @@ final class AppStateManager {
         let yearMonth = AssetSnapshot.currentYearMonth()
         
         if let asset = currentAsset {
-            asset.update(amount: totalAssetsInput, assetTypes: Array(selectedAssetTypes))
+            asset.update(amount: totalAssetsInput)
         } else {
-            let newAsset = Asset(amount: totalAssetsInput, assetTypes: Array(selectedAssetTypes))
+            let newAsset = Asset(amount: totalAssetsInput)
             context.insert(newAsset)
             currentAsset = newAsset
         }
         
         if let existingSnapshot = assetSnapshots.first(where: { $0.yearMonth == yearMonth }) {
             existingSnapshot.amount = totalAssetsInput
-            existingSnapshot.assetTypes = Array(selectedAssetTypes)
             existingSnapshot.snapshotDate = Date()
         } else {
             let newSnapshot = AssetSnapshot(
                 yearMonth: yearMonth,
-                amount: totalAssetsInput,
-                assetTypes: Array(selectedAssetTypes)
+                amount: totalAssetsInput
             )
             context.insert(newSnapshot)
         }
         
         if let existingUpdate = monthlyUpdates.first(where: { $0.yearMonth == yearMonth }) {
             existingUpdate.totalAssets = totalAssetsInput
-            existingUpdate.assetTypes = Array(selectedAssetTypes)
             existingUpdate.recordedAt = Date()
         }
         
@@ -408,15 +398,6 @@ final class AppStateManager {
         loadData()
         showAssetUpdateSheet = false
         showAssetUpdateConfirm = false
-    }
-    
-    /// 자산 종류 토글
-    func toggleAssetType(_ type: String) {
-        if selectedAssetTypes.contains(type) {
-            selectedAssetTypes.remove(type)
-        } else {
-            selectedAssetTypes.insert(type)
-        }
     }
 }
 
@@ -432,4 +413,3 @@ extension EnvironmentValues {
         set { self[AppStateManagerKey.self] = newValue }
     }
 }
-

@@ -17,8 +17,6 @@ struct AssetUpdateSheet: View {
         Bindable(appState)
     }
     
-    @State private var showAssetTypes = false
-    
     var body: some View {
         ZStack {
             Color.Exit.background.ignoresSafeArea()
@@ -40,47 +38,14 @@ struct AssetUpdateSheet: View {
                                 .contentTransition(.numericText())
                                 .animation(.easeInOut(duration: 0.1), value: appState.totalAssetsInput)
                         }
-                        
-                        Button {
-                            withAnimation(.bouncy) {
-                                showAssetTypes.toggle()
-                            }
-                        } label: {
-                            HStack {
-                                Text("보유 자산 종류 변경")
-                                    .font(.Exit.subheadline)
-                                    .foregroundStyle(Color.Exit.secondaryText)
-                                
-                                Spacer()
-                                
-                                Text("\(appState.selectedAssetTypes.count)개 선택")
-                                    .font(.Exit.caption)
-                                    .foregroundStyle(Color.Exit.accent)
-                                
-                                Image(systemName: showAssetTypes ? "chevron.up" : "chevron.down")
-                                    .foregroundStyle(Color.Exit.tertiaryText)
-                            }
-                            .padding(ExitSpacing.md)
-                            .background(Color.Exit.cardBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-                        }
-                        .padding(.horizontal, ExitSpacing.md)
-                        
-                        if showAssetTypes {
-                            assetTypeGrid
-                                .transition(.scale)
-                        }
                     }
                     .padding(.top, ExitSpacing.lg)
                 }
                 
-                if !showAssetTypes {
-                    CustomNumberKeyboard(
-                        value: bindableAppState.totalAssetsInput,
-                        showNegativeToggle: true
-                    )
-                    .transition(.scale)
-                }
+                CustomNumberKeyboard(
+                    value: bindableAppState.totalAssetsInput,
+                    showNegativeToggle: true
+                )
                 
                 Button {
                     appState.submitAssetUpdate()
@@ -93,37 +58,6 @@ struct AssetUpdateSheet: View {
             }
         }
         .presentationDetents([.large])
-    }
-    
-    private var assetTypeGrid: some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible()),
-            GridItem(.flexible())
-        ], spacing: ExitSpacing.md) {
-            ForEach(UserProfile.availableAssetTypes, id: \.self) { type in
-                Button {
-                    appState.toggleAssetType(type)
-                } label: {
-                    HStack {
-                        Text(type)
-                            .font(.Exit.body)
-                        Spacer()
-                        if appState.selectedAssetTypes.contains(type) {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .bold))
-                        }
-                    }
-                    .foregroundStyle(appState.selectedAssetTypes.contains(type) ? Color.Exit.primaryText : Color.Exit.secondaryText)
-                    .padding(ExitSpacing.md)
-                    .background(
-                        RoundedRectangle(cornerRadius: ExitRadius.sm)
-                            .fill(appState.selectedAssetTypes.contains(type) ? Color.Exit.accent.opacity(0.2) : Color.Exit.secondaryCardBackground)
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, ExitSpacing.md)
     }
     
     private func sheetHeader(title: String) -> some View {

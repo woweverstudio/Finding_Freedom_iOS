@@ -14,7 +14,6 @@ enum OnboardingStep: Int, CaseIterable {
     case desiredIncome = 0      // 희망 월 수입
     case currentAssets = 1      // 현재 순자산
     case monthlyInvestment = 2  // 월 투자 금액
-    case assetTypes = 3         // 보유 자산 종류
     
     var title: String {
         switch self {
@@ -24,8 +23,6 @@ enum OnboardingStep: Int, CaseIterable {
             return "현재 순자산"
         case .monthlyInvestment:
             return "월 평균 저축·투자 금액"
-        case .assetTypes:
-            return "보유 자산 종류"
         }
     }
     
@@ -37,8 +34,6 @@ enum OnboardingStep: Int, CaseIterable {
             return "투자 가능한 자산만 입력해주세요"
         case .monthlyInvestment:
             return "월급 등 근로 소득만 포함 (배당/이자 재투자 제외)"
-        case .assetTypes:
-            return "복수 선택 가능, 나중에 수정 가능"
         }
     }
     
@@ -50,8 +45,6 @@ enum OnboardingStep: Int, CaseIterable {
             return 0
         case .monthlyInvestment:
             return 500_000   // 50만원
-        case .assetTypes:
-            return 0
         }
     }
 }
@@ -75,9 +68,6 @@ final class OnboardingViewModel {
     /// 월 투자 금액 (원 단위)
     var monthlyInvestment: Double = 500_000
     
-    /// 선택된 자산 종류
-    var selectedAssetTypes: Set<String> = []
-    
     /// 온보딩 완료 여부
     var isCompleted: Bool = false
     
@@ -91,8 +81,6 @@ final class OnboardingViewModel {
                 return currentNetAssets
             case .monthlyInvestment:
                 return monthlyInvestment
-            case .assetTypes:
-                return 0
             }
         }
         set {
@@ -103,8 +91,6 @@ final class OnboardingViewModel {
                 currentNetAssets = newValue
             case .monthlyInvestment:
                 monthlyInvestment = newValue
-            case .assetTypes:
-                break
             }
         }
     }
@@ -116,7 +102,7 @@ final class OnboardingViewModel {
     
     /// 숫자 키보드 표시 여부
     var showsNumberKeyboard: Bool {
-        currentStep != .assetTypes
+        true
     }
     
     // MARK: - Computed
@@ -130,14 +116,12 @@ final class OnboardingViewModel {
             return true  // 0원도 허용
         case .monthlyInvestment:
             return monthlyInvestment >= 0
-        case .assetTypes:
-            return true  // 선택 안 해도 진행 가능
         }
     }
     
     /// 마지막 단계 여부
     var isLastStep: Bool {
-        currentStep == .assetTypes
+        currentStep == .monthlyInvestment
     }
     
     /// 진행률 (0~1)
@@ -167,38 +151,24 @@ final class OnboardingViewModel {
         }
     }
     
-    /// 자산 종류 토글
-    func toggleAssetType(_ type: String) {
-        if selectedAssetTypes.contains(type) {
-            selectedAssetTypes.remove(type)
-        } else {
-            selectedAssetTypes.insert(type)
-        }
-    }
-    
     /// 온보딩 완료 및 데이터 저장
     func completeOnboarding(context: ModelContext) {
         // UserProfile 저장
         let profile = UserProfile(
             desiredMonthlyIncome: desiredMonthlyIncome,
             currentNetAssets: currentNetAssets,
-            monthlyInvestment: monthlyInvestment,
-            assetTypes: Array(selectedAssetTypes)
+            monthlyInvestment: monthlyInvestment
         )
         context.insert(profile)
         
         // Asset 생성 (앱 전체 단일 자산)
-        let asset = Asset(
-            amount: currentNetAssets,
-            assetTypes: Array(selectedAssetTypes)
-        )
+        let asset = Asset(amount: currentNetAssets)
         context.insert(asset)
         
         // AssetSnapshot 생성 (초기 스냅샷)
         let snapshot = AssetSnapshot(
             yearMonth: AssetSnapshot.currentYearMonth(),
-            amount: currentNetAssets,
-            assetTypes: Array(selectedAssetTypes)
+            amount: currentNetAssets
         )
         context.insert(snapshot)
         
@@ -215,8 +185,7 @@ final class OnboardingViewModel {
             yearMonth: MonthlyUpdate.currentYearMonth(),
             depositAmount: 0,
             passiveIncome: 0,
-            totalAssets: currentNetAssets,
-            assetTypes: Array(selectedAssetTypes)
+            totalAssets: currentNetAssets
         )
         context.insert(initialUpdate)
         

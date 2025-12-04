@@ -42,9 +42,6 @@ final class MonthlyUpdate {
     /// 해당 월 총 자산 (원 단위)
     var totalAssets: Double = 0
     
-    /// 보유 자산 종류 (해당 시점)
-    var assetTypes: [String] = []
-    
     /// 입금 날짜 (실제 입금한 날짜)
     var depositDate: Date = Date()
     
@@ -75,7 +72,6 @@ final class MonthlyUpdate {
         depositAmount: Double,
         passiveIncome: Double = 0,
         totalAssets: Double,
-        assetTypes: [String] = [],
         depositDate: Date = Date()
     ) {
         self.id = UUID()
@@ -83,7 +79,6 @@ final class MonthlyUpdate {
         self.depositAmount = depositAmount
         self.passiveIncome = passiveIncome
         self.totalAssets = totalAssets
-        self.assetTypes = assetTypes
         self.depositDate = depositDate
         self.recordedAt = Date()
     }
@@ -96,8 +91,7 @@ final class MonthlyUpdate {
         interestAmount: Double = 0,
         rentAmount: Double = 0,
         otherAmount: Double = 0,
-        totalAssets: Double,
-        assetTypes: [String] = []
+        totalAssets: Double
     ) {
         self.id = UUID()
         self.yearMonth = yearMonth
@@ -110,7 +104,6 @@ final class MonthlyUpdate {
         self.depositAmount = salaryAmount + otherAmount
         self.passiveIncome = dividendAmount + interestAmount + rentAmount
         self.totalAssets = totalAssets
-        self.assetTypes = assetTypes
         self.depositDate = Date()
         self.recordedAt = Date()
     }

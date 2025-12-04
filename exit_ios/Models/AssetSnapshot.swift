@@ -21,19 +21,15 @@ final class AssetSnapshot {
     /// 해당 시점 자산 (원 단위)
     var amount: Double = 0
     
-    /// 보유 자산 종류 (해당 시점)
-    var assetTypes: [String] = []
-    
     /// 스냅샷 생성일
     var snapshotDate: Date = Date()
     
     init() {}
     
-    init(yearMonth: String, amount: Double, assetTypes: [String] = []) {
+    init(yearMonth: String, amount: Double) {
         self.id = UUID()
         self.yearMonth = yearMonth
         self.amount = amount
-        self.assetTypes = assetTypes
         self.snapshotDate = Date()
     }
     
@@ -62,4 +58,3 @@ final class AssetSnapshot {
         return formatter.string(from: date)
     }
 }
-

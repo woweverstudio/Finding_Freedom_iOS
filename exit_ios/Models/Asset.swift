@@ -18,9 +18,6 @@ final class Asset {
     /// 현재 총 순자산 (원 단위)
     var amount: Double = 0
     
-    /// 보유 자산 종류
-    var assetTypes: [String] = []
-    
     /// 생성일
     var createdAt: Date = Date()
     
@@ -29,21 +26,16 @@ final class Asset {
     
     init() {}
     
-    init(amount: Double, assetTypes: [String] = []) {
+    init(amount: Double) {
         self.id = UUID()
         self.amount = amount
-        self.assetTypes = assetTypes
         self.createdAt = Date()
         self.updatedAt = Date()
     }
     
     /// 자산 업데이트
-    func update(amount: Double, assetTypes: [String]? = nil) {
+    func update(amount: Double) {
         self.amount = amount
-        if let types = assetTypes {
-            self.assetTypes = types
-        }
         self.updatedAt = Date()
     }
 }
-

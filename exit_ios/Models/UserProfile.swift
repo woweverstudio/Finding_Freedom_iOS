@@ -19,9 +19,6 @@ final class UserProfile {
     /// 월 평균 저축·투자 금액 (원 단위)
     var monthlyInvestment: Double = 500_000
     
-    /// 보유 자산 종류 (복수 선택)
-    var assetTypes: [String] = []
-    
     /// 온보딩 완료 여부
     var hasCompletedOnboarding: Bool = false
     
@@ -36,29 +33,13 @@ final class UserProfile {
     init(
         desiredMonthlyIncome: Double,
         currentNetAssets: Double,
-        monthlyInvestment: Double,
-        assetTypes: [String]
+        monthlyInvestment: Double
     ) {
         self.desiredMonthlyIncome = desiredMonthlyIncome
         self.currentNetAssets = currentNetAssets
         self.monthlyInvestment = monthlyInvestment
-        self.assetTypes = assetTypes
         self.hasCompletedOnboarding = true
         self.createdAt = Date()
         self.updatedAt = Date()
     }
 }
-
-// MARK: - Asset Types
-extension UserProfile {
-    static let availableAssetTypes: [String] = [
-        "현금",
-        "예금·적금",
-        "주식",
-        "코인",
-        "채권",
-        "투자용 부동산",
-        "금"
-    ]
-}
-

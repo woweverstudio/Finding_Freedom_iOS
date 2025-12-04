@@ -17,9 +17,6 @@ struct FloatingActionButtons: View {
             Button {
                 // 현재 Asset 값으로 초기화
                 appState.totalAssetsInput = appState.currentAssetAmount
-                if let asset = appState.currentAsset {
-                    appState.selectedAssetTypes = Set(asset.assetTypes)
-                }
                 appState.showAssetUpdateSheet = true
             } label: {
                 HStack(spacing: ExitSpacing.xs) {

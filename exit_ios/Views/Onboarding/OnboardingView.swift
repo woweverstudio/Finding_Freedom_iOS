@@ -81,11 +81,7 @@ struct OnboardingView: View {
             .padding(.horizontal, ExitSpacing.lg)
             
             // 입력 영역
-            if step == .assetTypes {
-                assetTypeSelection
-            } else {
-                amountDisplay(for: step)
-            }
+            amountDisplay(for: step)
             
             Spacer()
             
@@ -110,8 +106,6 @@ struct OnboardingView: View {
                 return viewModel.currentNetAssets
             case .monthlyInvestment:
                 return viewModel.monthlyInvestment
-            case .assetTypes:
-                return 0
             }
         }()
         
@@ -126,25 +120,6 @@ struct OnboardingView: View {
                 .font(.Exit.title3)
                 .foregroundStyle(Color.Exit.accent)
         }
-    }
-    
-    // MARK: - Asset Type Selection
-    
-    private var assetTypeSelection: some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible()),
-            GridItem(.flexible())
-        ], spacing: ExitSpacing.md) {
-            ForEach(UserProfile.availableAssetTypes, id: \.self) { type in
-                AssetTypeButton(
-                    title: type,
-                    isSelected: viewModel.selectedAssetTypes.contains(type)
-                ) {
-                    viewModel.toggleAssetType(type)
-                }
-            }
-        }
-        .padding(.horizontal, ExitSpacing.lg)
     }
     
     // MARK: - Bottom Buttons
@@ -179,42 +154,6 @@ struct OnboardingView: View {
     }
 }
 
-// MARK: - Asset Type Button
-
-private struct AssetTypeButton: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Text(title)
-                    .font(.Exit.body)
-                
-                Spacer()
-                
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Color.Exit.accent)
-                }
-            }
-            .foregroundStyle(isSelected ? Color.Exit.primaryText : Color.Exit.secondaryText)
-            .padding(ExitSpacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: ExitRadius.md)
-                    .fill(isSelected ? Color.Exit.accent.opacity(0.15) : Color.Exit.cardBackground)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: ExitRadius.md)
-                    .stroke(isSelected ? Color.Exit.accent : Color.Exit.divider, lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .animation(.easeInOut(duration: 0.2), value: isSelected)
-    }
-}
-
 // MARK: - Preview
 
 #Preview {
@@ -222,4 +161,3 @@ private struct AssetTypeButton: View {
         .modelContainer(for: [UserProfile.self, Scenario.self, MonthlyUpdate.self], inMemory: true)
         .preferredColorScheme(.dark)
 }
-

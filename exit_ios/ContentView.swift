@@ -107,6 +107,8 @@ struct MainTabView: View {
             }
         }
         .onAppear {
+            // 온보딩 완료 후 또는 앱 재진입 시 데이터 로드
+            appState.loadData()
             simulationViewModel.configure(with: modelContext)
             settingsViewModel.configure(with: modelContext)
         }
@@ -207,9 +209,6 @@ struct MainTabView: View {
                         // 약간의 딜레이 후 자산 업데이트 시트 표시
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                             appState.totalAssetsInput = appState.currentAssetAmount
-                            if let asset = appState.currentAsset {
-                                appState.selectedAssetTypes = Set(asset.assetTypes)
-                            }
                             appState.showAssetUpdateSheet = true
                         }
                     } label: {
