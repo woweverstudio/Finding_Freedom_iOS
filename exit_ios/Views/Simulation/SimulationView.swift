@@ -47,13 +47,13 @@ struct SimulationView: View {
                     SimulationEmptyView(
                         scenario: viewModel.activeScenario,
                         currentAssetAmount: viewModel.currentAssetAmount,
-                        onStart: { viewModel.refreshSimulation() }
+                        onStart: { showSettingsSheet = true }
                     )
                 }
             }
         }
         .sheet(isPresented: $showSettingsSheet) {
-            SimulationSettingsSheet(viewModel: viewModel)
+            SimulationSetupSheet(viewModel: viewModel)
         }
     }
     
@@ -208,7 +208,7 @@ struct SimulationView: View {
             
             // 다시 시뮬레이션 버튼
             Button {
-                viewModel.refreshSimulation()
+                showSettingsSheet = true
             } label: {
                 HStack(spacing: ExitSpacing.sm) {
                     Image(systemName: "arrow.clockwise")
@@ -608,15 +608,23 @@ struct SimulationSettingsSheet: View {
             viewModel.updateVolatility(tempVolatility)
             viewModel.updateFailureThreshold(tempFailureThreshold)
             dismiss()
+            // 설정 저장 후 시뮬레이션 시작
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                viewModel.refreshSimulation()
+            }
         } label: {
-            Text("설정 저장")
-                .font(.Exit.body)
-                .fontWeight(.semibold)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, ExitSpacing.md)
-                .background(LinearGradient.exitAccent)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.xl))
+            HStack(spacing: ExitSpacing.sm) {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("시뮬레이션 시작")
+                    .font(.Exit.body)
+                    .fontWeight(.semibold)
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, ExitSpacing.md)
+            .background(LinearGradient.exitAccent)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.xl))
         }
         .buttonStyle(.plain)
         .padding(.horizontal, ExitSpacing.lg)
