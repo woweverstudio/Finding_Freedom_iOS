@@ -20,27 +20,27 @@ struct SettingsView: View {
             Color.Exit.background
                 .ignoresSafeArea()
             
-            VStack(spacing: 0) {
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: ExitSpacing.lg) {
-                        // 공지사항 섹션
-                        announcementSection
-                        
-                        // 입금 알람 섹션
-                        reminderSection
-                        
-                        // 데이터 관리 섹션
-                        dataManagementSection
-                        
-                        // 문의하기 섹션
-                        contactSection
-                        
-                        // 앱 정보 섹션
-                        appInfoSection
-                    }
-                    .padding(.horizontal, ExitSpacing.md)
-                    .padding(.vertical, ExitSpacing.lg)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: ExitSpacing.xl) {
+                    // 공지사항 섹션
+                    announcementSection
+                    
+                    // 입금 알람 섹션
+                    reminderSection
+                    
+                    // 문의하기 섹션
+                    contactSection
+                    
+                    // 앱 정보 섹션
+                    appInfoSection
+                    
+                    // 데이터 관리 섹션 (맨 아래로)
+                    dataManagementSection
+                    
+                    Spacer(minLength: ExitSpacing.xl)
                 }
+                .padding(.horizontal, ExitSpacing.md)
+                .padding(.vertical, ExitSpacing.lg)
             }
         }
         .sheet(isPresented: $viewModel.showReminderSheet) {
@@ -63,165 +63,103 @@ struct SettingsView: View {
     // MARK: - Announcement Section
     
     private var announcementSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            sectionHeader(title: "공지사항", icon: "megaphone.fill")
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            sectionHeader(title: "공지사항")
             
-            if let latestAnnouncement = viewModel.announcements.first {
-                Button {
-                    // 공지사항 리스트로 이동
-                    viewModel.showAnnouncementList = true
-                } label: {
-                    HStack(spacing: ExitSpacing.md) {
-                        // 타입 아이콘
-                        ZStack {
-                            Circle()
-                                .fill(Color(hex: latestAnnouncement.type.color).opacity(0.15))
-                                .frame(width: 40, height: 40)
-                            
-                            Image(systemName: latestAnnouncement.type.icon)
-                                .font(.system(size: 16))
-                                .foregroundStyle(Color(hex: latestAnnouncement.type.color))
-                        }
-                        
+            Button {
+                viewModel.showAnnouncementList = true
+            } label: {
+                HStack {
+                    if let latestAnnouncement = viewModel.announcements.first {
                         VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                            // 타입 뱃지 + 날짜
-                            HStack(spacing: ExitSpacing.xs) {
-                                Text(latestAnnouncement.type.rawValue)
-                                    .font(.Exit.caption2)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(Color(hex: latestAnnouncement.type.color))
-                                
-                                Text("•")
-                                    .font(.Exit.caption2)
-                                    .foregroundStyle(Color.Exit.tertiaryText)
-                                
-                                Text(latestAnnouncement.relativeTimeText)
-                                    .font(.Exit.caption2)
-                                    .foregroundStyle(Color.Exit.tertiaryText)
-                            }
-                            
-                            // 제목
                             Text(latestAnnouncement.title)
-                                .font(.Exit.caption)
-                                .fontWeight(latestAnnouncement.isRead ? .regular : .semibold)
-                                .foregroundStyle(latestAnnouncement.isRead ? Color.Exit.secondaryText : Color.Exit.primaryText)
+                                .font(.Exit.body)
+                                .fontWeight(latestAnnouncement.isRead ? .regular : .medium)
+                                .foregroundStyle(Color.Exit.primaryText)
                                 .lineLimit(1)
+                            
+                            Text(latestAnnouncement.relativeTimeText)
+                                .font(.Exit.caption)
+                                .foregroundStyle(Color.Exit.tertiaryText)
                         }
                         
                         Spacer()
                         
-                        // 읽지 않음 표시
                         if !latestAnnouncement.isRead {
                             Circle()
                                 .fill(Color.Exit.accent)
-                                .frame(width: 8, height: 8)
+                                .frame(width: 6, height: 6)
                         }
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .semibold))
+                    } else {
+                        Text("공지사항이 없습니다")
+                            .font(.Exit.body)
                             .foregroundStyle(Color.Exit.tertiaryText)
+                        
+                        Spacer()
                     }
-                    .padding(ExitSpacing.md)
-                    .background(Color.Exit.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-                }
-                .buttonStyle(.plain)
-            } else {
-                // 공지사항이 없을 때
-                HStack {
-                    Text("공지사항이 없습니다")
-                        .font(.Exit.body)
-                        .foregroundStyle(Color.Exit.secondaryText)
                     
-                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.Exit.tertiaryText)
                 }
                 .padding(ExitSpacing.md)
                 .background(Color.Exit.cardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             }
+            .buttonStyle(.plain)
         }
     }
     
     // MARK: - Reminder Section
     
     private var reminderSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
             HStack {
-                sectionHeader(title: "입금 알람", icon: "bell.fill")
+                sectionHeader(title: "알람")
                 
                 Spacer()
                 
                 Button {
                     viewModel.openAddReminderSheet()
                 } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 24))
+                    Text("추가")
+                        .font(.Exit.caption)
                         .foregroundStyle(Color.Exit.accent)
                 }
                 .buttonStyle(.plain)
             }
             
-            if viewModel.depositReminders.isEmpty {
-                // 빈 상태
-                VStack(spacing: ExitSpacing.md) {
-                    Image(systemName: "bell.slash")
-                        .font(.system(size: 40))
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                    
-                    Text("등록된 알람이 없습니다")
-                        .font(.Exit.body)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                    
-                    Text("월급일이나 배당금 입금일에\n알람을 설정해보세요")
-                        .font(.Exit.caption)
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                        .multilineTextAlignment(.center)
-                    
-                    Button {
-                        viewModel.openAddReminderSheet()
-                    } label: {
-                        Text("알람 추가하기")
-                            .font(.Exit.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, ExitSpacing.lg)
-                            .padding(.vertical, ExitSpacing.sm)
-                            .background(LinearGradient.exitAccent)
-                            .clipShape(Capsule())
+            VStack(spacing: 0) {
+                if viewModel.depositReminders.isEmpty {
+                    // 빈 상태
+                    HStack {
+                        Text("등록된 알람이 없습니다")
+                            .font(.Exit.body)
+                            .foregroundStyle(Color.Exit.tertiaryText)
+                        
+                        Spacer()
                     }
-                    .buttonStyle(.plain)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, ExitSpacing.xl)
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-            } else {
-                // 알람 리스트
-                VStack(spacing: 0) {
+                    .padding(ExitSpacing.md)
+                } else {
+                    // 알람 리스트
                     ForEach(viewModel.depositReminders, id: \.id) { reminder in
                         reminderRow(reminder)
                         
                         if reminder.id != viewModel.depositReminders.last?.id {
                             Divider()
                                 .background(Color.Exit.divider)
-                                .padding(.leading, 48)
+                                .padding(.leading, ExitSpacing.md)
                         }
                     }
                 }
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             }
+            .background(Color.Exit.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
     }
     
     private func reminderRow(_ reminder: DepositReminder) -> some View {
         HStack(spacing: ExitSpacing.md) {
-            // 아이콘
-            Image(systemName: reminder.repeatType.icon)
-                .font(.system(size: 20))
-                .foregroundStyle(reminder.isEnabled ? Color.Exit.accent : Color.Exit.tertiaryText)
-                .frame(width: 32)
-            
             // 정보
             VStack(alignment: .leading, spacing: ExitSpacing.xs) {
                 Text(reminder.name)
@@ -260,32 +198,19 @@ struct SettingsView: View {
     // MARK: - Data Management Section
     
     private var dataManagementSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            sectionHeader(title: "데이터 관리", icon: "externaldrive.fill")
-            
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
             Button {
                 viewModel.showDeleteConfirm = true
             } label: {
                 HStack {
-                    Image(systemName: "trash.fill")
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color.Exit.warning)
-                        .frame(width: 32)
-                    
-                    VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                        Text("모든 데이터 삭제")
-                            .font(.Exit.body)
-                            .foregroundStyle(Color.Exit.warning)
-                        
-                        Text("입금 기록, 자산 정보, 시나리오 모두 삭제")
-                            .font(.Exit.caption)
-                            .foregroundStyle(Color.Exit.tertiaryText)
-                    }
+                    Text("모든 데이터 삭제")
+                        .font(.Exit.body)
+                        .foregroundStyle(Color.Exit.warning.opacity(0.8))
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Color.Exit.tertiaryText)
                 }
                 .padding(ExitSpacing.md)
@@ -303,8 +228,8 @@ struct SettingsView: View {
     private let instagramURL = "https://www.instagram.com/woweverstudio/"
     
     private var contactSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            sectionHeader(title: "문의하기", icon: "envelope.fill")
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            sectionHeader(title: "문의하기")
             
             VStack(spacing: 0) {
                 // 이메일 복사
@@ -312,21 +237,14 @@ struct SettingsView: View {
                     UIPasteboard.general.string = contactEmail
                     showCopiedToast = true
                     
-                    // 햅틱 피드백
                     let generator = UIImpactFeedbackGenerator(style: .light)
                     generator.impactOccurred()
                     
-                    // 토스트 자동 숨김
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                         showCopiedToast = false
                     }
                 } label: {
-                    HStack(spacing: ExitSpacing.md) {
-                        Image(systemName: "envelope.fill")
-                            .font(.system(size: 18))
-                            .foregroundStyle(Color.Exit.accent)
-                            .frame(width: 32)
-                        
+                    HStack {
                         VStack(alignment: .leading, spacing: ExitSpacing.xs) {
                             Text("이메일")
                                 .font(.Exit.body)
@@ -334,20 +252,14 @@ struct SettingsView: View {
                             
                             Text(contactEmail)
                                 .font(.Exit.caption)
-                                .foregroundStyle(Color.Exit.secondaryText)
+                                .foregroundStyle(Color.Exit.tertiaryText)
                         }
                         
                         Spacer()
                         
-                        if showCopiedToast {
-                            Text("복사됨")
-                                .font(.Exit.caption)
-                                .foregroundStyle(Color.Exit.accent)
-                        } else {
-                            Image(systemName: "doc.on.doc")
-                                .font(.system(size: 14))
-                                .foregroundStyle(Color.Exit.tertiaryText)
-                        }
+                        Text(showCopiedToast ? "복사됨" : "복사")
+                            .font(.Exit.caption)
+                            .foregroundStyle(showCopiedToast ? Color.Exit.accent : Color.Exit.tertiaryText)
                     }
                     .padding(ExitSpacing.md)
                     .contentShape(Rectangle())
@@ -356,18 +268,13 @@ struct SettingsView: View {
                 
                 Divider()
                     .background(Color.Exit.divider)
-                    .padding(.leading, 48)
+                    .padding(.leading, ExitSpacing.md)
                 
                 // 인스타그램
                 Button {
                     openInstagram()
                 } label: {
-                    HStack(spacing: ExitSpacing.md) {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 18))
-                            .foregroundStyle(Color(hex: "E4405F")) // 인스타그램 색상
-                            .frame(width: 32)
-                        
+                    HStack {
                         VStack(alignment: .leading, spacing: ExitSpacing.xs) {
                             Text("인스타그램")
                                 .font(.Exit.body)
@@ -375,13 +282,13 @@ struct SettingsView: View {
                             
                             Text("@woweverstudio")
                                 .font(.Exit.caption)
-                                .foregroundStyle(Color.Exit.secondaryText)
+                                .foregroundStyle(Color.Exit.tertiaryText)
                         }
                         
                         Spacer()
                         
                         Image(systemName: "arrow.up.right")
-                            .font(.system(size: 14))
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(Color.Exit.tertiaryText)
                     }
                     .padding(ExitSpacing.md)
@@ -395,12 +302,9 @@ struct SettingsView: View {
     }
     
     private func openInstagram() {
-        // 인스타그램 앱 URL
         let appURL = URL(string: "instagram://user?username=woweverstudio")!
-        // 웹 URL (fallback)
         let webURL = URL(string: instagramURL)!
         
-        // 인스타그램 앱이 설치되어 있으면 앱으로, 아니면 웹으로
         if UIApplication.shared.canOpenURL(appURL) {
             UIApplication.shared.open(appURL)
         } else {
@@ -411,45 +315,34 @@ struct SettingsView: View {
     // MARK: - App Info Section
     
     private var appInfoSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            sectionHeader(title: "앱 정보", icon: "info.circle.fill")
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            sectionHeader(title: "앱 정보")
             
-            VStack(spacing: 0) {
-                infoRow(title: "버전", value: "1.0.0")
+            HStack {
+                Text("버전")
+                    .font(.Exit.body)
+                    .foregroundStyle(Color.Exit.primaryText)
+                
+                Spacer()
+                
+                Text("1.0.0")
+                    .font(.Exit.body)
+                    .foregroundStyle(Color.Exit.tertiaryText)
             }
+            .padding(ExitSpacing.md)
             .background(Color.Exit.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
     }
     
-    private func infoRow(title: String, value: String) -> some View {
-        HStack {
-            Text(title)
-                .font(.Exit.body)
-                .foregroundStyle(Color.Exit.primaryText)
-            
-            Spacer()
-            
-            Text(value)
-                .font(.Exit.body)
-                .foregroundStyle(Color.Exit.secondaryText)
-        }
-        .padding(ExitSpacing.md)
-    }
-    
     // MARK: - Section Header
     
-    private func sectionHeader(title: String, icon: String) -> some View {
-        HStack(spacing: ExitSpacing.sm) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundStyle(Color.Exit.accent)
-            
-            Text(title)
-                .font(.Exit.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(Color.Exit.secondaryText)
-        }
+    private func sectionHeader(title: String) -> some View {
+        Text(title)
+            .font(.Exit.caption)
+            .fontWeight(.medium)
+            .foregroundStyle(Color.Exit.secondaryText)
+            .padding(.leading, ExitSpacing.xs)
     }
 }
 
