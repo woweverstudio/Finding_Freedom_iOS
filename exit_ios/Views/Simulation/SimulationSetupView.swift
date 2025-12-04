@@ -145,10 +145,10 @@ struct SimulationSetupView: View {
             
             // 실패 조건 선택 버튼들
             HStack(spacing: ExitSpacing.sm) {
+                failureOption(1.0, label: "100%")
                 failureOption(1.1, label: "110%")
-                failureOption(1.25, label: "125%")
+                failureOption(1.3, label: "130%")
                 failureOption(1.5, label: "150%")
-                failureOption(2.0, label: "200%")
             }
             
             // 현재 설정 예시

@@ -281,14 +281,20 @@ final class SimulationViewModel {
     
     /// 목표 수익률 기반 변동성 자동 계산
     /// - Parameter returnRate: 연 목표 수익률 (%)
-    /// - Returns: 변동성 (%)
+    /// - Returns: 변동성 (표준편차, %)
     static func calculateVolatility(for returnRate: Double) -> Double {
         switch returnRate {
-        case ..<4:    return 8.0   // 안정형 (채권/예금 중심)
-        case 4..<6:   return 12.0  // 안정-중립 (혼합)
-        case 6..<8:   return 15.0  // 중립 (주식/채권 혼합)
-        case 8..<10:  return 20.0  // 공격형 (주식 중심)
-        default:      return 25.0  // 매우 공격형 (성장주 중심)
+        case ..<2.5:  return 1.0    // 초안전 자산
+        case 2.5..<4: return 4.5    // 국채 중심
+        case 4..<6:   return 7.0    // 채권 혼합
+        case 6..<7:   return 11.0   // 60:40 현실화
+        case 7..<8:   return 13.0
+        case 8..<9:   return 15.0
+        case 9..<10:  return 17.0   // S&P500 평균
+        case 10..<12: return 21.0
+        case 12..<15: return 27.0
+        case 15..<20: return 30.0
+        default:      return 35.0   // 고위험·레버리지
         }
     }
 }
