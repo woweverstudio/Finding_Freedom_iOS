@@ -33,7 +33,7 @@ struct PlanHeaderView: View {
                     .transition(.scale)
             }
         }
-        .background(Color.Exit.background)
+//        .background(Color.Exit.background)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isCompact)
     }
     
@@ -69,7 +69,8 @@ struct PlanHeaderView: View {
                 // 핵심 정보만 (자산 • 월수입 • 투자 • 수익률)
                 HStack(spacing: 4) {
                     Text(hideAmounts ? "•••" : ExitNumberFormatter.formatToEokManWon(effectiveAsset))
-                        .fontWeight(.semibold)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                         .foregroundStyle(Color.Exit.primaryText)
                     
                     Text("•")

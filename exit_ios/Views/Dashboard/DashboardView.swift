@@ -15,7 +15,7 @@ struct DashboardView: View {
     
     /// 스크롤 20pt 이상이면 컴팩트 모드
     private var isHeaderCompact: Bool {
-        scrollOffset > 50
+        scrollOffset > 20
     }
     
     var body: some View {

@@ -14,8 +14,25 @@ struct SimulationInfoCard: View {
     let effectiveVolatility: Double
     let result: MonteCarloResult
     
+    private var targetAsset: Double {
+        RetirementCalculator.calculateTargetAssets(
+            desiredMonthlyIncome: scenario.desiredMonthlyIncome,
+            postRetirementReturnRate: scenario.postRetirementReturnRate,
+            inflationRate: scenario.inflationRate
+        )
+    }
+    
+    private var preRetirementVolatility: Double {
+        SimulationViewModel.calculateVolatility(for: scenario.preRetirementReturnRate)
+    }
+    
+    private var postRetirementVolatility: Double {
+        SimulationViewModel.calculateVolatility(for: scenario.postRetirementReturnRate)
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
+        VStack(alignment: .leading, spacing: ExitSpacing.lg) {
+            // 헤더
             HStack {
                 Image(systemName: "info.circle.fill")
                     .foregroundStyle(Color.Exit.accent)
@@ -25,21 +42,43 @@ struct SimulationInfoCard: View {
                     .foregroundStyle(Color.Exit.primaryText)
             }
             
-            VStack(spacing: ExitSpacing.xs) {
-                infoRow(label: "현재 자산", value: ExitNumberFormatter.formatToEokManWon(currentAssetAmount), isAccent: true)
-                infoRow(label: "월 저축액", value: ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment), isAccent: true)
-                infoRow(label: "은퇴 후 희망 월수입", value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome), isAccent: true)
+            // 기본 정보
+            infoSection(title: "기본 정보") {
+                infoRow(label: "현재 자산", value: ExitNumberFormatter.formatToEokManWon(currentAssetAmount))
                 
-                infoRow(label: "은퇴 전 연 목표 수익률", value: String(format: "%.1f%%", scenario.preRetirementReturnRate), isAccent: true)
+                if scenario.assetOffset != 0 {
+                    let prefix = scenario.assetOffset > 0 ? "+" : ""
+                    infoRow(
+                        label: "가정 금액",
+                        value: prefix + ExitNumberFormatter.formatToEokManWon(scenario.assetOffset),
+                        valueColor: scenario.assetOffset > 0 ? Color.Exit.positive : Color.Exit.warning
+                    )
+                }
                 
-                Divider()
-                    .background(Color.Exit.divider)
-                    .padding(.vertical, 2)
-                
-                infoRow(label: "수익률 변동성", value: String(format: "%.1f%%", effectiveVolatility))
+                infoRow(label: "월 저축액", value: ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
+                infoRow(label: "희망 월수입", value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
+                infoRow(label: "목표 자산", value: ExitNumberFormatter.formatToEokManWon(targetAsset), valueColor: Color.Exit.accent)
+            }
+            
+            // 은퇴 전 시뮬레이션
+            infoSection(title: "은퇴 전 시뮬레이션") {
+                infoRow(label: "목표 수익률", value: String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                infoRow(label: "수익률 변동성", value: String(format: "%.1f%%", preRetirementVolatility), valueColor: Color.Exit.secondaryText)
+            }
+            
+            // 은퇴 후 시뮬레이션
+            infoSection(title: "은퇴 후 시뮬레이션") {
+                infoRow(label: "목표 수익률", value: String(format: "%.1f%%", scenario.postRetirementReturnRate))
+                infoRow(label: "수익률 변동성", value: String(format: "%.1f%%", postRetirementVolatility), valueColor: Color.Exit.secondaryText)
+                infoRow(label: "물가 상승률", value: String(format: "%.1f%%", scenario.inflationRate))
+            }
+            
+            // 시뮬레이션 결과
+            infoSection(title: "시뮬레이션 결과") {
                 infoRow(label: "시뮬레이션 횟수", value: "\(result.totalSimulations.formatted())회")
                 infoRow(label: "성공", value: "\(result.successCount.formatted())회", valueColor: Color.Exit.positive)
                 infoRow(label: "실패", value: "\(result.failureCount.formatted())회", valueColor: Color.Exit.warning)
+                infoRow(label: "성공률", value: String(format: "%.1f%%", result.successRate * 100), valueColor: Color.Exit.accent)
             }
         }
         .padding(ExitSpacing.md)
@@ -48,7 +87,25 @@ struct SimulationInfoCard: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
-    private func infoRow(label: String, value: String, isAccent: Bool = false, valueColor: Color? = nil) -> some View {
+    // MARK: - Components
+    
+    private func infoSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            Text(title)
+                .font(.Exit.caption2)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Exit.tertiaryText)
+            
+            VStack(spacing: ExitSpacing.xs) {
+                content()
+            }
+            .padding(ExitSpacing.sm)
+            .background(Color.Exit.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+        }
+    }
+    
+    private func infoRow(label: String, value: String, valueColor: Color = Color.Exit.primaryText) -> some View {
         HStack {
             Text(label)
                 .font(.Exit.caption)
@@ -56,8 +113,8 @@ struct SimulationInfoCard: View {
             Spacer()
             Text(value)
                 .font(.Exit.caption)
-                .fontWeight(isAccent ? .semibold : .medium)
-                .foregroundStyle(valueColor ?? (isAccent ? Color.Exit.accent : Color.Exit.primaryText))
+                .fontWeight(.medium)
+                .foregroundStyle(valueColor)
         }
     }
 }

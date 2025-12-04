@@ -334,8 +334,6 @@ struct ScenarioSettingsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
             }
             .disabled(appState.scenarios.count <= 1 || !scenario.isDeletable)
-            
-            Spacer()
         }
         .padding(.horizontal, ExitSpacing.lg)
     }
