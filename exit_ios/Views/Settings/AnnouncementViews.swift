@@ -45,23 +45,27 @@ struct AnnouncementListView: View {
     
     private var emptyState: some View {
         VStack(spacing: ExitSpacing.md) {
-            Image(systemName: "megaphone")
-                .font(.system(size: 48))
-                .foregroundStyle(Color.Exit.tertiaryText)
-            
             Text("공지사항이 없습니다")
                 .font(.Exit.body)
-                .foregroundStyle(Color.Exit.secondaryText)
+                .foregroundStyle(Color.Exit.tertiaryText)
         }
     }
     
     private var announcementList: some View {
         ScrollView {
-            LazyVStack(spacing: ExitSpacing.sm) {
+            VStack(spacing: 0) {
                 ForEach(viewModel.announcements, id: \.id) { announcement in
                     announcementRow(announcement)
+                    
+                    if announcement.id != viewModel.announcements.last?.id {
+                        Divider()
+                            .background(Color.Exit.divider)
+                            .padding(.leading, ExitSpacing.md)
+                    }
                 }
             }
+            .background(Color.Exit.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             .padding(ExitSpacing.md)
         }
     }
@@ -69,68 +73,37 @@ struct AnnouncementListView: View {
     private func announcementRow(_ announcement: Announcement) -> some View {
         NavigationLink(value: announcement) {
             HStack(spacing: ExitSpacing.md) {
-                // 타입 아이콘
-                ZStack {
-                    Circle()
-                        .fill(Color(hex: announcement.type.color).opacity(0.15))
-                        .frame(width: 44, height: 44)
-                    
-                    Image(systemName: announcement.type.icon)
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color(hex: announcement.type.color))
-                }
-                
                 // 내용
                 VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                    HStack(spacing: ExitSpacing.xs) {
-                        // 타입 뱃지
-                        Text(announcement.type.rawValue)
-                            .font(.Exit.caption2)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color(hex: announcement.type.color))
-                            .padding(.horizontal, ExitSpacing.sm)
-                            .padding(.vertical, 2)
-                            .background(Color(hex: announcement.type.color).opacity(0.15))
-                            .clipShape(Capsule())
-                        
-                        // 중요 표시
-                        if announcement.isImportant {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 10))
-                                .foregroundStyle(Color.Exit.caution)
-                        }
-                        
-                        Spacer()
-                        
-                        // 날짜
-                        Text(announcement.relativeTimeText)
-                            .font(.Exit.caption2)
-                            .foregroundStyle(Color.Exit.tertiaryText)
-                    }
-                    
                     // 제목
                     Text(announcement.title)
                         .font(.Exit.body)
-                        .fontWeight(announcement.isRead ? .regular : .semibold)
+                        .fontWeight(announcement.isRead ? .regular : .medium)
                         .foregroundStyle(announcement.isRead ? Color.Exit.secondaryText : Color.Exit.primaryText)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
+                    
+                    // 날짜
+                    Text(announcement.relativeTimeText)
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.tertiaryText)
                 }
+                
+                Spacer()
                 
                 // 읽지 않음 인디케이터
                 if !announcement.isRead {
                     Circle()
                         .fill(Color.Exit.accent)
-                        .frame(width: 8, height: 8)
+                        .frame(width: 6, height: 6)
                 }
                 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Color.Exit.tertiaryText)
             }
             .padding(ExitSpacing.md)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .simultaneousGesture(TapGesture().onEnded {
@@ -154,69 +127,36 @@ struct AnnouncementDetailContent: View {
                     // 헤더
                     headerSection
                     
-                    // 구분선
-                    Divider()
-                        .background(Color.Exit.divider)
-                    
                     // 본문
                     contentSection
                 }
                 .padding(ExitSpacing.lg)
             }
         }
-        .navigationTitle("공지사항")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
     }
     
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            // 타입 및 날짜
-            HStack {
-                // 타입 뱃지
-                HStack(spacing: ExitSpacing.xs) {
-                    Image(systemName: announcement.type.icon)
-                        .font(.system(size: 12))
-                    Text(announcement.type.rawValue)
-                        .font(.Exit.caption)
-                        .fontWeight(.semibold)
-                }
-                .foregroundStyle(Color(hex: announcement.type.color))
-                .padding(.horizontal, ExitSpacing.sm)
-                .padding(.vertical, ExitSpacing.xs)
-                .background(Color(hex: announcement.type.color).opacity(0.15))
-                .clipShape(Capsule())
-                
-                if announcement.isImportant {
-                    HStack(spacing: ExitSpacing.xs) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 10))
-                        Text("중요")
-                            .font(.Exit.caption2)
-                            .fontWeight(.semibold)
-                    }
-                    .foregroundStyle(Color.Exit.caution)
-                }
-                
-                Spacer()
-                
-                Text(announcement.publishedDateText)
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.tertiaryText)
-            }
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            // 날짜
+            Text(announcement.publishedDateText)
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.tertiaryText)
             
             // 제목
             Text(announcement.title)
                 .font(.Exit.title3)
-                .fontWeight(.bold)
+                .fontWeight(.semibold)
                 .foregroundStyle(Color.Exit.primaryText)
         }
     }
     
     private var contentSection: some View {
         Text(announcement.content)
-            .font(.Exit.body)
+            .font(.Exit.subheadline)
             .foregroundStyle(Color.Exit.secondaryText)
-            .lineSpacing(6)
+            .lineSpacing(8)
     }
 }
 

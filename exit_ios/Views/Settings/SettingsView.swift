@@ -439,34 +439,22 @@ struct ReminderEditSheet: View {
                     Button {
                         viewModel.reminderRepeatType = type
                     } label: {
-                        VStack(spacing: ExitSpacing.xs) {
-                            Image(systemName: type.icon)
-                                .font(.system(size: 20))
-                            Text(type.rawValue)
-                                .font(.Exit.caption2)
-                        }
-                        .foregroundStyle(
-                            viewModel.reminderRepeatType == type
-                            ? Color.Exit.accent
-                            : Color.Exit.secondaryText
-                        )
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, ExitSpacing.md)
-                        .background(
-                            viewModel.reminderRepeatType == type
-                            ? Color.Exit.accent.opacity(0.15)
-                            : Color.Exit.cardBackground
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: ExitRadius.md)
-                                .stroke(
-                                    viewModel.reminderRepeatType == type
-                                    ? Color.Exit.accent
-                                    : Color.Exit.divider,
-                                    lineWidth: 1
-                                )
-                        )
+                        Text(type.rawValue)
+                            .font(.Exit.caption)
+                            .fontWeight(viewModel.reminderRepeatType == type ? .semibold : .regular)
+                            .foregroundStyle(
+                                viewModel.reminderRepeatType == type
+                                ? Color.Exit.accent
+                                : Color.Exit.secondaryText
+                            )
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, ExitSpacing.md)
+                            .background(
+                                viewModel.reminderRepeatType == type
+                                ? Color.Exit.accent.opacity(0.1)
+                                : Color.Exit.cardBackground
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
                     }
                     .buttonStyle(.plain)
                 }
@@ -569,16 +557,13 @@ struct ReminderEditSheet: View {
             viewModel.deleteReminder(reminder)
             dismiss()
         } label: {
-            HStack {
-                Image(systemName: "trash.fill")
-                Text("알람 삭제")
-            }
-            .font(.Exit.body)
-            .foregroundStyle(Color.Exit.warning)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, ExitSpacing.md)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            Text("알람 삭제")
+                .font(.Exit.body)
+                .foregroundStyle(Color.Exit.warning.opacity(0.8))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, ExitSpacing.md)
+                .background(Color.Exit.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
         .buttonStyle(.plain)
     }
