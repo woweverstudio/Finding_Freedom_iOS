@@ -167,7 +167,8 @@ final class SimulationViewModel {
         let inflationRate = scenario.inflationRate
         let monthlyInvestment = scenario.monthlyInvestment
         let preRetirementReturnRate = scenario.preRetirementReturnRate
-        let volatility = self.effectiveVolatility
+        let preRetirementVolatility = self.effectiveVolatility
+        let postRetirementVolatility = Self.calculateVolatility(for: postRetirementReturnRate)
         let effectiveAsset = scenario.effectiveAsset(with: currentAsset)
         let failureMultiplier = self.failureThresholdMultiplier
         
@@ -190,13 +191,13 @@ final class SimulationViewModel {
         
         // 백그라운드 작업 시작
         Task.detached(priority: .userInitiated) { [weak self] in
-            // Phase 1: 목표 달성까지 시뮬레이션
+            // Phase 1: 목표 달성까지 시뮬레이션 (은퇴 전 수익률/변동성 사용)
             let monteCarloResult = MonteCarloSimulator.simulate(
                 initialAsset: effectiveAsset,
                 monthlyInvestment: monthlyInvestment,
                 targetAsset: targetAsset,
                 meanReturn: preRetirementReturnRate,
-                volatility: volatility,
+                volatility: preRetirementVolatility,
                 simulationCount: simCount,
                 maxMonths: maxMonthsForSimulation,
                 trackPaths: true,
@@ -214,12 +215,12 @@ final class SimulationViewModel {
                 self?.simulationPhase = .postRetirement
             }
             
-            // Phase 2: 은퇴 후 시뮬레이션
+            // Phase 2: 은퇴 후 시뮬레이션 (은퇴 후 수익률/변동성 사용)
             let retirementResult = RetirementSimulator.simulate(
                 initialAsset: targetAsset,
                 monthlySpending: desiredMonthlyIncome,
                 annualReturn: postRetirementReturnRate,
-                volatility: volatility,
+                volatility: postRetirementVolatility,
                 simulationCount: simCount,
                 progressCallback: { @Sendable completed in
                     let progress = 0.5 + Double(completed) / Double(simCount) * 0.5 // 50~100%
@@ -274,6 +275,21 @@ final class SimulationViewModel {
     func resetAllSettings() {
         resetVolatility()
         resetFailureThreshold()
+    }
+    
+    // MARK: - Volatility Calculation
+    
+    /// 목표 수익률 기반 변동성 자동 계산
+    /// - Parameter returnRate: 연 목표 수익률 (%)
+    /// - Returns: 변동성 (%)
+    static func calculateVolatility(for returnRate: Double) -> Double {
+        switch returnRate {
+        case ..<4:    return 8.0   // 안정형 (채권/예금 중심)
+        case 4..<6:   return 12.0  // 안정-중립 (혼합)
+        case 6..<8:   return 15.0  // 중립 (주식/채권 혼합)
+        case 8..<10:  return 20.0  // 공격형 (주식 중심)
+        default:      return 25.0  // 매우 공격형 (성장주 중심)
+        }
     }
 }
 

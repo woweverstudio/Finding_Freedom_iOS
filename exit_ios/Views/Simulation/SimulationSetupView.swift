@@ -204,31 +204,73 @@ struct SimulationSetupView: View {
     // MARK: - Scenario Summary
     
     private func scenarioSummary(_ scenario: Scenario) -> some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            Text("시뮬레이션 조건")
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.secondaryText)
-            
-            VStack(spacing: ExitSpacing.sm) {
-                summaryRow("현재 자산", ExitNumberFormatter.formatToEokManWon(appState.currentAssetAmount))
+        let preVolatility = SimulationViewModel.calculateVolatility(for: scenario.preRetirementReturnRate)
+        let postVolatility = SimulationViewModel.calculateVolatility(for: scenario.postRetirementReturnRate)
+        let targetAsset = RetirementCalculator.calculateTargetAssets(
+            desiredMonthlyIncome: scenario.desiredMonthlyIncome,
+            postRetirementReturnRate: scenario.postRetirementReturnRate,
+            inflationRate: scenario.inflationRate
+        )
+        
+        return VStack(alignment: .leading, spacing: ExitSpacing.lg) {
+            // 기본 정보
+            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                sectionLabel("기본 정보")
                 
-                if scenario.assetOffset != 0 {
-                    let prefix = scenario.assetOffset > 0 ? "+" : ""
-                    summaryRow("가정 금액", prefix + ExitNumberFormatter.formatToEokManWon(scenario.assetOffset))
+                VStack(spacing: ExitSpacing.xs) {
+                    summaryRow("현재 자산", ExitNumberFormatter.formatToEokManWon(appState.currentAssetAmount))
+                    
+                    if scenario.assetOffset != 0 {
+                        let prefix = scenario.assetOffset > 0 ? "+" : ""
+                        summaryRow("가정 금액", prefix + ExitNumberFormatter.formatToEokManWon(scenario.assetOffset), valueColor: scenario.assetOffset > 0 ? Color.Exit.positive : Color.Exit.warning)
+                    }
+                    
+                    summaryRow("월 저축액", ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
+                    summaryRow("희망 월수입", ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
+                    summaryRow("목표 자산", ExitNumberFormatter.formatToEokManWon(targetAsset), valueColor: Color.Exit.accent)
                 }
-                
-                summaryRow("월 저축액", ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
-                summaryRow("목표 수익률", String(format: "%.1f%%", scenario.preRetirementReturnRate))
-                summaryRow("희망 월수입", ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
+                .padding(ExitSpacing.md)
+                .background(Color.Exit.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             }
-            .padding(ExitSpacing.md)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            
+            // 은퇴 전 시뮬레이션 조건
+            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                sectionLabel("은퇴 전 시뮬레이션")
+                
+                VStack(spacing: ExitSpacing.xs) {
+                    summaryRow("목표 수익률", String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                    summaryRow("수익률 변동성", String(format: "%.0f%%", preVolatility), valueColor: Color.Exit.secondaryText)
+                }
+                .padding(ExitSpacing.md)
+                .background(Color.Exit.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            }
+            
+            // 은퇴 후 시뮬레이션 조건
+            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                sectionLabel("은퇴 후 시뮬레이션")
+                
+                VStack(spacing: ExitSpacing.xs) {
+                    summaryRow("목표 수익률", String(format: "%.1f%%", scenario.postRetirementReturnRate))
+                    summaryRow("수익률 변동성", String(format: "%.0f%%", postVolatility), valueColor: Color.Exit.secondaryText)
+                    summaryRow("물가 상승률", String(format: "%.1f%%", scenario.inflationRate))
+                }
+                .padding(ExitSpacing.md)
+                .background(Color.Exit.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            }
         }
         .padding(.horizontal, ExitSpacing.lg)
     }
     
-    private func summaryRow(_ label: String, _ value: String) -> some View {
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.Exit.caption)
+            .foregroundStyle(Color.Exit.secondaryText)
+    }
+    
+    private func summaryRow(_ label: String, _ value: String, valueColor: Color = Color.Exit.primaryText) -> some View {
         HStack {
             Text(label)
                 .font(.Exit.caption)
@@ -236,7 +278,7 @@ struct SimulationSetupView: View {
             Spacer()
             Text(value)
                 .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.primaryText)
+                .foregroundStyle(valueColor)
         }
     }
     
@@ -254,7 +296,7 @@ struct SimulationSetupView: View {
             
             // 3. 변동성 자동 계산 (목표 수익률 기반)
             if let scenario = selectedScenario {
-                let autoVolatility = calculateVolatility(for: scenario.preRetirementReturnRate)
+                let autoVolatility = SimulationViewModel.calculateVolatility(for: scenario.preRetirementReturnRate)
                 viewModel.updateVolatility(autoVolatility)
             }
             
@@ -284,17 +326,6 @@ struct SimulationSetupView: View {
     }
     
     // MARK: - Helpers
-    
-    /// 목표 수익률 기반 변동성 자동 계산
-    private func calculateVolatility(for returnRate: Double) -> Double {
-        switch returnRate {
-        case ..<4:    return 8.0   // 안정형
-        case 4..<6:   return 12.0  // 안정-중립
-        case 6..<8:   return 15.0  // 중립
-        case 8..<10:  return 20.0  // 공격형
-        default:      return 25.0  // 매우 공격형
-        }
-    }
     
     /// 기존 D-Day 계산
     private func calculateOriginalMonths(_ scenario: Scenario) -> Int {
