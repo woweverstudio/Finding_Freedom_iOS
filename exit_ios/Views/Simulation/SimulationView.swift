@@ -163,22 +163,13 @@ struct SimulationView: View {
                     RetirementProjectionChart(result: retirementResult, scenario: scenario)
                 }
                 
-                // 6. 시뮬레이션 상세 카드
-                if let scenario = viewModel.activeScenario {
-                    StatisticsCard(
-                        result: result,
-                        scenario: scenario,
-                        effectiveVolatility: viewModel.effectiveVolatility
-                    )
-                }
-                
-                // 7. 시뮬레이션 정보 카드
+                // 6. 시뮬레이션 정보 카드
                 if let scenario = viewModel.activeScenario {
                     SimulationInfoCard(
                         scenario: scenario,
                         currentAssetAmount: viewModel.currentAssetAmount,
                         effectiveVolatility: viewModel.effectiveVolatility,
-                        totalSimulations: result.totalSimulations
+                        result: result
                     )
                 }
                 

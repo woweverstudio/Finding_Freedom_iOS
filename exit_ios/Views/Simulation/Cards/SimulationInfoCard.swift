@@ -12,7 +12,7 @@ struct SimulationInfoCard: View {
     let scenario: Scenario
     let currentAssetAmount: Double
     let effectiveVolatility: Double
-    let totalSimulations: Int
+    let result: MonteCarloResult
     
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
@@ -36,9 +36,10 @@ struct SimulationInfoCard: View {
                     .background(Color.Exit.divider)
                     .padding(.vertical, 2)
                 
-                
                 infoRow(label: "수익률 변동성", value: String(format: "%.1f%%", effectiveVolatility))
-                infoRow(label: "시뮬레이션 횟수", value: "\(totalSimulations.formatted())회")
+                infoRow(label: "시뮬레이션 횟수", value: "\(result.totalSimulations.formatted())회")
+                infoRow(label: "성공", value: "\(result.successCount.formatted())회", valueColor: Color.Exit.positive)
+                infoRow(label: "실패", value: "\(result.failureCount.formatted())회", valueColor: Color.Exit.warning)
             }
         }
         .padding(ExitSpacing.md)
@@ -47,7 +48,7 @@ struct SimulationInfoCard: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
-    private func infoRow(label: String, value: String, isAccent: Bool = false) -> some View {
+    private func infoRow(label: String, value: String, isAccent: Bool = false, valueColor: Color? = nil) -> some View {
         HStack {
             Text(label)
                 .font(.Exit.caption)
@@ -56,7 +57,7 @@ struct SimulationInfoCard: View {
             Text(value)
                 .font(.Exit.caption)
                 .fontWeight(isAccent ? .semibold : .medium)
-                .foregroundStyle(isAccent ? Color.Exit.accent : Color.Exit.primaryText)
+                .foregroundStyle(valueColor ?? (isAccent ? Color.Exit.accent : Color.Exit.primaryText))
         }
     }
 }
