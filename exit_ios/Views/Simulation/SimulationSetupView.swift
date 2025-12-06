@@ -159,10 +159,10 @@ struct SimulationSetupView: View {
             editingCurrentAsset = min(editingCurrentAsset + amount, 10_000_000_000)
         } label: {
             Text(title)
-                .font(.Exit.caption)
+                .font(Font.Exit.caption)
                 .foregroundStyle(Color.Exit.accent)
-                .padding(.horizontal, ExitSpacing.sm)
-                .padding(.vertical, ExitSpacing.xs)
+                .padding(.horizontal, ExitSpacing.md)
+                .padding(.vertical, ExitSpacing.sm)
                 .background(
                     RoundedRectangle(cornerRadius: ExitRadius.sm)
                         .fill(Color.Exit.accent.opacity(0.1))

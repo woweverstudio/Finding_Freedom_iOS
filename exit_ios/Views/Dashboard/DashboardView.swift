@@ -24,41 +24,45 @@ struct DashboardView: View {
             PlanHeaderView(hideAmounts: appState.hideAmounts, isExpanded: $isHeaderExpanded)
             
             // 스크롤 컨텐츠
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: ExitSpacing.lg) {
-                    // D-DAY 헤더
-                    dDayHeader
-                    
-                    // 진행률 섹션
-                    progressSection
-                    
-                    // 조정 안내 (10년 이상 남았을 때만 표시)
-                    adjustmentHintCard
-                    
-                    // 계산방법 보기 버튼
-                    calculateFormulaButton
-                }
-                .padding(.vertical, ExitSpacing.lg)
-            }
-            .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                geometry.contentOffset.y
-            } action: { oldValue, newValue in
-                // 위로 당겼을 때 (음수 오프셋) 헤더 확장
-                if newValue < pullThreshold && !isHeaderExpanded {
-                    HapticService.shared.medium()
-                    
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        isHeaderExpanded = true
+            ScrollViewReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: ExitSpacing.lg) {
+                        // D-DAY 헤더
+                        dDayHeader
+                        
+                        // 진행률 섹션
+                        progressSection
+                        
+                        // 조정 안내 (10년 이상 남았을 때만 표시)
+                        adjustmentHintCard
+                        
+                        // 계산방법 보기 버튼
+                        calculateFormulaButton
                     }
+                    .padding(.vertical, ExitSpacing.lg)
+                    .id("container")
                 }
-                
-                // expanded 상태에서 아래로 스크롤하면 적용 (닫기)
-                // PlanHeaderView의 onChange에서 자동으로 설정이 적용됨
-                if newValue > closeThreshold && isHeaderExpanded {
-                    HapticService.shared.light()
+                .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                    geometry.contentOffset.y
+                } action: { oldValue, newValue in
+                    // 위로 당겼을 때 (음수 오프셋) 헤더 확장
+                    if newValue < pullThreshold && !isHeaderExpanded {
+                        HapticService.shared.medium()
+                        
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            isHeaderExpanded = true
+                        }
+                    }
                     
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        isHeaderExpanded = false
+                    // expanded 상태에서 아래로 스크롤하면 적용 (닫기)
+                    // PlanHeaderView의 onChange에서 자동으로 설정이 적용됨
+                    if newValue > closeThreshold && isHeaderExpanded {
+                        proxy.scrollTo("container", anchor: .top)
+                        HapticService.shared.light()
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            isHeaderExpanded = false
+                            
+                        }
                     }
                 }
             }

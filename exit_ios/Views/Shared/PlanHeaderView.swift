@@ -83,7 +83,7 @@ struct PlanHeaderView: View {
                 isExpanded.toggle()
             }
         } label: {
-            VStack(spacing: ExitSpacing.xs) {
+            VStack(spacing: ExitSpacing.md) {
                 // 핵심 정보 (한 줄)
                 if !isExpanded {
                     infoRow
@@ -158,7 +158,6 @@ struct PlanHeaderView: View {
         RoundedRectangle(cornerRadius: 2)
             .fill(Color.Exit.tertiaryText.opacity(0.5))
             .frame(width: 32, height: 4)
-            .padding(.top, 4)
     }
     
     // MARK: - Edit Panel (펼쳐지는 편집 영역)
@@ -208,21 +207,12 @@ struct PlanHeaderView: View {
                 color: Color.Exit.caution
             )
             
-            // 적용 버튼
             Button {
                 applyChanges()
             } label: {
                 Text("적용")
-                    .font(.Exit.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, ExitSpacing.sm)
-                    .background(Color.Exit.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+                    .exitSecondaryButton()
             }
-            .buttonStyle(.plain)
-            .padding(.top, ExitSpacing.xs)
         }
         .padding(.horizontal, ExitSpacing.md)
         .padding(.bottom, ExitSpacing.md)
