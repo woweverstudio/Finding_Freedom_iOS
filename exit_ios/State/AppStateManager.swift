@@ -46,6 +46,9 @@ final class AppStateManager {
     /// 금액 숨김 여부
     var hideAmounts: Bool = false
     
+    /// D-Day 애니메이션 트리거 (설정 변경 시 애니메이션 재시작)
+    var dDayAnimationTrigger: UUID = UUID()
+    
     // MARK: - Sheet States
     
     /// 입금 시트 표시
@@ -227,6 +230,9 @@ final class AppStateManager {
         
         try? context.save()
         calculateResults()
+        
+        // D-Day 애니메이션 트리거 (0부터 다시 카운트)
+        dDayAnimationTrigger = UUID()
     }
     
     // MARK: - Deposit Actions

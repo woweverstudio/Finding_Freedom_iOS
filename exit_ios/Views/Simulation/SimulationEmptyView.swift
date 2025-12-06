@@ -832,7 +832,7 @@ struct SimulationEmptyView: View {
                     }
                 }
             } else {
-                Text("약 3~5초 소요됩니다")
+                Text("약 3~10초 소요됩니다")
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.tertiaryText)
             }

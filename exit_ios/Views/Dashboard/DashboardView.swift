@@ -95,10 +95,11 @@ struct DashboardView: View {
                             .font(.Exit.body)
                             .foregroundStyle(Color.Exit.secondaryText)
                         
-                        Text(result.dDayString)
-                            .font(.Exit.title2)
-                            .foregroundStyle(Color.Exit.accent)
-                            .fontWeight(.heavy)
+                        // 파친코 스타일 롤링 애니메이션
+                        DDayRollingView(
+                            months: result.monthsToRetirement,
+                            animationID: appState.dDayAnimationTrigger
+                        )
                         
                         Text("남았습니다.")
                             .font(.Exit.body)
@@ -125,7 +126,8 @@ struct DashboardView: View {
                         currentAmount: ExitNumberFormatter.formatToEokManWon(result.currentAssets),
                         targetAmount: ExitNumberFormatter.formatToEokManWon(result.targetAssets),
                         percentText: ExitNumberFormatter.formatPercentInt(result.progressPercent),
-                        hideAmounts: appState.hideAmounts
+                        hideAmounts: appState.hideAmounts,
+                        animationID: appState.dDayAnimationTrigger
                     )
                     .frame(width: 200, height: 200)
                     

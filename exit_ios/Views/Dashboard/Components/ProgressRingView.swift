@@ -14,6 +14,7 @@ struct ProgressRingView: View {
     let targetAmount: String
     let percentText: String
     var hideAmounts: Bool = false
+    var animationID: UUID = UUID()
     
     @State private var animatedProgress: Double = 0
     
@@ -78,12 +79,19 @@ struct ProgressRingView: View {
         }
         .padding(ExitSpacing.md)
         .onAppear {
-            withAnimation(.easeOut(duration: 1.2)) {
+            withAnimation(.easeOut(duration: 0.8)) {
+                animatedProgress = progress
+            }
+        }
+        .onChange(of: animationID) { _, _ in
+            // 0부터 다시 채우기
+            animatedProgress = 0
+            withAnimation(.easeOut(duration: 0.6)) {
                 animatedProgress = progress
             }
         }
         .onChange(of: progress) { oldValue, newValue in
-            withAnimation(.easeOut(duration: 0.8)) {
+            withAnimation(.easeOut(duration: 0.5)) {
                 animatedProgress = newValue
             }
         }
