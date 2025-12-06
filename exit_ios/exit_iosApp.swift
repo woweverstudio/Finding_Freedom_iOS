@@ -34,6 +34,13 @@ struct exit_iosApp: App {
     
     /// 전역 앱 상태 관리자
     @State private var appStateManager = AppStateManager()
+    
+    init() {
+        // 앱 실행 기록 (리뷰 요청 조건 추적용)
+        Task { @MainActor in
+            ReviewService.shared.recordAppLaunch()
+        }
+    }
 
     var body: some Scene {
         WindowGroup {

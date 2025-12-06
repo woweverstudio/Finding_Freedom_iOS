@@ -234,6 +234,9 @@ final class SimulationViewModel {
                 self.retirementResult = retirementResult
                 self.simulationPhase = .idle
                 self.isSimulating = false
+                
+                // 시뮬레이션 완료 기록 (2회 실행 시 리뷰 요청)
+                ReviewService.shared.recordSimulationCompleted()
             }
         }
     }
