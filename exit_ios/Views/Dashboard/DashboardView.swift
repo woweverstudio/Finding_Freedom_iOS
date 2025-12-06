@@ -85,10 +85,9 @@ struct DashboardView: View {
     private var dDayMainTitle: some View {
         Group {
             if let result = appState.retirementResult {
-                if result.monthsToRetirement == 0 {
-                    Text("은퇴 가능합니다! 🎉")
-                        .font(.Exit.title2)
-                        .foregroundStyle(Color.Exit.primaryText)
+                if result.isRetirementReady {
+                    // 이미 은퇴 가능한 경우
+                    retirementReadyView(result: result)
                 } else {
                     VStack(spacing: ExitSpacing.sm) {
                         Text("회사 탈출까지")
@@ -110,6 +109,32 @@ struct DashboardView: View {
                 Text("계산 중...")
                     .font(.Exit.title2)
                     .foregroundStyle(Color.Exit.secondaryText)
+            }
+        }
+    }
+    
+    /// 은퇴 가능 상태 뷰
+    private func retirementReadyView(result: RetirementCalculationResult) -> some View {
+        VStack(spacing: ExitSpacing.md) {
+            Text("🎉")
+                .font(.system(size: 40))
+            
+            Text("은퇴 가능합니다!")
+                .font(.Exit.title2)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.Exit.accent)
+            
+            if let requiredRate = result.requiredReturnRate {
+                VStack(spacing: ExitSpacing.xs) {
+                    Text("필요 수익률")
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                    
+                    Text(String(format: "연 %.2f%%", requiredRate))
+                        .font(.Exit.title3)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(requiredRate < 4 ? Color.Exit.positive : Color.Exit.accent)
+                }
             }
         }
     }
@@ -234,31 +259,55 @@ struct DashboardView: View {
                     .background(Color.Exit.divider)
                 
                 // 설명 텍스트
-                if result.monthsToRetirement <= 0 {
+                if result.isRetirementReady, let requiredRate = result.requiredReturnRate {
+                    // 은퇴 가능: 필요 수익률 역산 결과 표시
                     VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                        HStack(spacing: 0) {
+                            Text("현재 자산 ")
+                                .foregroundStyle(Color.Exit.secondaryText)
+                            Text(ExitNumberFormatter.formatToEokManWon(result.currentAssets))
+                                .foregroundStyle(Color.Exit.accent)
+                                .fontWeight(.semibold)
+                                .blur(radius: appState.hideAmounts ? 5 : 0)
+                            Text("으로")
+                                .foregroundStyle(Color.Exit.secondaryText)
+                        }
+                        .font(.Exit.subheadline)
+                        
                         HStack(spacing: 0) {
                             Text("매월 ")
                                 .foregroundStyle(Color.Exit.secondaryText)
                             Text(ExitNumberFormatter.formatToManWon(profile.desiredMonthlyIncome))
                                 .foregroundStyle(Color.Exit.accent)
                                 .fontWeight(.semibold)
-                            Text("의 현금흐름을 만들기 위해")
+                            Text(" 현금흐름을 만들려면")
                                 .foregroundStyle(Color.Exit.secondaryText)
                         }
                         .font(.Exit.subheadline)
                         
                         HStack(spacing: 0) {
-                            Text("연복리 수익률 ")
+                            Text("연 ")
                                 .foregroundStyle(Color.Exit.secondaryText)
-                            Text(String(format: "%.1f%%", profile.postRetirementReturnRate))
-                                .foregroundStyle(Color.Exit.accent)
-                                .fontWeight(.semibold)
-                            Text("로 투자해야 합니다.")
+                            Text(String(format: "%.2f%%", requiredRate))
+                                .foregroundStyle(requiredRate < 4 ? Color.Exit.positive : Color.Exit.accent)
+                                .fontWeight(.bold)
+                            Text(" 수익률만 달성하면 됩니다")
                                 .foregroundStyle(Color.Exit.secondaryText)
                         }
                         .font(.Exit.subheadline)
+                        
+                        // 수익률 수준 코멘트
+                        if requiredRate < 3 {
+                            requiredRateComment("매우 안정적인 수익률입니다 (예금/채권 수준)", color: Color.Exit.positive)
+                        } else if requiredRate < 5 {
+                            requiredRateComment("안정적인 수익률입니다 (배당주/채권 수준)", color: Color.Exit.positive)
+                        } else if requiredRate < 7 {
+                            requiredRateComment("합리적인 수익률입니다 (인덱스펀드 수준)", color: Color.Exit.accent)
+                        } else {
+                            requiredRateComment("다소 높은 수익률이 필요합니다", color: Color.Exit.caution)
+                        }
                     }
-                } else {
+                } else if result.monthsToRetirement > 0 {
                     VStack(alignment: .leading, spacing: ExitSpacing.sm) {
                         HStack(spacing: 0) {
                             Text("매월 ")
@@ -303,6 +352,20 @@ struct DashboardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.Exit.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+    }
+    
+    /// 필요 수익률 코멘트
+    private func requiredRateComment(_ text: String, color: Color) -> some View {
+        HStack(spacing: ExitSpacing.xs) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(color)
+            
+            Text(text)
+                .font(.Exit.caption)
+                .foregroundStyle(color)
+        }
+        .padding(.top, ExitSpacing.xs)
     }
     
     private var calculateFormulaButton: some View {

@@ -21,6 +21,15 @@ struct RetirementCalculationResult {
     /// 계산에 사용된 현재 자산
     let currentAssets: Double
     
+    /// 이미 은퇴 가능한 경우, 희망 월수입을 만들기 위한 최소 필요 수익률 (%)
+    /// nil이면 아직 목표 미달
+    let requiredReturnRate: Double?
+    
+    /// 은퇴 가능 여부
+    var isRetirementReady: Bool {
+        monthsToRetirement == 0
+    }
+    
     /// 은퇴까지 남은 연도
     var yearsToRetirement: Int {
         monthsToRetirement / 12
@@ -66,6 +75,29 @@ enum RetirementCalculator {
         }
         
         return annualIncome / realReturnRate
+    }
+    
+    // MARK: - 필요 수익률 역산
+    
+    /// 현재 자산으로 희망 월수입을 만들기 위한 최소 필요 수익률 계산
+    /// 필요 수익률 = (희망 월수입 × 12) / 현재 자산 + 물가상승률
+    /// - Parameters:
+    ///   - currentAssets: 현재 자산 (원 단위)
+    ///   - desiredMonthlyIncome: 희망 월 수입 (원 단위)
+    ///   - inflationRate: 물가 상승률 (%, 예: 2.5)
+    /// - Returns: 필요 연 수익률 (%)
+    nonisolated static func calculateRequiredReturnRate(
+        currentAssets: Double,
+        desiredMonthlyIncome: Double,
+        inflationRate: Double
+    ) -> Double {
+        guard currentAssets > 0 else { return 0 }
+        
+        let annualIncome = desiredMonthlyIncome * 12
+        let realReturnRateNeeded = annualIncome / currentAssets * 100  // 실질 수익률 (%)
+        let nominalReturnRate = realReturnRateNeeded + inflationRate   // 명목 수익률 (%)
+        
+        return nominalReturnRate
     }
     
     // MARK: - D-DAY 계산
@@ -129,11 +161,19 @@ enum RetirementCalculator {
         
         let progress = min((currentAsset / targetAssets) * 100, 100)
         
+        // 이미 은퇴 가능한 경우 필요 수익률 계산
+        let requiredRate: Double? = months == 0 ? calculateRequiredReturnRate(
+            currentAssets: currentAsset,
+            desiredMonthlyIncome: profile.desiredMonthlyIncome,
+            inflationRate: profile.inflationRate
+        ) : nil
+        
         return RetirementCalculationResult(
             targetAssets: targetAssets,
             monthsToRetirement: months,
             progressPercent: progress,
-            currentAssets: currentAsset
+            currentAssets: currentAsset,
+            requiredReturnRate: requiredRate
         )
     }
     
@@ -161,11 +201,19 @@ enum RetirementCalculator {
         
         let progress = min((currentNetAssets / targetAssets) * 100, 100)
         
+        // 이미 은퇴 가능한 경우 필요 수익률 계산
+        let requiredRate: Double? = months == 0 ? calculateRequiredReturnRate(
+            currentAssets: currentNetAssets,
+            desiredMonthlyIncome: desiredMonthlyIncome,
+            inflationRate: inflationRate
+        ) : nil
+        
         return RetirementCalculationResult(
             targetAssets: targetAssets,
             monthsToRetirement: months,
             progressPercent: progress,
-            currentAssets: currentNetAssets
+            currentAssets: currentNetAssets,
+            requiredReturnRate: requiredRate
         )
     }
 }

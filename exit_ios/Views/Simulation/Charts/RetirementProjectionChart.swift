@@ -13,8 +13,14 @@ struct RetirementProjectionChart: View {
     let result: RetirementSimulationResult
     let userProfile: UserProfile
     
-    // 목표 자산 계산
-    private var targetAsset: Double {
+    // 시뮬레이션 시작 자산 (실제 시뮬레이션에서 사용된 값)
+    private var startingAsset: Double {
+        // 시뮬레이션 결과의 첫 번째 데이터 포인트가 시작 자산
+        result.medianPath.yearlyAssets.first ?? calculatedTargetAsset
+    }
+    
+    // 계산된 목표 자산 (폴백용)
+    private var calculatedTargetAsset: Double {
         RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome: userProfile.desiredMonthlyIncome,
             postRetirementReturnRate: userProfile.postRetirementReturnRate,
@@ -33,9 +39,9 @@ struct RetirementProjectionChart: View {
     // Y축 최대값 계산 (매우행운 제외, 스케일 안정화)
     private var chartYMax: Double {
         // 행운까지의 최대값 사용 (매우행운은 제외하여 스케일 안정화)
-        let maxFromLucky = luckyPath.max() ?? targetAsset
-        let maxFromMedian = medianPath.max() ?? targetAsset
-        return max(maxFromLucky, maxFromMedian, targetAsset) * 1.1
+        let maxFromLucky = luckyPath.max() ?? startingAsset
+        let maxFromMedian = medianPath.max() ?? startingAsset
+        return max(maxFromLucky, maxFromMedian, startingAsset) * 1.1
     }
     
     // 변화율 계산
@@ -116,10 +122,10 @@ struct RetirementProjectionChart: View {
     private var contextSection: some View {
         HStack(spacing: ExitSpacing.md) {
             VStack(spacing: 2) {
-                Text("은퇴 시점")
+                Text("시작 자산")
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.secondaryText)
-                Text(formatSimple(targetAsset))
+                Text(formatSimple(startingAsset))
                     .font(.Exit.body)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.Exit.accent)
@@ -314,7 +320,7 @@ struct RetirementProjectionChart: View {
             }
             
             // 시작점
-            PointMark(x: .value("년", 0), y: .value("자산", targetAsset))
+            PointMark(x: .value("년", 0), y: .value("자산", startingAsset))
                 .foregroundStyle(Color.Exit.accent)
                 .symbolSize(80)
             
@@ -493,7 +499,7 @@ struct RetirementProjectionChart: View {
                 .foregroundStyle(Color.Exit.secondaryText)
             
             HStack(spacing: ExitSpacing.lg) {
-                dataItem(label: "목표 자산", value: ExitNumberFormatter.formatChartAxis(targetAsset))
+                dataItem(label: "시작 자산", value: ExitNumberFormatter.formatChartAxis(startingAsset))
                 dataItem(label: "월 지출", value: ExitNumberFormatter.formatToManWon(userProfile.desiredMonthlyIncome))
                 dataItem(label: "은퇴 후 수익률", value: String(format: "%.1f%%", userProfile.postRetirementReturnRate))
             }

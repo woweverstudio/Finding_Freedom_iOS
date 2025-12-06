@@ -186,7 +186,7 @@ final class SimulationViewModel {
         let maxMonthsForSimulation = Int(Double(originalDDay) * failureMultiplier)
         
         // 백그라운드 작업 시작
-        Task.detached(priority: .userInitiated) { [weak self] in
+        Task.detached(priority: .userInitiated) {
             // Phase 1: 목표 달성까지 시뮬레이션 (은퇴 전 수익률/변동성 사용)
             let monteCarloResult = MonteCarloSimulator.simulate(
                 initialAsset: currentAsset,
@@ -199,38 +199,41 @@ final class SimulationViewModel {
                 trackPaths: true,
                 progressCallback: { @Sendable completed, _, _ in
                     let progress = Double(completed) / Double(simCount) * 0.5 // 전체의 50%
-                    DispatchQueue.main.async {
-                        self?.simulationProgress = progress
+                    Task { @MainActor in
+                        self.simulationProgress = progress
                     }
                 }
             )
             
             // 메인 스레드에서 Phase 1 결과 저장 및 Phase 2 시작
             await MainActor.run {
-                self?.monteCarloResult = monteCarloResult
-                self?.simulationPhase = .postRetirement
+                self.monteCarloResult = monteCarloResult
+                self.simulationPhase = .postRetirement
             }
             
             // Phase 2: 은퇴 후 시뮬레이션 (은퇴 후 수익률/변동성 사용)
+            // 이미 은퇴 가능한 경우 현재 자산을 시작점으로 사용, 아닌 경우 목표 자산 사용
+            let retirementStartAsset = originalDDay == 0 ? currentAsset : targetAsset
+            
             let retirementResult = RetirementSimulator.simulate(
-                initialAsset: targetAsset,
+                initialAsset: retirementStartAsset,
                 monthlySpending: desiredMonthlyIncome,
                 annualReturn: postRetirementReturnRate,
                 volatility: postRetirementVolatility,
                 simulationCount: simCount,
                 progressCallback: { @Sendable completed in
                     let progress = 0.5 + Double(completed) / Double(simCount) * 0.5 // 50~100%
-                    DispatchQueue.main.async {
-                        self?.simulationProgress = progress
+                    Task { @MainActor in
+                        self.simulationProgress = progress
                     }
                 }
             )
             
             // 완료 후 메인 스레드에서 결과 업데이트
             await MainActor.run {
-                self?.retirementResult = retirementResult
-                self?.simulationPhase = .idle
-                self?.isSimulating = false
+                self.retirementResult = retirementResult
+                self.simulationPhase = .idle
+                self.isSimulating = false
             }
         }
     }

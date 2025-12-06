@@ -13,8 +13,14 @@ struct RetirementShortTermChart: View {
     let result: RetirementSimulationResult
     let userProfile: UserProfile
     
-    // 목표 자산 계산
-    private var targetAsset: Double {
+    // 시뮬레이션 시작 자산 (실제 시뮬레이션에서 사용된 값)
+    private var startingAsset: Double {
+        // 시뮬레이션 결과의 첫 번째 데이터 포인트가 시작 자산
+        result.medianPath.yearlyAssets.first ?? calculatedTargetAsset
+    }
+    
+    // 계산된 목표 자산 (폴백용)
+    private var calculatedTargetAsset: Double {
         RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome: userProfile.desiredMonthlyIncome,
             postRetirementReturnRate: userProfile.postRetirementReturnRate,
@@ -134,7 +140,7 @@ struct RetirementShortTermChart: View {
                 .foregroundStyle(Color.Exit.secondaryText)
             
             HStack(spacing: ExitSpacing.lg) {
-                dataItem(label: "목표 자산", value: ExitNumberFormatter.formatChartAxis(targetAsset))
+                dataItem(label: "시작 자산", value: ExitNumberFormatter.formatChartAxis(startingAsset))
                 dataItem(label: "월 지출", value: ExitNumberFormatter.formatToManWon(userProfile.desiredMonthlyIncome))
                 dataItem(label: "은퇴 후 수익률", value: String(format: "%.1f%%", userProfile.postRetirementReturnRate))
             }
@@ -177,10 +183,10 @@ struct RetirementShortTermChart: View {
     private var contextSection: some View {
         HStack(spacing: ExitSpacing.md) {
             VStack(spacing: 2) {
-                Text("은퇴 시점")
+                Text("시작 자산")
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.secondaryText)
-                Text(formatSimple(targetAsset))
+                Text(formatSimple(startingAsset))
                     .font(.Exit.body)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.Exit.accent)
@@ -357,7 +363,7 @@ struct RetirementShortTermChart: View {
             }
             
             // 시작점
-            PointMark(x: .value("년", 0), y: .value("자산", targetAsset))
+            PointMark(x: .value("년", 0), y: .value("자산", startingAsset))
                 .foregroundStyle(Color.Exit.accent)
                 .symbolSize(80)
         }

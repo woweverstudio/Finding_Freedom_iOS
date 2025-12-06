@@ -161,63 +161,94 @@ struct SimulationView: View {
     // MARK: - Results View
     
     private func resultsView(result: MonteCarloResult) -> some View {
-        ScrollView(showsIndicators: false) {
+        let isAlreadyRetired = viewModel.originalDDayMonths == 0
+        
+        return ScrollView(showsIndicators: false) {
             VStack(spacing: ExitSpacing.lg) {
-                // 1. 성공률 카드
-                SuccessRateCard(
-                    result: result,
-                    originalDDayMonths: viewModel.originalDDayMonths,
-                    failureThresholdMultiplier: viewModel.failureThresholdMultiplier,
-                    userProfile: viewModel.userProfile,
-                    currentAssetAmount: viewModel.currentAssetAmount,
-                    effectiveVolatility: viewModel.effectiveVolatility
-                )
-                
-                // 2. 자산 변화 예측 차트 + FIRE 달성 시점 비교
-                if let paths = result.representativePaths,
-                   let profile = viewModel.userProfile {
-                    AssetPathChart(
-                        paths: paths,
-                        userProfile: profile,
+                if isAlreadyRetired {
+                    // 이미 은퇴 가능한 경우: 은퇴 후 시뮬레이션만 표시
+                    retirementReadyHeader
+                    
+                    // 은퇴 후 단기(1~10년) 자산 변화
+                    if let retirementResult = viewModel.retirementResult,
+                       let profile = viewModel.userProfile {
+                        RetirementShortTermChart(result: retirementResult, userProfile: profile)
+                    }
+                    
+                    // 은퇴 후 장기(40년) 자산 변화 예측
+                    if let retirementResult = viewModel.retirementResult,
+                       let profile = viewModel.userProfile {
+                        RetirementProjectionChart(result: retirementResult, userProfile: profile)
+                    }
+                    
+                    // 시뮬레이션 정보 카드
+                    if let profile = viewModel.userProfile {
+                        SimulationInfoCard(
+                            userProfile: profile,
+                            currentAssetAmount: viewModel.currentAssetAmount,
+                            effectiveVolatility: viewModel.effectiveVolatility,
+                            result: result
+                        )
+                    }
+                } else {
+                    // 아직 은퇴 전: 전체 시뮬레이션 표시
+                    
+                    // 1. 성공률 카드
+                    SuccessRateCard(
                         result: result,
                         originalDDayMonths: viewModel.originalDDayMonths,
+                        failureThresholdMultiplier: viewModel.failureThresholdMultiplier,
+                        userProfile: viewModel.userProfile,
                         currentAssetAmount: viewModel.currentAssetAmount,
                         effectiveVolatility: viewModel.effectiveVolatility
                     )
-                }
-                
-                // 3. 목표 달성 시점 분포 차트
-                DistributionChart(
-                    yearDistributionData: viewModel.yearDistributionData,
-                    result: result,
-                    userProfile: viewModel.userProfile,
-                    currentAssetAmount: viewModel.currentAssetAmount,
-                    effectiveVolatility: viewModel.effectiveVolatility
-                )
-                
-                // 4. 은퇴 후 단기(1~10년) 자산 변화
-                if let retirementResult = viewModel.retirementResult,
-                   let profile = viewModel.userProfile {
-                    RetirementShortTermChart(result: retirementResult, userProfile: profile)
-                }
-                
-                // 5. 은퇴 후 장기(40년) 자산 변화 예측
-                if let retirementResult = viewModel.retirementResult,
-                   let profile = viewModel.userProfile {
-                    RetirementProjectionChart(result: retirementResult, userProfile: profile)
-                }
-                
-                // 6. 시뮬레이션 정보 카드
-                if let profile = viewModel.userProfile {
-                    SimulationInfoCard(
-                        userProfile: profile,
+                    
+                    // 2. 자산 변화 예측 차트 + FIRE 달성 시점 비교
+                    if let paths = result.representativePaths,
+                       let profile = viewModel.userProfile {
+                        AssetPathChart(
+                            paths: paths,
+                            userProfile: profile,
+                            result: result,
+                            originalDDayMonths: viewModel.originalDDayMonths,
+                            currentAssetAmount: viewModel.currentAssetAmount,
+                            effectiveVolatility: viewModel.effectiveVolatility
+                        )
+                    }
+                    
+                    // 3. 목표 달성 시점 분포 차트
+                    DistributionChart(
+                        yearDistributionData: viewModel.yearDistributionData,
+                        result: result,
+                        userProfile: viewModel.userProfile,
                         currentAssetAmount: viewModel.currentAssetAmount,
-                        effectiveVolatility: viewModel.effectiveVolatility,
-                        result: result
+                        effectiveVolatility: viewModel.effectiveVolatility
                     )
+                    
+                    // 4. 은퇴 후 단기(1~10년) 자산 변화
+                    if let retirementResult = viewModel.retirementResult,
+                       let profile = viewModel.userProfile {
+                        RetirementShortTermChart(result: retirementResult, userProfile: profile)
+                    }
+                    
+                    // 5. 은퇴 후 장기(40년) 자산 변화 예측
+                    if let retirementResult = viewModel.retirementResult,
+                       let profile = viewModel.userProfile {
+                        RetirementProjectionChart(result: retirementResult, userProfile: profile)
+                    }
+                    
+                    // 6. 시뮬레이션 정보 카드
+                    if let profile = viewModel.userProfile {
+                        SimulationInfoCard(
+                            userProfile: profile,
+                            currentAssetAmount: viewModel.currentAssetAmount,
+                            effectiveVolatility: viewModel.effectiveVolatility,
+                            result: result
+                        )
+                    }
                 }
                 
-                // 8. 액션 버튼들
+                // 액션 버튼들
                 actionButtons                
             }
             .padding(.vertical, ExitSpacing.lg)
@@ -227,6 +258,59 @@ struct SimulationView: View {
         } action: { _, newValue in
             scrollOffset = newValue
         }
+    }
+    
+    // MARK: - Retirement Ready Header
+    
+    private var retirementReadyHeader: some View {
+        VStack(spacing: ExitSpacing.md) {
+            Text("🎉")
+                .font(.system(size: 50))
+            
+            Text("이미 은퇴 가능합니다!")
+                .font(.Exit.title2)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.Exit.accent)
+            
+            if let profile = viewModel.userProfile {
+                let requiredRate = RetirementCalculator.calculateRequiredReturnRate(
+                    currentAssets: viewModel.currentAssetAmount,
+                    desiredMonthlyIncome: profile.desiredMonthlyIncome,
+                    inflationRate: profile.inflationRate
+                )
+                
+                VStack(spacing: ExitSpacing.xs) {
+                    Text("매월 \(ExitNumberFormatter.formatToManWon(profile.desiredMonthlyIncome)) 현금흐름을 위해")
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                    
+                    HStack(spacing: ExitSpacing.xs) {
+                        Text("연")
+                            .font(.Exit.body)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                        Text(String(format: "%.2f%%", requiredRate))
+                            .font(.Exit.title3)
+                            .fontWeight(.bold)
+                            .foregroundStyle(requiredRate < 4 ? Color.Exit.positive : Color.Exit.accent)
+                        Text("수익률만 달성하면 됩니다")
+                            .font(.Exit.body)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                    }
+                }
+            }
+            
+            Text("아래는 은퇴 후 자산 변화 시뮬레이션입니다")
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.tertiaryText)
+                .padding(.top, ExitSpacing.sm)
+        }
+        .padding(ExitSpacing.xl)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: ExitRadius.xl)
+                .fill(LinearGradient.exitCard)
+        )
+        .padding(.horizontal, ExitSpacing.md)
     }
     
     // MARK: - Action Buttons

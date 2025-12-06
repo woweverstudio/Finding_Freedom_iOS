@@ -9,22 +9,22 @@
 import Foundation
 
 /// 단일 시뮬레이션 경로 (경로 + 소진 연도)
-struct RetirementPath {
+struct RetirementPath: Sendable {
     let yearlyAssets: [Double]  // 연도별 자산
     let depletionYear: Int?     // 소진 연도 (없으면 nil)
     
-    var finalAsset: Double {
+    nonisolated var finalAsset: Double {
         yearlyAssets.last ?? 0
     }
     
     /// 10년 후 자산 (단기 분석용)
-    var assetAt10Years: Double {
+    nonisolated var assetAt10Years: Double {
         yearlyAssets.count > 10 ? yearlyAssets[10] : (yearlyAssets.last ?? 0)
     }
 }
 
 /// 은퇴 후 시뮬레이션 결과
-struct RetirementSimulationResult {
+struct RetirementSimulationResult: Sendable {
     // MARK: - 장기 (40년 기준) 경로
     
     /// 매우 행운 경로 - 40년 기준 (상위 10%)

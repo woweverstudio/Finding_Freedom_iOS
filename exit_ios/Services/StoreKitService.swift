@@ -187,8 +187,8 @@ final class StoreKitService {
         }
     }
     
-    /// 트랜잭션 검증
-    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
+    /// 트랜잭션 검증 (상태를 변경하지 않으므로 nonisolated)
+    nonisolated private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
         switch result {
         case .unverified:
             throw StoreError.failedVerification
