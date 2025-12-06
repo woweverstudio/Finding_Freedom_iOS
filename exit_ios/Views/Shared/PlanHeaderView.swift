@@ -15,8 +15,8 @@ struct PlanHeaderView: View {
     
     let hideAmounts: Bool
     
-    /// 패널 펼침 상태
-    @State private var isExpanded: Bool = false
+    /// 패널 펼침 상태 (외부에서 바인딩 가능)
+    @Binding var isExpanded: Bool
     
     /// 편집 중인 임시 값들 (슬라이더용)
     @State private var editingCurrentAsset: Double = 100_000_000
@@ -24,6 +24,18 @@ struct PlanHeaderView: View {
     @State private var editingMonthlyInvestment: Double = 500_000
     @State private var editingPreReturnRate: Double = 6.5
     @State private var editingPostReturnRate: Double = 5.0
+    
+    /// 기본 이니셜라이저 (외부 바인딩 사용)
+    init(hideAmounts: Bool, isExpanded: Binding<Bool>) {
+        self.hideAmounts = hideAmounts
+        self._isExpanded = isExpanded
+    }
+    
+    /// 편의 이니셜라이저 (내부 상태 사용)
+    init(hideAmounts: Bool) {
+        self.hideAmounts = hideAmounts
+        self._isExpanded = .constant(false)
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -350,15 +362,23 @@ private struct HeaderButtonStyle: ButtonStyle {
 // MARK: - Preview
 
 #Preview {
-    ZStack {
-        Color.Exit.background.ignoresSafeArea()
+    struct PreviewWrapper: View {
+        @State private var isExpanded = false
         
-        VStack {
-            PlanHeaderView(hideAmounts: false)
-            
-            Spacer()
+        var body: some View {
+            ZStack {
+                Color.Exit.background.ignoresSafeArea()
+                
+                VStack {
+                    PlanHeaderView(hideAmounts: false, isExpanded: $isExpanded)
+                    
+                    Spacer()
+                }
+            }
+            .preferredColorScheme(.dark)
+            .environment(\.appState, AppStateManager())
         }
     }
-    .preferredColorScheme(.dark)
-    .environment(\.appState, AppStateManager())
+    
+    return PreviewWrapper()
 }

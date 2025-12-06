@@ -11,11 +11,15 @@ import SwiftUI
 struct DashboardView: View {
     @Environment(\.appState) private var appState
     @State private var showFormulaSheet = false
+    @State private var isHeaderExpanded = false
+    
+    /// Pull-to-expand 트리거 임계값 (음수 = 위로 당김)
+    private let pullThreshold: CGFloat = -60
     
     var body: some View {
         VStack(spacing: 0) {
             // 상단 헤더 (탭하면 인라인 편집 패널 펼쳐짐)
-            PlanHeaderView(hideAmounts: appState.hideAmounts)
+            PlanHeaderView(hideAmounts: appState.hideAmounts, isExpanded: $isHeaderExpanded)
             
             // 스크롤 컨텐츠
             ScrollView(showsIndicators: false) {
@@ -33,6 +37,16 @@ struct DashboardView: View {
                     calculateFormulaButton
                 }
                 .padding(.vertical, ExitSpacing.lg)
+            }
+            .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                geometry.contentOffset.y
+            } action: { oldValue, newValue in
+                // 위로 당겼을 때 (음수 오프셋) 헤더 확장
+                if newValue < pullThreshold && !isHeaderExpanded {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        isHeaderExpanded = true
+                    }
+                }
             }
         }
     }
@@ -143,7 +157,7 @@ struct DashboardView: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Exit.primaryText)
                     
-                    Text("상단의 '내 계획'을 눌러 설정을 조정해보세요")
+                    Text("위로 당기거나 상단을 눌러 설정을 조정해보세요")
                         .font(.Exit.caption)
                         .foregroundStyle(Color.Exit.secondaryText)
                 }
