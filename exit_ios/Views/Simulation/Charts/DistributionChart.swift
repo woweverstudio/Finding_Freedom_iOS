@@ -191,7 +191,8 @@ struct DistributionChart: View {
                 ForEach(probabilityData, id: \.year) { data in
                     BarMark(
                         x: .value("연도", data.year),
-                        y: .value("확률", data.probability)
+                        y: .value("확률", data.probability),
+                        width: .fixed(12)
                     )
                     .foregroundStyle(
                         data.year == mostLikelyYear ?

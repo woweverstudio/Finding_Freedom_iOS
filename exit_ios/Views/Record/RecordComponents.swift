@@ -118,7 +118,8 @@ struct YearlyBarChart: View {
                     // 월급 막대 (회색) - 먼저 그려서 아래에 위치
                     BarMark(
                         x: .value("월", item.monthLabel),
-                        y: .value("월급", item.depositAmount)
+                        y: .value("월급", item.depositAmount),
+                        width: .ratio(0.6)
                     )
                     .foregroundStyle(Color.Exit.accent.opacity(0.4))
                     .cornerRadius(4)
@@ -126,7 +127,8 @@ struct YearlyBarChart: View {
                     // 월급 외 수익 막대 (accent) - 스택되어 위에 위치
                     BarMark(
                         x: .value("월", item.monthLabel),
-                        y: .value("월급 외 수익", item.passiveIncome)
+                        y: .value("월급 외 수익", item.passiveIncome),
+                        width: .ratio(0.6)
                     )
                     .foregroundStyle(
                         LinearGradient(

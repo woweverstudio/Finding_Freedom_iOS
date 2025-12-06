@@ -87,8 +87,14 @@ struct WelcomeView: View {
     private var titleSection: some View {
         VStack(spacing: ExitSpacing.lg) {
             // Exit 로고 텍스트
-            Text("Exit")
-                .font(.system(size: 72, weight: .black, design: .default))
+            Image("logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 100, height: 100)
+                .shadow(color: Color.Exit.accent.opacity(0.5), radius: 20, x: 0, y: 10)
+            
+            Text("자유를 찾아서")
+                .font(.Exit.title)
                 .foregroundStyle(
                     LinearGradient(
                         colors: [Color.Exit.accent, Color(hex: "00B894")],
@@ -120,22 +126,16 @@ struct WelcomeView: View {
                     .foregroundStyle(Color.Exit.secondaryText)
                 
                 HStack(spacing: ExitSpacing.xs) {
-                    Text("Exit")
+                    Text("자유를 찾아서")
                         .font(.Exit.body)
                         .fontWeight(.bold)
                         .foregroundStyle(Color.Exit.accent)
                     
-                    Text("과 함께라면 가능합니다.")
+                    Text("와 함께라면 가능합니다.")
                         .font(.Exit.body)
                         .foregroundStyle(Color.Exit.secondaryText)
                 }
             }
-            
-            // 메시지 3 - 강조
-            Text("천리길도 한걸음부터")
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.tertiaryText)
-                .italic()
         }
         .multilineTextAlignment(.center)
     }
