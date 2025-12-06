@@ -10,7 +10,7 @@ import SwiftUI
 /// 상세 통계 카드
 struct StatisticsCard: View {
     let result: MonteCarloResult
-    let scenario: Scenario
+    let userProfile: UserProfile
     let effectiveVolatility: Double
     
     var body: some View {
@@ -36,9 +36,9 @@ struct StatisticsCard: View {
                     .background(Color.Exit.divider)
                     .padding(.vertical, ExitSpacing.xs)
                 
-                statRow(label: "평균 수익률", value: String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                statRow(label: "평균 수익률", value: String(format: "%.1f%%", userProfile.preRetirementReturnRate))
                 statRow(label: "수익률 변동성", value: String(format: "%.1f%%", effectiveVolatility))
-                statRow(label: "월 저축액", value: ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
+                statRow(label: "월 저축액", value: ExitNumberFormatter.formatToManWon(userProfile.monthlyInvestment))
             }
         }
         .padding(ExitSpacing.lg)

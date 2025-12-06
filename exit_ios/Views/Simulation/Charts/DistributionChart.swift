@@ -14,7 +14,7 @@ struct DistributionChart: View {
     let result: MonteCarloResult
     
     // 시뮬레이션 조건 표시용
-    var scenario: Scenario? = nil
+    var userProfile: UserProfile? = nil
     var currentAssetAmount: Double = 0
     var effectiveVolatility: Double = 0
     
@@ -82,8 +82,8 @@ struct DistributionChart: View {
             helpSection
             
             // 4. 시뮬레이션 조건
-            if let scenario = scenario {
-                simulationConditionSection(scenario: scenario)
+            if let profile = userProfile {
+                simulationConditionSection(profile: profile)
             }
         }
         .padding(ExitSpacing.lg)
@@ -120,7 +120,7 @@ struct DistributionChart: View {
     
     // MARK: - Simulation Condition
     
-    private func simulationConditionSection(scenario: Scenario) -> some View {
+    private func simulationConditionSection(profile: UserProfile) -> some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
             Text("📊 시뮬레이션 조건")
                 .font(.Exit.caption)
@@ -128,15 +128,15 @@ struct DistributionChart: View {
                 .foregroundStyle(Color.Exit.secondaryText)
             
             let targetAsset = RetirementCalculator.calculateTargetAssets(
-                desiredMonthlyIncome: scenario.desiredMonthlyIncome,
-                postRetirementReturnRate: scenario.postRetirementReturnRate,
-                inflationRate: scenario.inflationRate
+                desiredMonthlyIncome: profile.desiredMonthlyIncome,
+                postRetirementReturnRate: profile.postRetirementReturnRate,
+                inflationRate: profile.inflationRate
             )
             
             HStack(spacing: ExitSpacing.md) {
                 dataItem(label: "현재 자산", value: ExitNumberFormatter.formatChartAxis(currentAssetAmount))
                 dataItem(label: "목표 자산", value: ExitNumberFormatter.formatChartAxis(targetAsset))
-                dataItem(label: "월 투자", value: ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
+                dataItem(label: "월 투자", value: ExitNumberFormatter.formatToManWon(profile.monthlyInvestment))
                 dataItem(label: "변동성", value: String(format: "%.0f%%", effectiveVolatility))
             }
         }

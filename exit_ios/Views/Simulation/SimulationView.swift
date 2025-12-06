@@ -68,7 +68,7 @@ struct SimulationView: View {
     
     private var emptyScreenView: some View {
         SimulationEmptyView(
-            scenario: viewModel.activeScenario,
+            userProfile: viewModel.userProfile,
             currentAssetAmount: viewModel.currentAssetAmount,
             onStart: {
                 // 이미 구입한 경우 설정 화면으로
@@ -87,19 +87,6 @@ struct SimulationView: View {
     
     private var resultsScreenView: some View {
         VStack(spacing: 0) {
-            // 상단 헤더 (스크롤에 따라 컴팩트 모드 전환)
-            if viewModel.displayResult != nil && viewModel.isSimulating == false {
-                PlanHeaderView(
-                    scenario: appState.activeScenario,
-                    currentAssetAmount: appState.currentAssetAmount,
-                    hideAmounts: appState.hideAmounts,
-                    isCompact: isHeaderCompact,
-                    onScenarioTap: {
-                        appState.showScenarioSheet = true
-                    }
-                )
-            }
-            
             // 메인 컨텐츠
             ZStack {
                 if viewModel.isSimulating {
@@ -181,17 +168,17 @@ struct SimulationView: View {
                     result: result,
                     originalDDayMonths: viewModel.originalDDayMonths,
                     failureThresholdMultiplier: viewModel.failureThresholdMultiplier,
-                    scenario: viewModel.activeScenario,
+                    userProfile: viewModel.userProfile,
                     currentAssetAmount: viewModel.currentAssetAmount,
                     effectiveVolatility: viewModel.effectiveVolatility
                 )
                 
                 // 2. 자산 변화 예측 차트 + FIRE 달성 시점 비교
                 if let paths = result.representativePaths,
-                   let scenario = viewModel.activeScenario {
+                   let profile = viewModel.userProfile {
                     AssetPathChart(
                         paths: paths,
-                        scenario: scenario,
+                        userProfile: profile,
                         result: result,
                         originalDDayMonths: viewModel.originalDDayMonths,
                         currentAssetAmount: viewModel.currentAssetAmount,
@@ -203,27 +190,27 @@ struct SimulationView: View {
                 DistributionChart(
                     yearDistributionData: viewModel.yearDistributionData,
                     result: result,
-                    scenario: viewModel.activeScenario,
+                    userProfile: viewModel.userProfile,
                     currentAssetAmount: viewModel.currentAssetAmount,
                     effectiveVolatility: viewModel.effectiveVolatility
                 )
                 
                 // 4. 은퇴 후 단기(1~10년) 자산 변화
                 if let retirementResult = viewModel.retirementResult,
-                   let scenario = viewModel.activeScenario {
-                    RetirementShortTermChart(result: retirementResult, scenario: scenario)
+                   let profile = viewModel.userProfile {
+                    RetirementShortTermChart(result: retirementResult, userProfile: profile)
                 }
                 
                 // 5. 은퇴 후 장기(40년) 자산 변화 예측
                 if let retirementResult = viewModel.retirementResult,
-                   let scenario = viewModel.activeScenario {
-                    RetirementProjectionChart(result: retirementResult, scenario: scenario)
+                   let profile = viewModel.userProfile {
+                    RetirementProjectionChart(result: retirementResult, userProfile: profile)
                 }
                 
                 // 6. 시뮬레이션 정보 카드
-                if let scenario = viewModel.activeScenario {
+                if let profile = viewModel.userProfile {
                     SimulationInfoCard(
-                        scenario: scenario,
+                        userProfile: profile,
                         currentAssetAmount: viewModel.currentAssetAmount,
                         effectiveVolatility: viewModel.effectiveVolatility,
                         result: result

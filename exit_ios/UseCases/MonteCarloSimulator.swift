@@ -299,39 +299,38 @@ enum MonteCarloSimulator {
         )
     }
     
-    // MARK: - Scenario-based Simulation
+    // MARK: - UserProfile-based Simulation
     
-    /// 시나리오 기반 시뮬레이션 (편의 메서드)
+    /// UserProfile 기반 시뮬레이션 (편의 메서드)
     /// - Parameters:
-    ///   - scenario: 시나리오
+    ///   - profile: 사용자 프로필
     ///   - currentAsset: 현재 자산
+    ///   - volatility: 변동성 (기본값 15%)
     ///   - simulationCount: 시뮬레이션 횟수
     ///   - trackPaths: 자산 경로 추적 여부
     ///   - progressCallback: 진행률 콜백
     /// - Returns: 시뮬레이션 결과
     nonisolated static func simulate(
-        scenario: Scenario,
+        profile: UserProfile,
         currentAsset: Double,
+        volatility: Double = 15.0,
         simulationCount: Int = 30_000,
         trackPaths: Bool = true,
         progressCallback: ProgressCallback? = nil
     ) -> MonteCarloResult {
         // 목표 자산 계산
         let targetAsset = RetirementCalculator.calculateTargetAssets(
-            desiredMonthlyIncome: scenario.desiredMonthlyIncome,
-            postRetirementReturnRate: scenario.postRetirementReturnRate,
-            inflationRate: scenario.inflationRate
+            desiredMonthlyIncome: profile.desiredMonthlyIncome,
+            postRetirementReturnRate: profile.postRetirementReturnRate,
+            inflationRate: profile.inflationRate
         )
         
-        // 시나리오 오프셋 적용
-        let effectiveAsset = scenario.effectiveAsset(with: currentAsset)
-        
         return simulate(
-            initialAsset: effectiveAsset,
-            monthlyInvestment: scenario.monthlyInvestment,
+            initialAsset: currentAsset,
+            monthlyInvestment: profile.monthlyInvestment,
             targetAsset: targetAsset,
-            meanReturn: scenario.preRetirementReturnRate,
-            volatility: scenario.returnRateVolatility,
+            meanReturn: profile.preRetirementReturnRate,
+            volatility: volatility,
             simulationCount: simulationCount,
             trackPaths: trackPaths,
             progressCallback: progressCallback

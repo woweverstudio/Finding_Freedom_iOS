@@ -9,25 +9,25 @@ import SwiftUI
 
 /// 시뮬레이션 정보 카드
 struct SimulationInfoCard: View {
-    let scenario: Scenario
+    let userProfile: UserProfile
     let currentAssetAmount: Double
     let effectiveVolatility: Double
     let result: MonteCarloResult
     
     private var targetAsset: Double {
         RetirementCalculator.calculateTargetAssets(
-            desiredMonthlyIncome: scenario.desiredMonthlyIncome,
-            postRetirementReturnRate: scenario.postRetirementReturnRate,
-            inflationRate: scenario.inflationRate
+            desiredMonthlyIncome: userProfile.desiredMonthlyIncome,
+            postRetirementReturnRate: userProfile.postRetirementReturnRate,
+            inflationRate: userProfile.inflationRate
         )
     }
     
     private var preRetirementVolatility: Double {
-        SimulationViewModel.calculateVolatility(for: scenario.preRetirementReturnRate)
+        SimulationViewModel.calculateVolatility(for: userProfile.preRetirementReturnRate)
     }
     
     private var postRetirementVolatility: Double {
-        SimulationViewModel.calculateVolatility(for: scenario.postRetirementReturnRate)
+        SimulationViewModel.calculateVolatility(for: userProfile.postRetirementReturnRate)
     }
     
     var body: some View {
@@ -45,32 +45,22 @@ struct SimulationInfoCard: View {
             // 기본 정보
             infoSection(title: "기본 정보") {
                 infoRow(label: "현재 자산", value: ExitNumberFormatter.formatToEokManWon(currentAssetAmount))
-                
-                if scenario.assetOffset != 0 {
-                    let prefix = scenario.assetOffset > 0 ? "+" : ""
-                    infoRow(
-                        label: "가정 금액",
-                        value: prefix + ExitNumberFormatter.formatToEokManWon(scenario.assetOffset),
-                        valueColor: scenario.assetOffset > 0 ? Color.Exit.positive : Color.Exit.warning
-                    )
-                }
-                
-                infoRow(label: "월 저축액", value: ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
-                infoRow(label: "희망 월수입", value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
+                infoRow(label: "월 저축액", value: ExitNumberFormatter.formatToManWon(userProfile.monthlyInvestment))
+                infoRow(label: "희망 월수입", value: ExitNumberFormatter.formatToManWon(userProfile.desiredMonthlyIncome))
                 infoRow(label: "목표 자산", value: ExitNumberFormatter.formatToEokManWon(targetAsset), valueColor: Color.Exit.accent)
             }
             
             // 은퇴 전 시뮬레이션
             infoSection(title: "은퇴 전 시뮬레이션") {
-                infoRow(label: "목표 수익률", value: String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                infoRow(label: "목표 수익률", value: String(format: "%.1f%%", userProfile.preRetirementReturnRate))
                 infoRow(label: "수익률 변동성", value: String(format: "%.1f%%", preRetirementVolatility), valueColor: Color.Exit.secondaryText)
             }
             
             // 은퇴 후 시뮬레이션
             infoSection(title: "은퇴 후 시뮬레이션") {
-                infoRow(label: "목표 수익률", value: String(format: "%.1f%%", scenario.postRetirementReturnRate))
+                infoRow(label: "목표 수익률", value: String(format: "%.1f%%", userProfile.postRetirementReturnRate))
                 infoRow(label: "수익률 변동성", value: String(format: "%.1f%%", postRetirementVolatility), valueColor: Color.Exit.secondaryText)
-                infoRow(label: "물가 상승률", value: String(format: "%.1f%%", scenario.inflationRate))
+                infoRow(label: "물가 상승률", value: String(format: "%.1f%%", userProfile.inflationRate))
             }
             
             // 시뮬레이션 결과
@@ -118,4 +108,3 @@ struct SimulationInfoCard: View {
         }
     }
 }
-

@@ -14,7 +14,6 @@ struct exit_iosApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             UserProfile.self,
-            Scenario.self,
             MonthlyUpdate.self,
             Asset.self,
             AssetSnapshot.self,

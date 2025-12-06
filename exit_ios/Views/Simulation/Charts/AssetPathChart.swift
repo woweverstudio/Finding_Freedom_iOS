@@ -11,7 +11,7 @@ import Charts
 /// 자산 변화 예측 차트 + FIRE 달성 시점 비교 (통합 카드)
 struct AssetPathChart: View {
     let paths: RepresentativePaths
-    let scenario: Scenario
+    let userProfile: UserProfile
     let result: MonteCarloResult?
     let originalDDayMonths: Int
     
@@ -19,9 +19,9 @@ struct AssetPathChart: View {
     var currentAssetAmount: Double = 0
     var effectiveVolatility: Double = 0
     
-    init(paths: RepresentativePaths, scenario: Scenario, result: MonteCarloResult? = nil, originalDDayMonths: Int = 0, currentAssetAmount: Double = 0, effectiveVolatility: Double = 0) {
+    init(paths: RepresentativePaths, userProfile: UserProfile, result: MonteCarloResult? = nil, originalDDayMonths: Int = 0, currentAssetAmount: Double = 0, effectiveVolatility: Double = 0) {
         self.paths = paths
-        self.scenario = scenario
+        self.userProfile = userProfile
         self.result = result
         self.originalDDayMonths = originalDDayMonths
         self.currentAssetAmount = currentAssetAmount
@@ -99,15 +99,15 @@ struct AssetPathChart: View {
                 .foregroundStyle(Color.Exit.secondaryText)
             
             let targetAsset = RetirementCalculator.calculateTargetAssets(
-                desiredMonthlyIncome: scenario.desiredMonthlyIncome,
-                postRetirementReturnRate: scenario.postRetirementReturnRate,
-                inflationRate: scenario.inflationRate
+                desiredMonthlyIncome: userProfile.desiredMonthlyIncome,
+                postRetirementReturnRate: userProfile.postRetirementReturnRate,
+                inflationRate: userProfile.inflationRate
             )
             
             HStack(spacing: ExitSpacing.md) {
                 dataItem(label: "현재 자산", value: ExitNumberFormatter.formatChartAxis(currentAssetAmount))
                 dataItem(label: "목표 자산", value: ExitNumberFormatter.formatChartAxis(targetAsset))
-                dataItem(label: "수익률", value: String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                dataItem(label: "수익률", value: String(format: "%.1f%%", userProfile.preRetirementReturnRate))
                 dataItem(label: "변동성", value: String(format: "%.0f%%", effectiveVolatility))
             }
         }
@@ -168,9 +168,9 @@ struct AssetPathChart: View {
             
             // 목표 자산 선
             let targetAsset = RetirementCalculator.calculateTargetAssets(
-                desiredMonthlyIncome: scenario.desiredMonthlyIncome,
-                postRetirementReturnRate: scenario.postRetirementReturnRate,
-                inflationRate: scenario.inflationRate
+                desiredMonthlyIncome: userProfile.desiredMonthlyIncome,
+                postRetirementReturnRate: userProfile.postRetirementReturnRate,
+                inflationRate: userProfile.inflationRate
             )
             
             RuleMark(y: .value("목표", targetAsset))

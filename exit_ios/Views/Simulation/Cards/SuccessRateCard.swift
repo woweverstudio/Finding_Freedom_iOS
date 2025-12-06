@@ -14,7 +14,7 @@ struct SuccessRateCard: View {
     var failureThresholdMultiplier: Double = 1.1  // 실패 조건 배수 (기본값 1.1)
     
     // 시뮬레이션 조건 표시용
-    var scenario: Scenario? = nil
+    var userProfile: UserProfile? = nil
     var currentAssetAmount: Double = 0
     var effectiveVolatility: Double = 0
     
@@ -113,8 +113,8 @@ struct SuccessRateCard: View {
             helpSection
             
             // 4. 시뮬레이션 조건
-            if let scenario = scenario {
-                simulationConditionSection(scenario: scenario)
+            if let profile = userProfile {
+                simulationConditionSection(profile: profile)
             }
         }
         .padding(ExitSpacing.lg)
@@ -157,7 +157,7 @@ struct SuccessRateCard: View {
     
     // MARK: - Simulation Condition
     
-    private func simulationConditionSection(scenario: Scenario) -> some View {
+    private func simulationConditionSection(profile: UserProfile) -> some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
             Text("📊 시뮬레이션 조건")
                 .font(.Exit.caption)
@@ -166,8 +166,8 @@ struct SuccessRateCard: View {
             
             HStack(spacing: ExitSpacing.md) {
                 dataItem(label: "현재 자산", value: ExitNumberFormatter.formatChartAxis(currentAssetAmount))
-                dataItem(label: "월 투자", value: ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
-                dataItem(label: "수익률", value: String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                dataItem(label: "월 투자", value: ExitNumberFormatter.formatToManWon(profile.monthlyInvestment))
+                dataItem(label: "수익률", value: String(format: "%.1f%%", profile.preRetirementReturnRate))
                 dataItem(label: "변동성", value: String(format: "%.0f%%", effectiveVolatility))
             }
         }

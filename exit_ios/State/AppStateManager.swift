@@ -26,13 +26,7 @@ final class AppStateManager {
     /// 현재 자산 (앱 전체 단일)
     var currentAsset: Asset?
     
-    /// 활성 시나리오
-    var activeScenario: Scenario?
-    
-    /// 모든 시나리오
-    var scenarios: [Scenario] = []
-    
-    /// 사용자 프로필
+    /// 사용자 프로필 (설정값 포함)
     var userProfile: UserProfile?
     
     /// 월별 업데이트 기록
@@ -59,9 +53,6 @@ final class AppStateManager {
     
     /// 자산 업데이트 시트 표시
     var showAssetUpdateSheet: Bool = false
-    
-    /// 시나리오 설정 시트 표시
-    var showScenarioSheet: Bool = false
     
     /// 입금 완료 후 자산 업데이트 확인 표시
     var showAssetUpdateConfirm: Bool = false
@@ -180,13 +171,6 @@ final class AppStateManager {
         let profileDescriptor = FetchDescriptor<UserProfile>()
         userProfile = try? context.fetch(profileDescriptor).first
         
-        // Scenarios 로드
-        let scenarioDescriptor = FetchDescriptor<Scenario>(
-            sortBy: [SortDescriptor(\.createdAt)]
-        )
-        scenarios = (try? context.fetch(scenarioDescriptor)) ?? []
-        activeScenario = scenarios.first(where: { $0.isActive }) ?? scenarios.first
-        
         // MonthlyUpdates 로드
         let updateDescriptor = FetchDescriptor<MonthlyUpdate>(
             sortBy: [SortDescriptor(\.yearMonth, order: .reverse)]
@@ -213,68 +197,36 @@ final class AppStateManager {
     // MARK: - Calculations
     
     func calculateResults() {
-        guard let scenario = activeScenario else { return }
+        guard let profile = userProfile else { return }
         
         retirementResult = RetirementCalculator.calculate(
-            from: scenario,
+            from: profile,
             currentAsset: currentAssetAmount
         )
     }
     
-    // MARK: - Scenario Actions
+    // MARK: - Settings Actions
     
-    /// 시나리오 선택
-    func selectScenario(_ scenario: Scenario) {
-        guard let context = modelContext else { return }
+    /// 설정 업데이트
+    func updateSettings(
+        desiredMonthlyIncome: Double? = nil,
+        monthlyInvestment: Double? = nil,
+        preRetirementReturnRate: Double? = nil,
+        postRetirementReturnRate: Double? = nil,
+        inflationRate: Double? = nil
+    ) {
+        guard let context = modelContext, let profile = userProfile else { return }
         
-        ScenarioManager.activateScenario(scenario, in: scenarios, context: context)
-        activeScenario = scenario
-        calculateResults()
-    }
-    
-    /// 시나리오 복제
-    func duplicateScenario(_ scenario: Scenario) {
-        guard let context = modelContext else { return }
-        if let duplicated = ScenarioManager.duplicateScenario(scenario, in: scenarios, context: context) {
-            scenarios.append(duplicated)
-        }
-    }
-    
-    /// 시나리오 삭제
-    func deleteScenario(_ scenario: Scenario) {
-        guard let context = modelContext, scenarios.count > 1, scenario.isDeletable else { return }
-        ScenarioManager.deleteScenario(scenario, from: scenarios, context: context)
-        loadData()
-    }
-    
-    /// 시나리오 이름 변경
-    func renameScenario(_ scenario: Scenario, to newName: String) {
-        guard let context = modelContext else { return }
-        ScenarioManager.renameScenario(scenario, to: newName, context: context)
-    }
-    
-    /// 시나리오 업데이트
-    func updateScenario(_ scenario: Scenario) {
-        guard let context = modelContext else { return }
-        scenario.updatedAt = Date()
+        profile.updateSettings(
+            desiredMonthlyIncome: desiredMonthlyIncome,
+            monthlyInvestment: monthlyInvestment,
+            preRetirementReturnRate: preRetirementReturnRate,
+            postRetirementReturnRate: postRetirementReturnRate,
+            inflationRate: inflationRate
+        )
+        
         try? context.save()
-        
-        if scenario.isActive {
-            calculateResults()
-        }
-    }
-    
-    /// 새 시나리오 생성
-    func createNewScenario(name: String) {
-        guard let context = modelContext else { return }
-        if let newScenario = ScenarioManager.createScenario(
-            name: name,
-            basedOn: activeScenario,
-            in: scenarios,
-            context: context
-        ) {
-            scenarios.append(newScenario)
-        }
+        calculateResults()
     }
     
     // MARK: - Deposit Actions
@@ -365,6 +317,22 @@ final class AppStateManager {
     }
     
     // MARK: - Asset Actions
+    
+    /// 자산 업데이트
+    func updateCurrentAsset(_ amount: Double) {
+        guard let context = modelContext else { return }
+        
+        if let asset = currentAsset {
+            asset.update(amount: amount)
+        } else {
+            let newAsset = Asset(amount: amount)
+            context.insert(newAsset)
+            currentAsset = newAsset
+        }
+        
+        try? context.save()
+        calculateResults()
+    }
     
     /// 자산 변동 업데이트
     func submitAssetUpdate() {

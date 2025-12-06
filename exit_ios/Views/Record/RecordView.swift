@@ -221,18 +221,14 @@ struct RecordTabView: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
-    // MARK: - "내 계획" 시나리오 찾기
-    
-    private var myPlanScenario: Scenario? {
-        appState.scenarios.first { $0.isSystemScenario } ?? appState.activeScenario
-    }
+    // MARK: - 사용자 프로필 참조
     
     /// 입금 달성도 점수 (0~100)
     private var depositScore: Int {
-        guard let scenario = myPlanScenario else { return 0 }
+        guard let profile = appState.userProfile else { return 0 }
         guard !filteredUpdates.isEmpty else { return 0 }
         
-        let monthlyTarget = scenario.monthlyInvestment
+        let monthlyTarget = profile.monthlyInvestment
         guard monthlyTarget > 0 else { return 100 }
         
         // 각 월별 달성률 계산
@@ -256,10 +252,10 @@ struct RecordTabView: View {
     
     /// 패시브인컴 달성도 점수 (0~100)
     private var passiveIncomeScore: Int {
-        guard let scenario = myPlanScenario else { return 0 }
+        guard let profile = appState.userProfile else { return 0 }
         guard !filteredUpdates.isEmpty else { return 0 }
         
-        let targetIncome = scenario.desiredMonthlyIncome
+        let targetIncome = profile.desiredMonthlyIncome
         guard targetIncome > 0 else { return 100 }
         
         // 월 평균 패시브인컴 vs 목표 현금흐름
@@ -331,7 +327,7 @@ struct RecordTabView: View {
             }
             
             // 계획 달성 점수
-            if let scenario = myPlanScenario, !filteredUpdates.isEmpty {
+            if appState.userProfile != nil, !filteredUpdates.isEmpty {
                 VStack(spacing: ExitSpacing.md) {
                     // 종합 점수 헤더
                     Divider()
@@ -391,7 +387,7 @@ struct RecordTabView: View {
                                 Text("입금 달성도")
                                     .font(.Exit.caption2)
                                     .foregroundStyle(Color.Exit.secondaryText)
-                                Text("목표 \(ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))/월")
+                                Text("목표 \(ExitNumberFormatter.formatToManWon(appState.userProfile?.monthlyInvestment ?? 0))/월")
                                     .font(.system(size: 10))
                                     .foregroundStyle(Color.Exit.tertiaryText)
                             }
@@ -425,7 +421,7 @@ struct RecordTabView: View {
                                 Text("패시브인컴 달성도")
                                     .font(.Exit.caption2)
                                     .foregroundStyle(Color.Exit.secondaryText)
-                                Text("목표 \(ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))/월")
+                                Text("목표 \(ExitNumberFormatter.formatToManWon(appState.userProfile?.desiredMonthlyIncome ?? 0))/월")
                                     .font(.system(size: 10))
                                     .foregroundStyle(Color.Exit.tertiaryText)
                             }

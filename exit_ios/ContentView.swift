@@ -122,9 +122,6 @@ struct MainTabView: View {
         .sheet(isPresented: bindableAppState.showAssetUpdateSheet) {
             AssetUpdateSheet()
         }
-        .fullScreenCover(isPresented: bindableAppState.showScenarioSheet) {
-            ScenarioSettingsView()
-        }
     }
     
     // MARK: - Asset Update Confirm Overlay
@@ -238,7 +235,6 @@ struct MainTabView: View {
     ContentView()
         .modelContainer(for: [
             UserProfile.self,
-            Scenario.self,
             MonthlyUpdate.self,
             Asset.self,
             AssetSnapshot.self,

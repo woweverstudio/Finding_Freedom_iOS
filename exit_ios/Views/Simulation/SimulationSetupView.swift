@@ -14,7 +14,6 @@ struct SimulationSetupView: View {
     let onBack: () -> Void
     let onStart: () -> Void
     
-    @State private var selectedScenario: Scenario?
     @State private var failureThreshold: Double = 1.1
     
     var body: some View {
@@ -27,15 +26,12 @@ struct SimulationSetupView: View {
                 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: ExitSpacing.xl) {
-                        // 1. 시나리오 선택
-                        scenarioSection
-                        
-                        // 2. 실패 조건 설정
+                        // 실패 조건 설정
                         failureThresholdSection
                         
-                        // 선택된 시나리오 요약
-                        if let scenario = selectedScenario {
-                            scenarioSummary(scenario)
+                        // 현재 설정 요약
+                        if let profile = appState.userProfile {
+                            settingsSummary(profile)
                         }
                     }
                     .padding(.vertical, ExitSpacing.lg)
@@ -46,7 +42,6 @@ struct SimulationSetupView: View {
             }
         }
         .onAppear {
-            selectedScenario = appState.activeScenario ?? appState.scenarios.first
             failureThreshold = viewModel.failureThresholdMultiplier
         }
     }
@@ -81,54 +76,6 @@ struct SimulationSetupView: View {
         .padding(.vertical, ExitSpacing.md)
     }
     
-    // MARK: - Scenario Section
-    
-    private var scenarioSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            Text("시나리오")
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.secondaryText)
-                .padding(.horizontal, ExitSpacing.lg)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: ExitSpacing.sm) {
-                    ForEach(appState.scenarios, id: \.id) { scenario in
-                        scenarioChip(scenario)
-                    }
-                }
-                .padding(.horizontal, ExitSpacing.lg)
-            }
-        }
-    }
-    
-    private func scenarioChip(_ scenario: Scenario) -> some View {
-        let isSelected = scenario.id == selectedScenario?.id
-        
-        return Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                selectedScenario = scenario
-            }
-        } label: {
-            Text(scenario.name)
-                .font(.Exit.caption)
-                .fontWeight(isSelected ? .semibold : .regular)
-                .foregroundStyle(isSelected ? .white : Color.Exit.secondaryText)
-                .padding(.horizontal, ExitSpacing.md)
-                .padding(.vertical, ExitSpacing.sm)
-                .background(
-                    isSelected
-                        ? AnyShapeStyle(LinearGradient.exitAccent)
-                        : AnyShapeStyle(Color.Exit.cardBackground)
-                )
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(isSelected ? Color.clear : Color.Exit.divider, lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
-    }
-    
     // MARK: - Failure Threshold Section
     
     private var failureThresholdSection: some View {
@@ -152,8 +99,8 @@ struct SimulationSetupView: View {
             }
             
             // 현재 설정 예시
-            if let scenario = selectedScenario {
-                let originalMonths = calculateOriginalMonths(scenario)
+            if let profile = appState.userProfile {
+                let originalMonths = calculateOriginalMonths(profile)
                 let failureMonths = Int(Double(originalMonths) * failureThreshold)
                 
                 if originalMonths > 0 {
@@ -201,15 +148,15 @@ struct SimulationSetupView: View {
         .buttonStyle(.plain)
     }
     
-    // MARK: - Scenario Summary
+    // MARK: - Settings Summary
     
-    private func scenarioSummary(_ scenario: Scenario) -> some View {
-        let preVolatility = SimulationViewModel.calculateVolatility(for: scenario.preRetirementReturnRate)
-        let postVolatility = SimulationViewModel.calculateVolatility(for: scenario.postRetirementReturnRate)
+    private func settingsSummary(_ profile: UserProfile) -> some View {
+        let preVolatility = SimulationViewModel.calculateVolatility(for: profile.preRetirementReturnRate)
+        let postVolatility = SimulationViewModel.calculateVolatility(for: profile.postRetirementReturnRate)
         let targetAsset = RetirementCalculator.calculateTargetAssets(
-            desiredMonthlyIncome: scenario.desiredMonthlyIncome,
-            postRetirementReturnRate: scenario.postRetirementReturnRate,
-            inflationRate: scenario.inflationRate
+            desiredMonthlyIncome: profile.desiredMonthlyIncome,
+            postRetirementReturnRate: profile.postRetirementReturnRate,
+            inflationRate: profile.inflationRate
         )
         
         return VStack(alignment: .leading, spacing: ExitSpacing.lg) {
@@ -219,14 +166,8 @@ struct SimulationSetupView: View {
                 
                 VStack(spacing: ExitSpacing.xs) {
                     summaryRow("현재 자산", ExitNumberFormatter.formatToEokManWon(appState.currentAssetAmount))
-                    
-                    if scenario.assetOffset != 0 {
-                        let prefix = scenario.assetOffset > 0 ? "+" : ""
-                        summaryRow("가정 금액", prefix + ExitNumberFormatter.formatToEokManWon(scenario.assetOffset), valueColor: scenario.assetOffset > 0 ? Color.Exit.positive : Color.Exit.warning)
-                    }
-                    
-                    summaryRow("월 저축액", ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
-                    summaryRow("희망 월수입", ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
+                    summaryRow("월 저축액", ExitNumberFormatter.formatToManWon(profile.monthlyInvestment))
+                    summaryRow("희망 월수입", ExitNumberFormatter.formatToManWon(profile.desiredMonthlyIncome))
                     summaryRow("목표 자산", ExitNumberFormatter.formatToEokManWon(targetAsset), valueColor: Color.Exit.accent)
                 }
                 .padding(ExitSpacing.md)
@@ -239,7 +180,7 @@ struct SimulationSetupView: View {
                 sectionLabel("은퇴 전 시뮬레이션")
                 
                 VStack(spacing: ExitSpacing.xs) {
-                    summaryRow("목표 수익률", String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                    summaryRow("목표 수익률", String(format: "%.1f%%", profile.preRetirementReturnRate))
                     summaryRow("수익률 변동성", String(format: "%.0f%%", preVolatility), valueColor: Color.Exit.secondaryText)
                 }
                 .padding(ExitSpacing.md)
@@ -252,9 +193,9 @@ struct SimulationSetupView: View {
                 sectionLabel("은퇴 후 시뮬레이션")
                 
                 VStack(spacing: ExitSpacing.xs) {
-                    summaryRow("목표 수익률", String(format: "%.1f%%", scenario.postRetirementReturnRate))
+                    summaryRow("목표 수익률", String(format: "%.1f%%", profile.postRetirementReturnRate))
                     summaryRow("수익률 변동성", String(format: "%.0f%%", postVolatility), valueColor: Color.Exit.secondaryText)
-                    summaryRow("물가 상승률", String(format: "%.1f%%", scenario.inflationRate))
+                    summaryRow("물가 상승률", String(format: "%.1f%%", profile.inflationRate))
                 }
                 .padding(ExitSpacing.md)
                 .background(Color.Exit.cardBackground)
@@ -286,25 +227,20 @@ struct SimulationSetupView: View {
     
     private var startButton: some View {
         Button {
-            // 1. 시나리오 선택 및 저장
-            if let scenario = selectedScenario {
-                appState.selectScenario(scenario)
-            }
-            
-            // 2. 실패 조건 저장
+            // 1. 실패 조건 저장
             viewModel.updateFailureThreshold(failureThreshold)
             
-            // 3. 변동성 자동 계산 (목표 수익률 기반)
-            if let scenario = selectedScenario {
-                let autoVolatility = SimulationViewModel.calculateVolatility(for: scenario.preRetirementReturnRate)
+            // 2. 변동성 자동 계산 (목표 수익률 기반)
+            if let profile = appState.userProfile {
+                let autoVolatility = SimulationViewModel.calculateVolatility(for: profile.preRetirementReturnRate)
                 viewModel.updateVolatility(autoVolatility)
             }
             
-            // 4. 데이터 로드 및 시뮬레이션 시작
+            // 3. 데이터 로드 및 시뮬레이션 시작
             viewModel.loadData()
             viewModel.refreshSimulation()
             
-            // 5. 화면 전환
+            // 4. 화면 전환
             onStart()
         } label: {
             HStack(spacing: ExitSpacing.sm) {
@@ -328,19 +264,18 @@ struct SimulationSetupView: View {
     // MARK: - Helpers
     
     /// 기존 D-Day 계산
-    private func calculateOriginalMonths(_ scenario: Scenario) -> Int {
-        let effectiveAsset = scenario.effectiveAsset(with: appState.currentAssetAmount)
+    private func calculateOriginalMonths(_ profile: UserProfile) -> Int {
         let targetAsset = RetirementCalculator.calculateTargetAssets(
-            desiredMonthlyIncome: scenario.desiredMonthlyIncome,
-            postRetirementReturnRate: scenario.postRetirementReturnRate,
-            inflationRate: scenario.inflationRate
+            desiredMonthlyIncome: profile.desiredMonthlyIncome,
+            postRetirementReturnRate: profile.postRetirementReturnRate,
+            inflationRate: profile.inflationRate
         )
         
         return RetirementCalculator.calculateMonthsToRetirement(
-            currentAssets: effectiveAsset,
+            currentAssets: appState.currentAssetAmount,
             targetAssets: targetAsset,
-            monthlyInvestment: scenario.monthlyInvestment,
-            annualReturnRate: scenario.preRetirementReturnRate
+            monthlyInvestment: profile.monthlyInvestment,
+            annualReturnRate: profile.preRetirementReturnRate
         )
     }
     

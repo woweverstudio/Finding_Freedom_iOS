@@ -7,206 +7,343 @@
 
 import SwiftUI
 
-// MARK: - Plan Header View (통합)
+// MARK: - Plan Header View (상단 드롭다운 편집 패널)
 
-/// 상단 네비게이션 바 - 현재 계획 설정값 표시
-/// 스크롤에 따라 일반/컴팩트 모드 전환
+/// 상단 네비게이션 바 - 아래로 드래그하면 편집 패널이 펼쳐짐
 struct PlanHeaderView: View {
-    let scenario: Scenario?
-    let currentAssetAmount: Double
-    let hideAmounts: Bool
-    let isCompact: Bool
-    let onScenarioTap: () -> Void
+    @Environment(\.appState) private var appState
     
-    /// 시나리오에 적용될 실제 자산 (자산 + 오프셋)
-    private var effectiveAsset: Double {
-        guard let scenario = scenario else { return currentAssetAmount }
-        return scenario.effectiveAsset(with: currentAssetAmount)
-    }
+    let hideAmounts: Bool
+    
+    /// 패널 펼침 상태
+    @State private var isExpanded: Bool = false
+    
+    /// 편집 중인 임시 값들 (슬라이더용)
+    @State private var editingCurrentAsset: Double = 100_000_000
+    @State private var editingMonthlyIncome: Double = 3_000_000
+    @State private var editingMonthlyInvestment: Double = 500_000
+    @State private var editingPreReturnRate: Double = 6.5
+    @State private var editingPostReturnRate: Double = 5.0
     
     var body: some View {
         VStack(spacing: 0) {
-            if isCompact {
-                compactHeader
-            } else {
-                expandedHeader
-                    .transition(.scale)
+            // 메인 헤더 (탭 영역)
+            headerButton
+            
+            // 펼쳐지는 편집 패널
+            if isExpanded {
+                editPanel
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal: .move(edge: .top).combined(with: .opacity)
+                    ))
             }
         }
-//        .background(Color.Exit.background)
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isCompact)
-    }
-    
-    // MARK: - Expanded Header (기본)
-    
-    private var expandedHeader: some View {
-        VStack(spacing: 0) {
-            headerCard
-                .padding(.horizontal, ExitSpacing.sm)
-                .padding(.vertical, ExitSpacing.sm)
+        .background(Color.Exit.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+        .overlay(
+            RoundedRectangle(cornerRadius: ExitRadius.lg)
+                .stroke(isExpanded ? Color.Exit.accent.opacity(0.4) : Color.Exit.divider, lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
+        .padding(.horizontal, ExitSpacing.md)
+        .padding(.vertical, ExitSpacing.xs)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isExpanded)
+        .onAppear {
+            syncEditingValues()
+        }
+        .onChange(of: appState.userProfile?.updatedAt) { _, _ in
+            syncEditingValues()
         }
     }
     
-    // MARK: - Compact Header (스크롤 시)
+    // MARK: - Header Button (컴팩트 스타일)
     
-    private var compactHeader: some View {
-        Button(action: onScenarioTap) {
-            HStack(spacing: ExitSpacing.sm) {
-                // 시나리오 이름
-                Text(scenario?.name ?? "내 계획")
+    private var headerButton: some View {
+        Button {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                isExpanded.toggle()
+            }
+        } label: {
+            VStack(spacing: ExitSpacing.xs) {
+                // 핵심 정보 (한 줄)
+                if !isExpanded {
+                    infoRow
+                    pullIndicator
+                }
+            }
+            .padding(.horizontal, ExitSpacing.md)
+            .padding(.top, isExpanded ? ExitSpacing.sm : ExitSpacing.md)
+            .padding(.bottom, ExitSpacing.xs)
+        }
+        .buttonStyle(HeaderButtonStyle())
+    }
+    
+    // MARK: - Info Row (한 줄 레이아웃)
+    
+    private var infoRow: some View {
+        HStack(spacing: 0) {
+            // 현재 자산
+            infoItem(
+                label: "자산",
+                value: hideAmounts ? "•••" : ExitNumberFormatter.formatToEokManWon(editingCurrentAsset),
+                color: Color.Exit.primaryText
+            )
+            
+            // 월 투자
+            infoItem(
+                label: "월투자",
+                value: ExitNumberFormatter.formatToManWon(editingMonthlyInvestment),
+                color: Color.Exit.positive
+            )
+            
+            // 수익률
+            infoItem(
+                label: "수익률",
+                value: String(format: "%.1f%%", editingPreReturnRate),
+                color: Color.Exit.accent
+            )
+            
+            // 목표 월수입
+            infoItem(
+                label: "목표",
+                value: ExitNumberFormatter.formatToManWon(editingMonthlyIncome),
+                color: Color.Exit.accent
+            )
+        }
+    }
+    
+    // MARK: - Info Item
+    
+    private func infoItem(
+        label: String,
+        value: String,
+        color: Color
+    ) -> some View {
+        VStack(spacing: 2) {
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Color.Exit.tertiaryText)
+            
+            Text(value)
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundStyle(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity)
+    }
+    
+    // MARK: - Pull Indicator
+    
+    private var pullIndicator: some View {
+        RoundedRectangle(cornerRadius: 2)
+            .fill(Color.Exit.tertiaryText.opacity(0.5))
+            .frame(width: 32, height: 4)
+            .padding(.top, 4)
+    }
+    
+    // MARK: - Edit Panel (펼쳐지는 편집 영역)
+    
+    private var editPanel: some View {
+        VStack(spacing: ExitSpacing.md) {
+            // 현재 자산 (순자산) + 조정 버튼
+            assetSliderWithButtons
+            
+            // 매월 투자금액
+            sliderRow(
+                label: "매월 투자금액",
+                value: $editingMonthlyInvestment,
+                range: 0...10_000_000,
+                step: 100_000,
+                formatter: { ExitNumberFormatter.formatToManWon($0) },
+                color: Color.Exit.positive
+            )
+            
+            // 은퇴 전 목표 수익률
+            sliderRow(
+                label: "은퇴 전 수익률",
+                value: $editingPreReturnRate,
+                range: 0.5...50.0,
+                step: 0.5,
+                formatter: { String(format: "%.1f%%", $0) },
+                color: Color.Exit.accent
+            )
+            
+            // 은퇴 후 희망 월수입
+            sliderRow(
+                label: "은퇴 후 월수입",
+                value: $editingMonthlyIncome,
+                range: 1_000_000...50_000_000,
+                step: 100_000,
+                formatter: { ExitNumberFormatter.formatToManWon($0) },
+                color: Color.Exit.accent
+            )
+            
+            // 은퇴 후 목표 수익률
+            sliderRow(
+                label: "은퇴 후 수익률",
+                value: $editingPostReturnRate,
+                range: 0.5...50.0,
+                step: 0.5,
+                formatter: { String(format: "%.1f%%", $0) },
+                color: Color.Exit.caution
+            )
+            
+            // 적용 버튼
+            Button {
+                applyChanges()
+            } label: {
+                Text("적용")
                     .font(.Exit.caption)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.accent)
-                    .padding(.horizontal, ExitSpacing.sm)
-                    .padding(.vertical, ExitSpacing.xs)
-                    .background(
-                        Capsule()
-                            .fill(Color.Exit.accent.opacity(0.15))
-                    )
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, ExitSpacing.sm)
+                    .background(Color.Exit.accent)
+                    .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, ExitSpacing.xs)
+        }
+        .padding(.horizontal, ExitSpacing.md)
+        .padding(.bottom, ExitSpacing.md)
+    }
+    
+    // MARK: - Asset Slider with Adjustment Buttons
+    
+    private var assetSliderWithButtons: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+            // 라벨 + 값
+            HStack {
+                Text("현재 자산")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
                 
                 Spacer()
                 
-                // 핵심 정보만 (자산 • 월수입 • 투자 • 수익률)
-                HStack(spacing: 4) {
-                    Text(hideAmounts ? "•••" : ExitNumberFormatter.formatToEokManWon(effectiveAsset))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                        .foregroundStyle(Color.Exit.primaryText)
-                    
-                    Text("•")
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                    
-                    Text(ExitNumberFormatter.formatToManWon(scenario?.desiredMonthlyIncome ?? 0))
-                        .foregroundStyle(Color.Exit.accent)
-                    
-                    Text("•")
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                    
-                    Text(ExitNumberFormatter.formatToManWon(scenario?.monthlyInvestment ?? 0))
-                        .foregroundStyle(Color.Exit.positive)
-                    
-                    Text("•")
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                    
-                    Text(String(format: "%.1f%%", scenario?.preRetirementReturnRate ?? 0))
-                        .foregroundStyle(Color.Exit.accent)
-                }
-                .font(.Exit.caption)
-                
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(Color.Exit.tertiaryText)
+                Text(ExitNumberFormatter.formatToEokManWon(editingCurrentAsset))
+                    .font(.Exit.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.Exit.primaryText)
             }
-            .padding(.horizontal, ExitSpacing.md)
-            .padding(.vertical, ExitSpacing.sm)
-            .background(Color.Exit.cardBackground)
+            
+            // 슬라이더
+            Slider(value: $editingCurrentAsset, in: 0...10_000_000_000, step: 10_000_000)
+                .tint(Color.Exit.primaryText)
+            
+            // 조정 버튼들
+            HStack(spacing: ExitSpacing.xs) {
+                assetAdjustButton("+10만", amount: 100_000)
+                assetAdjustButton("+100만", amount: 1_000_000)
+                assetAdjustButton("+1000만", amount: 10_000_000)
+                assetAdjustButton("+1억", amount: 100_000_000)
+                
+                // 초기화 버튼
+                Button {
+                    editingCurrentAsset = 0
+                } label: {
+                    Text("초기화")
+                        .font(Font.Exit.caption)
+                        .foregroundStyle(Color.Exit.caution)
+                        .padding(.horizontal, ExitSpacing.sm)
+                        .padding(.vertical, ExitSpacing.sm)
+                        .background(
+                            RoundedRectangle(cornerRadius: ExitRadius.sm)
+                                .stroke(Color.Exit.caution.opacity(0.5), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+    
+    // MARK: - Asset Adjust Button
+    
+    private func assetAdjustButton(_ title: String, amount: Double) -> some View {
+        Button {
+            editingCurrentAsset = min(editingCurrentAsset + amount, 10_000_000_000)
+        } label: {
+            Text(title)
+                .font(Font.Exit.caption)
+                .foregroundStyle(Color.Exit.accent)
+                .padding(.horizontal, ExitSpacing.sm)
+                .padding(.vertical, ExitSpacing.sm)
+                .background(
+                    RoundedRectangle(cornerRadius: ExitRadius.sm)
+                        .fill(Color.Exit.accent.opacity(0.1))
+                )
         }
         .buttonStyle(.plain)
     }
     
-    // MARK: - Header Card (테이블 스타일)
+    // MARK: - Slider Row
     
-    private var headerCard: some View {
-        VStack(spacing: 0) {
-            // 시나리오 이름 헤더
-            Button(action: onScenarioTap) {
-                HStack {
-                    Text(scenario?.name ?? "내 계획")
-                        .font(.Exit.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.accent)
-                    
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Color.Exit.accent.opacity(0.7))
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, ExitSpacing.md)
-                .padding(.vertical, ExitSpacing.sm)
-                .background(Color.Exit.accent.opacity(0.08))
+    private func sliderRow(
+        label: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        step: Double,
+        formatter: @escaping (Double) -> String,
+        color: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+            HStack {
+                Text(label)
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                Spacer()
+                
+                Text(formatter(value.wrappedValue))
+                    .font(.Exit.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(color)
             }
-            .buttonStyle(.plain)
             
-            // 테이블 본문
-            VStack(spacing: 0) {
-                // 1행: 현재 자산 | 목표 월수입
-                HStack(spacing: 0) {
-                    tableCell(
-                        label: "현재 자산",
-                        value: hideAmounts ? "•••" : ExitNumberFormatter.formatToEokManWon(effectiveAsset),
-                        valueColor: Color.Exit.primaryText
-                    )
-                    
-                    Rectangle()
-                        .fill(Color.Exit.divider)
-                        .frame(width: 1)
-                    
-                    tableCell(
-                        label: "은퇴 월수입",
-                        value: ExitNumberFormatter.formatToManWon(scenario?.desiredMonthlyIncome ?? 0),
-                        valueColor: Color.Exit.accent
-                    )
-                }
-                .frame(height: 44)
-                
-                Rectangle()
-                    .fill(Color.Exit.divider)
-                    .frame(height: 1)
-                
-                // 2행: 매월 투자 | 목표 수익률
-                HStack(spacing: 0) {
-                    tableCell(
-                        label: "매월 투자",
-                        value: ExitNumberFormatter.formatToManWon(scenario?.monthlyInvestment ?? 0),
-                        valueColor: Color.Exit.positive
-                    )
-                    
-                    Rectangle()
-                        .fill(Color.Exit.divider)
-                        .frame(width: 1)
-                    
-                    tableCell(
-                        label: "목표 수익률",
-                        value: String(format: "%.1f%%", scenario?.preRetirementReturnRate ?? 0),
-                        valueColor: Color.Exit.accent
-                    )
-                }
-                .frame(height: 44)
-            }
+            Slider(value: value, in: range, step: step)
+                .tint(color)
         }
-        .background(Color.Exit.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-        .overlay(
-            RoundedRectangle(cornerRadius: ExitRadius.md)
-                .stroke(Color.Exit.divider, lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
     }
     
-    // MARK: - Table Cell
+    // MARK: - Helper Methods
     
-    private func tableCell(
-        label: String,
-        value: String,
-        valueColor: Color
-    ) -> some View {
-        HStack {
-            Text(label)
-                .font(.Exit.caption2)
-                .foregroundStyle(Color.Exit.tertiaryText)
-            
-            Spacer()
-            
-            Text(value)
-                .font(.Exit.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(valueColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+    private func syncEditingValues() {
+        editingCurrentAsset = appState.currentAssetAmount
+        
+        guard let profile = appState.userProfile else { return }
+        editingMonthlyIncome = profile.desiredMonthlyIncome
+        editingMonthlyInvestment = profile.monthlyInvestment
+        editingPreReturnRate = profile.preRetirementReturnRate
+        editingPostReturnRate = profile.postRetirementReturnRate
+    }
+    
+    private func applyChanges() {
+        // 자산 업데이트
+        appState.updateCurrentAsset(editingCurrentAsset)
+        
+        // 설정 업데이트
+        appState.updateSettings(
+            desiredMonthlyIncome: editingMonthlyIncome,
+            monthlyInvestment: editingMonthlyInvestment,
+            preRetirementReturnRate: editingPreReturnRate,
+            postRetirementReturnRate: editingPostReturnRate
+        )
+        
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            isExpanded = false
         }
-        .padding(.horizontal, ExitSpacing.sm)
-        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Header Button Style
+
+private struct HeaderButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
@@ -216,28 +353,12 @@ struct PlanHeaderView: View {
     ZStack {
         Color.Exit.background.ignoresSafeArea()
         
-        VStack(spacing: ExitSpacing.xl) {
-            // 일반 헤더
-            PlanHeaderView(
-                scenario: nil,
-                currentAssetAmount: 150_000_000,
-                hideAmounts: false,
-                isCompact: false,
-                onScenarioTap: {}
-            )
-            
-            // 컴팩트 헤더
-            PlanHeaderView(
-                scenario: nil,
-                currentAssetAmount: 150_000_000,
-                hideAmounts: false,
-                isCompact: true,
-                onScenarioTap: {}
-            )
+        VStack {
+            PlanHeaderView(hideAmounts: false)
             
             Spacer()
         }
     }
     .preferredColorScheme(.dark)
+    .environment(\.appState, AppStateManager())
 }
-

@@ -11,14 +11,14 @@ import Charts
 /// 은퇴 후 장기(40년) 자산 변화 예측 차트
 struct RetirementProjectionChart: View {
     let result: RetirementSimulationResult
-    let scenario: Scenario
+    let userProfile: UserProfile
     
     // 목표 자산 계산
     private var targetAsset: Double {
         RetirementCalculator.calculateTargetAssets(
-            desiredMonthlyIncome: scenario.desiredMonthlyIncome,
-            postRetirementReturnRate: scenario.postRetirementReturnRate,
-            inflationRate: scenario.inflationRate
+            desiredMonthlyIncome: userProfile.desiredMonthlyIncome,
+            postRetirementReturnRate: userProfile.postRetirementReturnRate,
+            inflationRate: userProfile.inflationRate
         )
     }
     
@@ -494,8 +494,8 @@ struct RetirementProjectionChart: View {
             
             HStack(spacing: ExitSpacing.lg) {
                 dataItem(label: "목표 자산", value: ExitNumberFormatter.formatChartAxis(targetAsset))
-                dataItem(label: "월 지출", value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
-                dataItem(label: "은퇴 후 수익률", value: String(format: "%.1f%%", scenario.postRetirementReturnRate))
+                dataItem(label: "월 지출", value: ExitNumberFormatter.formatToManWon(userProfile.desiredMonthlyIncome))
+                dataItem(label: "은퇴 후 수익률", value: String(format: "%.1f%%", userProfile.postRetirementReturnRate))
             }
         }
     }

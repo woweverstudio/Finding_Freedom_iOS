@@ -158,6 +158,6 @@ struct OnboardingView: View {
 
 #Preview {
     OnboardingView()
-        .modelContainer(for: [UserProfile.self, Scenario.self, MonthlyUpdate.self], inMemory: true)
+        .modelContainer(for: [UserProfile.self, MonthlyUpdate.self], inMemory: true)
         .preferredColorScheme(.dark)
 }

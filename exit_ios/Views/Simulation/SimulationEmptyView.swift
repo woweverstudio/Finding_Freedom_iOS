@@ -15,7 +15,7 @@ import StoreKit
 struct SimulationEmptyView: View {
     @Environment(\.appState) private var appState
     
-    let scenario: Scenario?
+    let userProfile: UserProfile?
     let currentAssetAmount: Double
     let onStart: () -> Void
     let isPurchased: Bool
@@ -24,12 +24,12 @@ struct SimulationEmptyView: View {
     @State private var isPurchasing: Bool = false
     
     init(
-        scenario: Scenario?,
+        userProfile: UserProfile?,
         currentAssetAmount: Double,
         onStart: @escaping () -> Void,
         isPurchased: Bool = false
     ) {
-        self.scenario = scenario
+        self.userProfile = userProfile
         self.currentAssetAmount = currentAssetAmount
         self.onStart = onStart
         self.isPurchased = isPurchased
@@ -697,7 +697,7 @@ struct SimulationEmptyView: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
-    private func currentDataPreview(scenario: Scenario) -> some View {
+    private func currentDataPreview(profile: UserProfile) -> some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
             HStack {
                 Image(systemName: "doc.text.fill")
@@ -713,9 +713,9 @@ struct SimulationEmptyView: View {
             
             VStack(spacing: ExitSpacing.sm) {
                 dataPreviewRow(label: "현재 자산", value: ExitNumberFormatter.formatToEokManWon(currentAssetAmount))
-                dataPreviewRow(label: "월 저축액", value: ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment))
-                dataPreviewRow(label: "목표 월수입", value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome))
-                dataPreviewRow(label: "예상 수익률", value: String(format: "%.1f%%", scenario.preRetirementReturnRate))
+                dataPreviewRow(label: "월 저축액", value: ExitNumberFormatter.formatToManWon(profile.monthlyInvestment))
+                dataPreviewRow(label: "목표 월수입", value: ExitNumberFormatter.formatToManWon(profile.desiredMonthlyIncome))
+                dataPreviewRow(label: "예상 수익률", value: String(format: "%.1f%%", profile.preRetirementReturnRate))
             }
             
             HStack(spacing: ExitSpacing.xs) {
@@ -959,7 +959,7 @@ struct SimulationEmptyView: View {
         Color.Exit.background.ignoresSafeArea()
         
         SimulationEmptyView(
-            scenario: nil,
+            userProfile: nil,
             currentAssetAmount: 50_000_000,
             onStart: {},
             isPurchased: false

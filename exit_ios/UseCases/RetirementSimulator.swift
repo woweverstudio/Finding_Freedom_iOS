@@ -274,27 +274,28 @@ enum RetirementSimulator {
         return mean + z0 * standardDeviation
     }
     
-    // MARK: - Scenario-based Simulation
+    // MARK: - UserProfile-based Simulation
     
-    /// 시나리오 기반 시뮬레이션 (편의 메서드)
+    /// UserProfile 기반 시뮬레이션 (편의 메서드)
     nonisolated static func simulate(
-        scenario: Scenario,
+        profile: UserProfile,
+        volatility: Double = 15.0,
         simulationCount: Int = 30_000,
         progressCallback: ProgressCallback? = nil
     ) -> RetirementSimulationResult {
         
         // 목표 자산 계산
         let targetAsset = RetirementCalculator.calculateTargetAssets(
-            desiredMonthlyIncome: scenario.desiredMonthlyIncome,
-            postRetirementReturnRate: scenario.postRetirementReturnRate,
-            inflationRate: scenario.inflationRate
+            desiredMonthlyIncome: profile.desiredMonthlyIncome,
+            postRetirementReturnRate: profile.postRetirementReturnRate,
+            inflationRate: profile.inflationRate
         )
         
         return simulate(
             initialAsset: targetAsset,
-            monthlySpending: scenario.desiredMonthlyIncome,
-            annualReturn: scenario.postRetirementReturnRate,
-            volatility: scenario.returnRateVolatility,
+            monthlySpending: profile.desiredMonthlyIncome,
+            annualReturn: profile.postRetirementReturnRate,
+            volatility: volatility,
             simulationCount: simulationCount,
             progressCallback: progressCallback
         )

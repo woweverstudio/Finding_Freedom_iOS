@@ -283,14 +283,6 @@ final class SettingsViewModel {
             }
         }
         
-        // Scenario 삭제
-        let scenarioDescriptor = FetchDescriptor<Scenario>()
-        if let scenarios = try? context.fetch(scenarioDescriptor) {
-            for scenario in scenarios {
-                context.delete(scenario)
-            }
-        }
-        
         // MonthlyUpdate 삭제
         let updateDescriptor = FetchDescriptor<MonthlyUpdate>()
         if let updates = try? context.fetch(updateDescriptor) {

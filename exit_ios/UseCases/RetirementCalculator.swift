@@ -18,7 +18,7 @@ struct RetirementCalculationResult {
     /// 현재 진행률 (0~100)
     let progressPercent: Double
     
-    /// 계산에 사용된 현재 자산 (시나리오 오프셋 적용됨)
+    /// 계산에 사용된 현재 자산
     let currentAssets: Double
     
     /// 은퇴까지 남은 연도
@@ -108,35 +108,32 @@ enum RetirementCalculator {
     
     // MARK: - 통합 계산
     
-    /// 시나리오와 현재 자산 기반 은퇴 계산 실행
+    /// UserProfile과 현재 자산 기반 은퇴 계산 실행
     /// - Parameters:
-    ///   - scenario: 시나리오 데이터
-    ///   - currentAsset: 현재 실제 자산 (Asset.amount)
+    ///   - profile: 사용자 프로필
+    ///   - currentAsset: 현재 자산
     /// - Returns: 계산 결과
-    nonisolated static func calculate(from scenario: Scenario, currentAsset: Double) -> RetirementCalculationResult {
+    nonisolated static func calculate(from profile: UserProfile, currentAsset: Double) -> RetirementCalculationResult {
         let targetAssets = calculateTargetAssets(
-            desiredMonthlyIncome: scenario.desiredMonthlyIncome,
-            postRetirementReturnRate: scenario.postRetirementReturnRate,
-            inflationRate: scenario.inflationRate
+            desiredMonthlyIncome: profile.desiredMonthlyIncome,
+            postRetirementReturnRate: profile.postRetirementReturnRate,
+            inflationRate: profile.inflationRate
         )
-        
-        // 실제 자산 + 시나리오 오프셋
-        let effectiveAssets = scenario.effectiveAsset(with: currentAsset)
         
         let months = calculateMonthsToRetirement(
-            currentAssets: effectiveAssets,
+            currentAssets: currentAsset,
             targetAssets: targetAssets,
-            monthlyInvestment: scenario.monthlyInvestment,
-            annualReturnRate: scenario.preRetirementReturnRate
+            monthlyInvestment: profile.monthlyInvestment,
+            annualReturnRate: profile.preRetirementReturnRate
         )
         
-        let progress = min((effectiveAssets / targetAssets) * 100, 100)
+        let progress = min((currentAsset / targetAssets) * 100, 100)
         
         return RetirementCalculationResult(
             targetAssets: targetAssets,
             monthsToRetirement: months,
             progressPercent: progress,
-            currentAssets: effectiveAssets
+            currentAssets: currentAsset
         )
     }
     

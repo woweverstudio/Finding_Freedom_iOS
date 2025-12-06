@@ -20,8 +20,8 @@ final class SimulationViewModel {
     /// 현재 자산
     var currentAsset: Asset?
     
-    /// 활성 시나리오
-    var activeScenario: Scenario?
+    /// 사용자 프로필
+    var userProfile: UserProfile?
     
     /// 몬테카를로 시뮬레이션 결과 (목표 달성까지)
     var monteCarloResult: MonteCarloResult?
@@ -75,15 +75,15 @@ final class SimulationViewModel {
         return monteCarloResult
     }
     
-    /// 사용할 변동성 (커스텀 또는 시나리오 기본값)
+    /// 사용할 변동성 (커스텀 또는 기본값 15%)
     var effectiveVolatility: Double {
-        customVolatility ?? activeScenario?.returnRateVolatility ?? 15.0
+        customVolatility ?? 15.0
     }
     
     /// 기존 D-Day (확정적 계산, 변동성 미반영)
     var originalDDayMonths: Int {
-        guard let scenario = activeScenario else { return 0 }
-        let result = RetirementCalculator.calculate(from: scenario, currentAsset: currentAssetAmount)
+        guard let profile = userProfile else { return 0 }
+        let result = RetirementCalculator.calculate(from: profile, currentAsset: currentAssetAmount)
         return result.monthsToRetirement
     }
     
@@ -115,11 +115,11 @@ final class SimulationViewModel {
     
     /// 목표 자산
     var targetAsset: Double {
-        guard let scenario = activeScenario else { return 0 }
+        guard let profile = userProfile else { return 0 }
         return RetirementCalculator.calculateTargetAssets(
-            desiredMonthlyIncome: scenario.desiredMonthlyIncome,
-            postRetirementReturnRate: scenario.postRetirementReturnRate,
-            inflationRate: scenario.inflationRate
+            desiredMonthlyIncome: profile.desiredMonthlyIncome,
+            postRetirementReturnRate: profile.postRetirementReturnRate,
+            inflationRate: profile.inflationRate
         )
     }
     
@@ -139,12 +139,9 @@ final class SimulationViewModel {
         let assetDescriptor = FetchDescriptor<Asset>()
         currentAsset = try? context.fetch(assetDescriptor).first
         
-        // 활성 Scenario 로드
-        let scenarioDescriptor = FetchDescriptor<Scenario>(
-            sortBy: [SortDescriptor(\.createdAt)]
-        )
-        let scenarios = (try? context.fetch(scenarioDescriptor)) ?? []
-        activeScenario = scenarios.first(where: { $0.isActive }) ?? scenarios.first
+        // UserProfile 로드
+        let profileDescriptor = FetchDescriptor<UserProfile>()
+        userProfile = try? context.fetch(profileDescriptor).first
     }
     
     // MARK: - Simulation
@@ -152,24 +149,23 @@ final class SimulationViewModel {
     /// 모든 시뮬레이션 실행 (목표 달성 + 은퇴 후)
     @MainActor
     func runAllSimulations() {
-        guard let scenario = activeScenario else { return }
+        guard let profile = userProfile else { return }
         
         // 상태 변경
         isSimulating = true
         simulationProgress = 0.0
         simulationPhase = .preRetirement
         
-        // 메인 스레드에서 모든 값을 미리 캡처 (SwiftData @Model 접근)
+        // 메인 스레드에서 모든 값을 미리 캡처
         let currentAsset = self.currentAssetAmount
         let simCount = self.simulationCount
-        let desiredMonthlyIncome = scenario.desiredMonthlyIncome
-        let postRetirementReturnRate = scenario.postRetirementReturnRate
-        let inflationRate = scenario.inflationRate
-        let monthlyInvestment = scenario.monthlyInvestment
-        let preRetirementReturnRate = scenario.preRetirementReturnRate
+        let desiredMonthlyIncome = profile.desiredMonthlyIncome
+        let postRetirementReturnRate = profile.postRetirementReturnRate
+        let inflationRate = profile.inflationRate
+        let monthlyInvestment = profile.monthlyInvestment
+        let preRetirementReturnRate = profile.preRetirementReturnRate
         let preRetirementVolatility = self.effectiveVolatility
         let postRetirementVolatility = Self.calculateVolatility(for: postRetirementReturnRate)
-        let effectiveAsset = scenario.effectiveAsset(with: currentAsset)
         let failureMultiplier = self.failureThresholdMultiplier
         
         let targetAsset = RetirementCalculator.calculateTargetAssets(
@@ -180,7 +176,7 @@ final class SimulationViewModel {
         
         // 기존 D-Day 계산 (확정적 계산)
         let originalDDay = RetirementCalculator.calculateMonthsToRetirement(
-            currentAssets: effectiveAsset,
+            currentAssets: currentAsset,
             targetAssets: targetAsset,
             monthlyInvestment: monthlyInvestment,
             annualReturnRate: preRetirementReturnRate
@@ -193,7 +189,7 @@ final class SimulationViewModel {
         Task.detached(priority: .userInitiated) { [weak self] in
             // Phase 1: 목표 달성까지 시뮬레이션 (은퇴 전 수익률/변동성 사용)
             let monteCarloResult = MonteCarloSimulator.simulate(
-                initialAsset: effectiveAsset,
+                initialAsset: currentAsset,
                 monthlyInvestment: monthlyInvestment,
                 targetAsset: targetAsset,
                 meanReturn: preRetirementReturnRate,
@@ -256,7 +252,7 @@ final class SimulationViewModel {
         customVolatility = volatility
     }
     
-    /// 변동성 초기화 (시나리오 기본값으로)
+    /// 변동성 초기화 (기본값 15%로)
     func resetVolatility() {
         customVolatility = nil
     }

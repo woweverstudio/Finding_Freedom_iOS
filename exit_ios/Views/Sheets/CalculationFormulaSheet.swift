@@ -88,7 +88,7 @@ struct CalculationFormulaSheet: View {
             .padding(.vertical, ExitSpacing.md)
             
             // 현재 값 예시
-            if let scenario = appState.activeScenario, let result = appState.retirementResult {
+            if let profile = appState.userProfile, let result = appState.retirementResult {
                 VStack(alignment: .leading, spacing: ExitSpacing.sm) {
                     Text("현재 설정값:")
                         .font(.Exit.caption)
@@ -96,16 +96,16 @@ struct CalculationFormulaSheet: View {
                     
                     FormulaValueRow(
                         label: "희망 월수입",
-                        value: ExitNumberFormatter.formatToManWon(scenario.desiredMonthlyIncome)
+                        value: ExitNumberFormatter.formatToManWon(profile.desiredMonthlyIncome)
                     )
                     FormulaValueRow(
                         label: "은퇴 후 수익률",
-                        value: String(format: "%.1f%%", scenario.postRetirementReturnRate),
+                        value: String(format: "%.1f%%", profile.postRetirementReturnRate),
                         valueColor: Color.Exit.accent
                     )
                     FormulaValueRow(
                         label: "물가상승률",
-                        value: String(format: "%.1f%%", scenario.inflationRate),
+                        value: String(format: "%.1f%%", profile.inflationRate),
                         valueColor: Color.Exit.caution
                     )
                     
@@ -159,7 +159,7 @@ struct CalculationFormulaSheet: View {
             .padding(.vertical, ExitSpacing.sm)
             
             // 현재 값 예시
-            if let scenario = appState.activeScenario, let result = appState.retirementResult {
+            if let profile = appState.userProfile, let result = appState.retirementResult {
                 VStack(alignment: .leading, spacing: ExitSpacing.sm) {
                     Text("현재 설정값:")
                         .font(.Exit.caption)
@@ -175,11 +175,11 @@ struct CalculationFormulaSheet: View {
                     )
                     FormulaValueRow(
                         label: "월 투자금",
-                        value: ExitNumberFormatter.formatToManWon(scenario.monthlyInvestment)
+                        value: ExitNumberFormatter.formatToManWon(profile.monthlyInvestment)
                     )
                     FormulaValueRow(
                         label: "은퇴 전 수익률",
-                        value: String(format: "%.1f%%", scenario.preRetirementReturnRate),
+                        value: String(format: "%.1f%%", profile.preRetirementReturnRate),
                         valueColor: Color.Exit.accent
                     )
                     
