@@ -14,6 +14,14 @@ struct SimulationSetupView: View {
     let onBack: () -> Void
     let onStart: () -> Void
     
+    // MARK: - Editing States
+    
+    @State private var editingCurrentAsset: Double = 0
+    @State private var editingMonthlyInvestment: Double = 500_000
+    @State private var editingMonthlyIncome: Double = 3_000_000
+    @State private var editingPreReturnRate: Double = 6.5
+    @State private var editingPostReturnRate: Double = 5.0
+    @State private var editingInflationRate: Double = 2.5
     @State private var failureThreshold: Double = 1.1
     
     var body: some View {
@@ -25,14 +33,18 @@ struct SimulationSetupView: View {
                 header
                 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: ExitSpacing.xl) {
-                        // 실패 조건 설정
+                    VStack(spacing: ExitSpacing.lg) {
+                        // 기본 설정 섹션
+                        basicSettingsSection
+                        
+                        // 수익률 설정 섹션
+                        returnRateSection
+                        
+                        // 실패 조건 섹션
                         failureThresholdSection
                         
-                        // 현재 설정 요약
-                        if let profile = appState.userProfile {
-                            settingsSummary(profile)
-                        }
+                        // 시뮬레이션 요약
+                        simulationSummary
                     }
                     .padding(.vertical, ExitSpacing.lg)
                 }
@@ -42,7 +54,7 @@ struct SimulationSetupView: View {
             }
         }
         .onAppear {
-            failureThreshold = viewModel.failureThresholdMultiplier
+            syncEditingValues()
         }
     }
     
@@ -76,31 +88,160 @@ struct SimulationSetupView: View {
         .padding(.vertical, ExitSpacing.md)
     }
     
+    // MARK: - Basic Settings Section
+    
+    private var basicSettingsSection: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.md) {
+            sectionHeader("기본 설정")
+            
+            VStack(spacing: ExitSpacing.md) {
+                // 현재 자산
+                assetSliderWithButtons
+                
+                // 매월 투자금액
+                sliderRow(
+                    label: "매월 투자금액",
+                    value: $editingMonthlyInvestment,
+                    range: 0...10_000_000,
+                    step: 100_000,
+                    formatter: { ExitNumberFormatter.formatToManWon($0) },
+                    color: Color.Exit.positive
+                )
+                
+                // 은퇴 후 희망 월수입
+                sliderRow(
+                    label: "은퇴 후 월수입",
+                    value: $editingMonthlyIncome,
+                    range: 500_000...20_000_000,
+                    step: 100_000,
+                    formatter: { ExitNumberFormatter.formatToManWon($0) },
+                    color: Color.Exit.accent
+                )
+            }
+            .padding(ExitSpacing.md)
+            .background(Color.Exit.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+        }
+        .padding(.horizontal, ExitSpacing.lg)
+    }
+    
+    // MARK: - Asset Slider with Buttons
+    
+    private var assetSliderWithButtons: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+            HStack {
+                Text("현재 자산")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                Spacer()
+                
+                Text(ExitNumberFormatter.formatToEokManWon(editingCurrentAsset))
+                    .font(.Exit.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.Exit.primaryText)
+            }
+            
+            Slider(value: $editingCurrentAsset, in: 0...10_000_000_000, step: 10_000_000)
+                .tint(Color.Exit.primaryText)
+            
+            HStack(spacing: ExitSpacing.xs) {
+                assetAdjustButton("+10만", amount: 100_000)
+                assetAdjustButton("+100만", amount: 1_000_000)
+                assetAdjustButton("+1000만", amount: 10_000_000)
+                assetAdjustButton("+1억", amount: 100_000_000)
+            }
+        }
+    }
+    
+    private func assetAdjustButton(_ title: String, amount: Double) -> some View {
+        Button {
+            editingCurrentAsset = min(editingCurrentAsset + amount, 10_000_000_000)
+        } label: {
+            Text(title)
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.accent)
+                .padding(.horizontal, ExitSpacing.sm)
+                .padding(.vertical, ExitSpacing.xs)
+                .background(
+                    RoundedRectangle(cornerRadius: ExitRadius.sm)
+                        .fill(Color.Exit.accent.opacity(0.1))
+                )
+        }
+        .buttonStyle(.plain)
+    }
+    
+    // MARK: - Return Rate Section
+    
+    private var returnRateSection: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.md) {
+            sectionHeader("수익률 설정")
+            
+            VStack(spacing: ExitSpacing.md) {
+                // 은퇴 전 수익률
+                sliderRow(
+                    label: "은퇴 전 수익률",
+                    value: $editingPreReturnRate,
+                    range: 0.5...50.0,
+                    step: 0.5,
+                    formatter: { String(format: "%.1f%%", $0) },
+                    color: Color.Exit.accent
+                )
+                
+                // 은퇴 후 수익률
+                sliderRow(
+                    label: "은퇴 후 수익률",
+                    value: $editingPostReturnRate,
+                    range: 0.5...50.0,
+                    step: 0.5,
+                    formatter: { String(format: "%.1f%%", $0) },
+                    color: Color.Exit.caution
+                )
+                
+                Divider()
+                    .background(Color.Exit.divider)
+                
+                // 물가 상승률
+                sliderRow(
+                    label: "물가 상승률",
+                    value: $editingInflationRate,
+                    range: 0.0...10.0,
+                    step: 0.1,
+                    formatter: { String(format: "%.1f%%", $0) },
+                    color: Color.Exit.warning
+                )
+            }
+            .padding(ExitSpacing.md)
+            .background(Color.Exit.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+        }
+        .padding(.horizontal, ExitSpacing.lg)
+    }
+    
     // MARK: - Failure Threshold Section
     
     private var failureThresholdSection: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
             VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                Text("실패 조건")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
+                sectionHeader("실패 조건")
                 
                 Text("목표 기간의 몇 %를 초과하면 실패로 판정할지 설정합니다")
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.tertiaryText)
+                    .padding(.horizontal, ExitSpacing.lg)
             }
             
-            // 실패 조건 선택 버튼들
-            HStack(spacing: ExitSpacing.sm) {
-                failureOption(1.0, label: "100%")
-                failureOption(1.1, label: "110%")
-                failureOption(1.3, label: "130%")
-                failureOption(1.5, label: "150%")
-            }
-            
-            // 현재 설정 예시
-            if let profile = appState.userProfile {
-                let originalMonths = calculateOriginalMonths(profile)
+            VStack(spacing: ExitSpacing.sm) {
+                // 실패 조건 선택 버튼들
+                HStack(spacing: ExitSpacing.sm) {
+                    failureOption(1.0, label: "100%")
+                    failureOption(1.1, label: "110%")
+                    failureOption(1.3, label: "130%")
+                    failureOption(1.5, label: "150%")
+                }
+                
+                // 현재 설정 예시
+                let originalMonths = calculateOriginalMonths()
                 let failureMonths = Int(Double(originalMonths) * failureThreshold)
                 
                 if originalMonths > 0 {
@@ -113,9 +254,11 @@ struct SimulationSetupView: View {
                             .font(.Exit.caption2)
                             .foregroundStyle(Color.Exit.tertiaryText)
                     }
-                    .padding(.top, ExitSpacing.xs)
                 }
             }
+            .padding(ExitSpacing.md)
+            .background(Color.Exit.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         }
         .padding(.horizontal, ExitSpacing.lg)
     }
@@ -137,7 +280,7 @@ struct SimulationSetupView: View {
                 .background(
                     isSelected
                         ? AnyShapeStyle(Color.Exit.accent)
-                        : AnyShapeStyle(Color.Exit.cardBackground)
+                        : AnyShapeStyle(Color.Exit.background)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
                 .overlay(
@@ -148,100 +291,50 @@ struct SimulationSetupView: View {
         .buttonStyle(.plain)
     }
     
-    // MARK: - Settings Summary
+    // MARK: - Simulation Summary
     
-    private func settingsSummary(_ profile: UserProfile) -> some View {
-        let preVolatility = SimulationViewModel.calculateVolatility(for: profile.preRetirementReturnRate)
-        let postVolatility = SimulationViewModel.calculateVolatility(for: profile.postRetirementReturnRate)
-        let targetAsset = RetirementCalculator.calculateTargetAssets(
-            desiredMonthlyIncome: profile.desiredMonthlyIncome,
-            postRetirementReturnRate: profile.postRetirementReturnRate,
-            inflationRate: profile.inflationRate
-        )
-        
-        return VStack(alignment: .leading, spacing: ExitSpacing.lg) {
-            // 기본 정보
-            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                sectionLabel("기본 정보")
-                
-                VStack(spacing: ExitSpacing.xs) {
-                    summaryRow("현재 자산", ExitNumberFormatter.formatToEokManWon(appState.currentAssetAmount))
-                    summaryRow("월 저축액", ExitNumberFormatter.formatToManWon(profile.monthlyInvestment))
-                    summaryRow("희망 월수입", ExitNumberFormatter.formatToManWon(profile.desiredMonthlyIncome))
-                    summaryRow("목표 자산", ExitNumberFormatter.formatToEokManWon(targetAsset), valueColor: Color.Exit.accent)
-                }
-                .padding(ExitSpacing.md)
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-            }
+    private var simulationSummary: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.md) {
+            sectionHeader("시뮬레이션 정보")
             
-            // 은퇴 전 시뮬레이션 조건
-            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                sectionLabel("은퇴 전 시뮬레이션")
-                
-                VStack(spacing: ExitSpacing.xs) {
-                    summaryRow("목표 수익률", String(format: "%.1f%%", profile.preRetirementReturnRate))
-                    summaryRow("수익률 변동성", String(format: "%.0f%%", preVolatility), valueColor: Color.Exit.secondaryText)
-                }
-                .padding(ExitSpacing.md)
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-            }
+            let targetAsset = RetirementCalculator.calculateTargetAssets(
+                desiredMonthlyIncome: editingMonthlyIncome,
+                postRetirementReturnRate: editingPostReturnRate,
+                inflationRate: editingInflationRate
+            )
+            let preVolatility = SimulationViewModel.calculateVolatility(for: editingPreReturnRate)
+            let postVolatility = SimulationViewModel.calculateVolatility(for: editingPostReturnRate)
             
-            // 은퇴 후 시뮬레이션 조건
-            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                sectionLabel("은퇴 후 시뮬레이션")
+            VStack(spacing: ExitSpacing.sm) {
+                summaryRow("목표 자산", ExitNumberFormatter.formatToEokManWon(targetAsset), valueColor: Color.Exit.accent)
+                summaryRow("은퇴 전 변동성", String(format: "%.0f%%", preVolatility))
+                summaryRow("은퇴 후 변동성", String(format: "%.0f%%", postVolatility))
                 
-                VStack(spacing: ExitSpacing.xs) {
-                    summaryRow("목표 수익률", String(format: "%.1f%%", profile.postRetirementReturnRate))
-                    summaryRow("수익률 변동성", String(format: "%.0f%%", postVolatility), valueColor: Color.Exit.secondaryText)
-                    summaryRow("물가 상승률", String(format: "%.1f%%", profile.inflationRate))
+                Divider()
+                    .background(Color.Exit.divider)
+                
+                HStack(spacing: ExitSpacing.xs) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    
+                    Text("변동성은 목표 수익률 기반으로 자동 계산됩니다")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
                 }
-                .padding(ExitSpacing.md)
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             }
+            .padding(ExitSpacing.md)
+            .background(Color.Exit.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         }
         .padding(.horizontal, ExitSpacing.lg)
-    }
-    
-    private func sectionLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.Exit.caption)
-            .foregroundStyle(Color.Exit.secondaryText)
-    }
-    
-    private func summaryRow(_ label: String, _ value: String, valueColor: Color = Color.Exit.primaryText) -> some View {
-        HStack {
-            Text(label)
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.tertiaryText)
-            Spacer()
-            Text(value)
-                .font(.Exit.caption)
-                .foregroundStyle(valueColor)
-        }
     }
     
     // MARK: - Start Button
     
     private var startButton: some View {
         Button {
-            // 1. 실패 조건 저장
-            viewModel.updateFailureThreshold(failureThreshold)
-            
-            // 2. 변동성 자동 계산 (목표 수익률 기반)
-            if let profile = appState.userProfile {
-                let autoVolatility = SimulationViewModel.calculateVolatility(for: profile.preRetirementReturnRate)
-                viewModel.updateVolatility(autoVolatility)
-            }
-            
-            // 3. 데이터 로드 및 시뮬레이션 시작
-            viewModel.loadData()
-            viewModel.refreshSimulation()
-            
-            // 4. 화면 전환
-            onStart()
+            applySettingsAndStart()
         } label: {
             HStack(spacing: ExitSpacing.sm) {
                 Image(systemName: "play.fill")
@@ -261,25 +354,111 @@ struct SimulationSetupView: View {
         .padding(.bottom, ExitSpacing.xl)
     }
     
-    // MARK: - Helpers
+    // MARK: - Helper Views
     
-    /// 기존 D-Day 계산
-    private func calculateOriginalMonths(_ profile: UserProfile) -> Int {
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text)
+            .font(.Exit.caption)
+            .foregroundStyle(Color.Exit.secondaryText)
+            .padding(.horizontal, ExitSpacing.lg)
+    }
+    
+    private func sliderRow(
+        label: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        step: Double,
+        formatter: @escaping (Double) -> String,
+        color: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+            HStack {
+                Text(label)
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                Spacer()
+                
+                Text(formatter(value.wrappedValue))
+                    .font(.Exit.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(color)
+            }
+            
+            Slider(value: value, in: range, step: step)
+                .tint(color)
+        }
+    }
+    
+    private func summaryRow(_ label: String, _ value: String, valueColor: Color = Color.Exit.primaryText) -> some View {
+        HStack {
+            Text(label)
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.tertiaryText)
+            Spacer()
+            Text(value)
+                .font(.Exit.caption)
+                .foregroundStyle(valueColor)
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func syncEditingValues() {
+        editingCurrentAsset = appState.currentAssetAmount
+        failureThreshold = viewModel.failureThresholdMultiplier
+        
+        guard let profile = appState.userProfile else { return }
+        editingMonthlyInvestment = profile.monthlyInvestment
+        editingMonthlyIncome = profile.desiredMonthlyIncome
+        editingPreReturnRate = profile.preRetirementReturnRate
+        editingPostReturnRate = profile.postRetirementReturnRate
+        editingInflationRate = profile.inflationRate
+    }
+    
+    private func applySettingsAndStart() {
+        // 1. 자산 업데이트
+        appState.updateCurrentAsset(editingCurrentAsset)
+        
+        // 2. 설정 업데이트 (물가 상승률 포함)
+        appState.updateSettings(
+            desiredMonthlyIncome: editingMonthlyIncome,
+            monthlyInvestment: editingMonthlyInvestment,
+            preRetirementReturnRate: editingPreReturnRate,
+            postRetirementReturnRate: editingPostReturnRate,
+            inflationRate: editingInflationRate
+        )
+        
+        // 3. 실패 조건 저장
+        viewModel.updateFailureThreshold(failureThreshold)
+        
+        // 4. 변동성 자동 계산 (목표 수익률 기반)
+        let autoVolatility = SimulationViewModel.calculateVolatility(for: editingPreReturnRate)
+        viewModel.updateVolatility(autoVolatility)
+        
+        // 5. 데이터 로드 및 시뮬레이션 시작
+        viewModel.loadData()
+        viewModel.refreshSimulation()
+        
+        // 6. 화면 전환
+        onStart()
+    }
+    
+    private func calculateOriginalMonths() -> Int {
         let targetAsset = RetirementCalculator.calculateTargetAssets(
-            desiredMonthlyIncome: profile.desiredMonthlyIncome,
-            postRetirementReturnRate: profile.postRetirementReturnRate,
-            inflationRate: profile.inflationRate
+            desiredMonthlyIncome: editingMonthlyIncome,
+            postRetirementReturnRate: editingPostReturnRate,
+            inflationRate: editingInflationRate
         )
         
         return RetirementCalculator.calculateMonthsToRetirement(
-            currentAssets: appState.currentAssetAmount,
+            currentAssets: editingCurrentAsset,
             targetAssets: targetAsset,
-            monthlyInvestment: profile.monthlyInvestment,
-            annualReturnRate: profile.preRetirementReturnRate
+            monthlyInvestment: editingMonthlyInvestment,
+            annualReturnRate: editingPreReturnRate
         )
     }
     
-    /// 기간 포맷
     private func formatPeriod(_ months: Int) -> String {
         let years = months / 12
         let remainingMonths = months % 12
