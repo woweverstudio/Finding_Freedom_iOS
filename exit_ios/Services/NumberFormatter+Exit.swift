@@ -28,6 +28,21 @@ enum ExitNumberFormatter {
         return "0만원"
     }
     
+    /// 원 단위를 "X,XXX만원" 형식으로 변환
+    /// - Parameter value: 원 단위 금액
+    /// - Returns: 포맷된 문자열 (예: "7,500만원")
+    nonisolated static func formatToMan(_ value: Double) -> String {
+        let manWon = value / 10_000
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        
+        if let formatted = formatter.string(from: NSNumber(value: manWon)) {
+            return "\(formatted)만"
+        }
+        return "0만"
+    }
+    
     /// 원 단위를 "X억 X,XXX만원" 형식으로 변환 (억 단위 포함)
     /// - Parameter value: 원 단위 금액
     /// - Returns: 포맷된 문자열 (예: "4억 2,750만원")
@@ -48,6 +63,29 @@ enum ExitNumberFormatter {
             return "\(eok)억원"
         } else {
             return formatToManWon(value)
+        }
+    }
+    
+    /// 원 단위를 "X억 X,XXX만" 형식으로 변환 (억 단위 포함)
+    /// - Parameter value: 원 단위 금액
+    /// - Returns: 포맷된 문자열 (예: "4억 2,750만")
+    nonisolated static func formatToEokMan(_ value: Double) -> String {
+        let eok = Int(value / 100_000_000)
+        let remainingManWon = (value.truncatingRemainder(dividingBy: 100_000_000)) / 10_000
+        
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        
+        if eok > 0 {
+            if remainingManWon > 0 {
+                if let manFormatted = formatter.string(from: NSNumber(value: remainingManWon)) {
+                    return "\(eok)억 \(manFormatted)만"
+                }
+            }
+            return "\(eok)억"
+        } else {
+            return formatToMan(value)
         }
     }
     

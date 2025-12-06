@@ -15,6 +15,8 @@ struct DashboardView: View {
     
     /// Pull-to-expand 트리거 임계값 (음수 = 위로 당김)
     private let pullThreshold: CGFloat = -60
+    /// Pull-to-close 트리거 임계값 (양수 = 아래로 스크롤)
+    private let closeThreshold: CGFloat = 80
     
     var body: some View {
         VStack(spacing: 0) {
@@ -43,8 +45,20 @@ struct DashboardView: View {
             } action: { oldValue, newValue in
                 // 위로 당겼을 때 (음수 오프셋) 헤더 확장
                 if newValue < pullThreshold && !isHeaderExpanded {
+                    HapticService.shared.medium()
+                    
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                         isHeaderExpanded = true
+                    }
+                }
+                
+                // expanded 상태에서 아래로 스크롤하면 적용 (닫기)
+                // PlanHeaderView의 onChange에서 자동으로 설정이 적용됨
+                if newValue > closeThreshold && isHeaderExpanded {
+                    HapticService.shared.light()
+                    
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        isHeaderExpanded = false
                     }
                 }
             }

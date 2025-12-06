@@ -137,6 +137,9 @@ extension Font {
         /// 소형 캡션 (12pt Regular)
         static let caption2 = Font.system(size: 12, weight: .regular, design: .default)
         
+        /// 소형 캡션 (12pt Regular)
+        static let caption3 = Font.system(size: 13, weight: .semibold, design: .rounded)
+        
         /// 대형 숫자 (96pt Heavy, Tabular)
         static let scoreDisplay = Font.system(size: 96, weight: .heavy, design: .default).monospacedDigit()
         

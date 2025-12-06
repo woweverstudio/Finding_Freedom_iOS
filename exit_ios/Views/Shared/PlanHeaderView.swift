@@ -67,6 +67,12 @@ struct PlanHeaderView: View {
         .onChange(of: appState.userProfile?.updatedAt) { _, _ in
             syncEditingValues()
         }
+        .onChange(of: isExpanded) { oldValue, newValue in
+            // 외부에서 닫힐 때 (true -> false) 자동으로 설정 적용
+            if oldValue && !newValue {
+                applyChangesWithoutAnimation()
+            }
+        }
     }
     
     // MARK: - Header Button (컴팩트 스타일)
@@ -98,14 +104,14 @@ struct PlanHeaderView: View {
             // 현재 자산
             infoItem(
                 label: "자산",
-                value: hideAmounts ? "•••" : ExitNumberFormatter.formatToEokManWon(editingCurrentAsset),
+                value: hideAmounts ? "•••" : ExitNumberFormatter.formatToEokMan(editingCurrentAsset),
                 color: Color.Exit.primaryText
             )
             
             // 월 투자
             infoItem(
                 label: "월투자",
-                value: ExitNumberFormatter.formatToManWon(editingMonthlyInvestment),
+                value: ExitNumberFormatter.formatToEokMan(editingMonthlyInvestment),
                 color: Color.Exit.positive
             )
             
@@ -119,7 +125,7 @@ struct PlanHeaderView: View {
             // 목표 월수입
             infoItem(
                 label: "목표",
-                value: ExitNumberFormatter.formatToManWon(editingMonthlyIncome),
+                value: ExitNumberFormatter.formatToEokMan(editingMonthlyIncome),
                 color: Color.Exit.accent
             )
         }
@@ -134,11 +140,11 @@ struct PlanHeaderView: View {
     ) -> some View {
         VStack(spacing: 2) {
             Text(label)
-                .font(.system(size: 10, weight: .medium))
+                .font(Font.Exit.caption2)
                 .foregroundStyle(Color.Exit.tertiaryText)
             
             Text(value)
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .font(Font.Exit.caption3)
                 .foregroundStyle(color)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -186,7 +192,7 @@ struct PlanHeaderView: View {
             sliderRow(
                 label: "은퇴 후 월수입",
                 value: $editingMonthlyIncome,
-                range: 1_000_000...50_000_000,
+                range: 500_000...20_000_000,
                 step: 100_000,
                 formatter: { ExitNumberFormatter.formatToManWon($0) },
                 color: Color.Exit.accent
@@ -250,22 +256,6 @@ struct PlanHeaderView: View {
                 assetAdjustButton("+100만", amount: 1_000_000)
                 assetAdjustButton("+1000만", amount: 10_000_000)
                 assetAdjustButton("+1억", amount: 100_000_000)
-                
-                // 초기화 버튼
-                Button {
-                    editingCurrentAsset = 0
-                } label: {
-                    Text("초기화")
-                        .font(Font.Exit.caption)
-                        .foregroundStyle(Color.Exit.caution)
-                        .padding(.horizontal, ExitSpacing.sm)
-                        .padding(.vertical, ExitSpacing.sm)
-                        .background(
-                            RoundedRectangle(cornerRadius: ExitRadius.sm)
-                                .stroke(Color.Exit.caution.opacity(0.5), lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
             }
         }
     }
@@ -279,7 +269,7 @@ struct PlanHeaderView: View {
             Text(title)
                 .font(Font.Exit.caption)
                 .foregroundStyle(Color.Exit.accent)
-                .padding(.horizontal, ExitSpacing.sm)
+                .padding(.horizontal, ExitSpacing.md)
                 .padding(.vertical, ExitSpacing.sm)
                 .background(
                     RoundedRectangle(cornerRadius: ExitRadius.sm)
@@ -331,6 +321,15 @@ struct PlanHeaderView: View {
     }
     
     private func applyChanges() {
+        applyChangesWithoutAnimation()
+        
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            isExpanded = false
+        }
+    }
+    
+    /// 설정만 적용 (애니메이션 없이, 외부에서 닫힐 때 사용)
+    private func applyChangesWithoutAnimation() {
         // 자산 업데이트
         appState.updateCurrentAsset(editingCurrentAsset)
         
@@ -341,10 +340,6 @@ struct PlanHeaderView: View {
             preRetirementReturnRate: editingPreReturnRate,
             postRetirementReturnRate: editingPostReturnRate
         )
-        
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            isExpanded = false
-        }
     }
 }
 
