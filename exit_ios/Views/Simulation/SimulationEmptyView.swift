@@ -189,7 +189,7 @@ struct SimulationEmptyView: View {
             VStack(spacing: ExitSpacing.sm) {
                 Text("단순 계산")
                     .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .foregroundStyle(Color.Exit.secondaryText)
                 
                 // 직선 그래프
                 ZStack {
@@ -201,13 +201,13 @@ struct SimulationEmptyView: View {
                         path.move(to: CGPoint(x: 10, y: 50))
                         path.addLine(to: CGPoint(x: 80, y: 10))
                     }
-                    .stroke(Color.Exit.tertiaryText, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .stroke(Color.Exit.secondaryText, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                 }
                 .frame(width: 90, height: 60)
                 
                 Text("매년 똑같이 오름")
                     .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .foregroundStyle(Color.Exit.secondaryText)
             }
             
             Image(systemName: "arrow.right")
@@ -784,43 +784,34 @@ struct SimulationEmptyView: View {
                             .font(.Exit.body)
                             .fontWeight(.semibold)
                     } else {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 16))
-                        Text("프리미엄 기능 구매하기")
-                            .font(.Exit.body)
-                            .fontWeight(.semibold)
+                        HStack(spacing: ExitSpacing.xs) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 16))
+                            if let product = appState.storeKit.montecarloProduct {
+                                Text("프리미엄 구매 • \(product.displayPrice)")
+                                    .font(.Exit.body)
+                                    .fontWeight(.semibold)
+                            } else {
+                                Text("제품 정보 불러오기 실패")
+                                    .font(.Exit.body)
+                                    .fontWeight(.semibold)
+                            }
+                        }
                     }
                 }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, ExitSpacing.md)
-                .background(
-                    LinearGradient(
-                        colors: [Color(hex: "00D4AA"), Color(hex: "00B894")],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.xl))
-                .shadow(color: Color.Exit.accent.opacity(0.4), radius: 12, x: 0, y: 6)
+                .exitPrimaryButton()
             }
             .buttonStyle(.plain)
             .disabled(isPurchasing)
             
-            // 가격 표시 또는 복원 버튼
+            // 복원 버튼 또는 안내 텍스트
             if !isPurchased {
-                VStack(spacing: ExitSpacing.xs) {
-                    if let product = appState.storeKit.montecarloProduct {
-                        Text("\(product.displayPrice) • 한 번 구매로 평생 사용")
-                            .font(.Exit.caption)
-                            .foregroundStyle(Color.Exit.tertiaryText)
-                    } else {
-                        Text("₩4,900 • 한 번 구매로 평생 사용")
-                            .font(.Exit.caption)
-                            .foregroundStyle(Color.Exit.tertiaryText)
-                    }
+                // 구매 복원 버튼
+                HStack(spacing: ExitSpacing.md) {
+                    Text("한 번 구매로 평생 사용")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.primaryText)
                     
-                    // 구매 복원 버튼
                     Button {
                         Task {
                             await appState.storeKit.restorePurchases()
@@ -834,7 +825,7 @@ struct SimulationEmptyView: View {
             } else {
                 Text("약 3~10초 소요됩니다")
                     .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .foregroundStyle(Color.Exit.secondaryText)
             }
             
             // 에러 메시지
