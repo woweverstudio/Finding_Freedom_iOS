@@ -808,7 +808,7 @@ struct SimulationEmptyView: View {
             if !isPurchased {
                 // 구매 복원 버튼
                 HStack(spacing: ExitSpacing.md) {
-                    Text("한 번 구매로 평생 사용")
+                    Text("한 번 구매로 평생 & 무한 사용")
                         .font(.Exit.caption2)
                         .foregroundStyle(Color.Exit.primaryText)
                     

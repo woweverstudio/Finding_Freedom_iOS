@@ -380,7 +380,7 @@ struct DashboardView: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Exit.primaryText)
                     
-                    Text("30,000가지 미래로 분석해드려요")
+                    Text("30,000가지 미래로 더 자세히 분석해드려요")
                         .font(.Exit.caption)
                         .foregroundStyle(Color.Exit.secondaryText)
                 }
