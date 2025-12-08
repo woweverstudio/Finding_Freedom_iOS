@@ -33,11 +33,11 @@ struct DashboardView: View {
                         // 진행률 섹션
                         progressSection
                         
-                        // 조정 안내 (10년 이상 남았을 때만 표시)
-                        adjustmentHintCard
-                        
                         // 계산방법 보기 버튼
                         calculateFormulaButton
+                        
+                        // 시뮬레이션 유도 버튼
+                        simulationPromptButton
                     }
                     .padding(.vertical, ExitSpacing.lg)
                     .id("container")
@@ -74,6 +74,13 @@ struct DashboardView: View {
     private var dDayHeader: some View {
         VStack(spacing: ExitSpacing.md) {
             dDayMainTitle
+            
+            // 10년 이상 남았을 때만 설정 조정 힌트 표시
+            if let result = appState.retirementResult,
+               result.monthsToRetirement >= 120,
+               !result.isRetirementReady {
+                adjustmentHintButton
+            }
         }
         .padding(.vertical, ExitSpacing.lg)
         .padding(.horizontal, ExitSpacing.md)
@@ -84,6 +91,33 @@ struct DashboardView: View {
                 .exitCardShadow()
         )
         .padding(.horizontal, ExitSpacing.md)
+    }
+    
+    /// 컴팩트한 설정 조정 힌트 버튼
+    private var adjustmentHintButton: some View {
+        Button {
+            HapticService.shared.light()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                isHeaderExpanded = true
+            }
+        } label: {
+            HStack(spacing: ExitSpacing.xs) {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 12, weight: .medium))
+                
+                Text("더 빨리 탈출하기")
+                    .font(.Exit.caption2)
+                    .fontWeight(.medium)
+            }
+            .foregroundStyle(Color.Exit.accent)
+            .padding(.horizontal, ExitSpacing.md)
+            .padding(.vertical, ExitSpacing.sm)
+            .background(
+                Capsule()
+                    .fill(Color.Exit.accent.opacity(0.15))
+            )
+        }
+        .buttonStyle(.plain)
     }
     
     private var dDayMainTitle: some View {
@@ -174,51 +208,6 @@ struct DashboardView: View {
         .padding(.horizontal, ExitSpacing.md)
         .sheet(isPresented: $showFormulaSheet) {
             CalculationFormulaSheet()
-        }
-    }
-    
-    // MARK: - Adjustment Hint Card
-    
-    @ViewBuilder
-    private var adjustmentHintCard: some View {
-        // 10년(120개월) 이상 남았을 때만 표시
-        if let result = appState.retirementResult, result.monthsToRetirement >= 120 {
-            HStack(spacing: ExitSpacing.md) {
-                // 아이콘
-                ZStack {
-                    Circle()
-                        .fill(Color.Exit.accent.opacity(0.15))
-                        .frame(width: 40, height: 40)
-                    
-                    Image(systemName: "lightbulb.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color.Exit.accent)
-                }
-                
-                // 텍스트
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("시간을 앞당길 수 있어요!")
-                        .font(.Exit.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.primaryText)
-                    
-                    Text("위로 당기거나 상단을 눌러 설정을 조정해보세요")
-                        .font(.Exit.caption)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                }
-                
-                Spacer()
-            }
-            .padding(ExitSpacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: ExitRadius.lg)
-                    .fill(Color.Exit.cardBackground)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: ExitRadius.lg)
-                            .stroke(Color.Exit.accent.opacity(0.3), lineWidth: 1)
-                    )
-            )
-            .padding(.horizontal, ExitSpacing.md)
         }
     }
     
@@ -382,6 +371,50 @@ struct DashboardView: View {
                 .foregroundStyle(Color.Exit.tertiaryText)
         }
         .buttonStyle(.plain)
+    }
+    
+    // MARK: - Simulation Prompt Button
+    
+    private var simulationPromptButton: some View {
+        Button {
+            appState.selectedTab = .simulation
+        } label: {
+            HStack(spacing: ExitSpacing.md) {
+                // 텍스트
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("🎲 내 은퇴 성공 확률은 몇 %?")
+                        .font(.Exit.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.Exit.primaryText)
+                    
+                    Text("30,000가지 미래로 분석해드려요")
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                }
+                
+                Spacer()
+                
+                // 화살표
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.Exit.caution)
+            }
+            .padding(ExitSpacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: ExitRadius.lg)
+                    .fill(Color.Exit.cardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: ExitRadius.lg)
+                            .stroke(
+                                Color.Exit.caution,
+                                lineWidth: 1
+                            )
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, ExitSpacing.md)
+        .padding(.top, ExitSpacing.md)
     }
 }
 

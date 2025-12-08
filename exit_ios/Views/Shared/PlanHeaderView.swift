@@ -189,7 +189,7 @@ struct PlanHeaderView: View {
             
             // 은퇴 후 희망 월수입
             sliderRow(
-                label: "은퇴 후 월수입",
+                label: "은퇴 후 희망 월수입",
                 value: $editingMonthlyIncome,
                 range: 500_000...20_000_000,
                 step: 100_000,
