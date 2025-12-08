@@ -33,9 +33,6 @@ struct DashboardView: View {
                         // 진행률 섹션
                         progressSection
                         
-                        // 계산방법 보기 버튼
-                        calculateFormulaButton
-                        
                         // 시뮬레이션 유도 버튼
                         simulationPromptButton
                     }
@@ -72,19 +69,32 @@ struct DashboardView: View {
     // MARK: - D-DAY Header
     
     private var dDayHeader: some View {
-        VStack(spacing: ExitSpacing.md) {
-            dDayMainTitle
-            
-            // 10년 이상 남았을 때만 설정 조정 힌트 표시
-            if let result = appState.retirementResult,
-               result.monthsToRetirement >= 120,
-               !result.isRetirementReady {
-                adjustmentHintButton
+        ZStack(alignment: .topTrailing) {
+            VStack(spacing: ExitSpacing.md) {
+                dDayMainTitle
+                
+                // 10년 이상 남았을 때만 설정 조정 힌트 표시
+                if let result = appState.retirementResult,
+                   result.monthsToRetirement >= 120,
+                   !result.isRetirementReady {
+                    adjustmentHintButton
+                }
             }
+            .padding(.vertical, ExitSpacing.lg)
+            .padding(.horizontal, ExitSpacing.md)
+            .frame(maxWidth: .infinity)
+            
+            // 계산방법 물음표 버튼 (우측 상단)
+            Button {
+                showFormulaSheet = true
+            } label: {
+                Image(systemName: "questionmark.circle")
+                    .font(.system(size: 18))
+                    .foregroundStyle(Color.Exit.tertiaryText)
+            }
+            .buttonStyle(.plain)
+            .padding(ExitSpacing.md)
         }
-        .padding(.vertical, ExitSpacing.lg)
-        .padding(.horizontal, ExitSpacing.md)
-        .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: ExitRadius.xl)
                 .fill(LinearGradient.exitCard)
@@ -101,21 +111,16 @@ struct DashboardView: View {
                 isHeaderExpanded = true
             }
         } label: {
-            HStack(spacing: ExitSpacing.xs) {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 12, weight: .medium))
-                
-                Text("더 빨리 탈출하기")
-                    .font(.Exit.caption2)
-                    .fontWeight(.medium)
-            }
-            .foregroundStyle(Color.Exit.accent)
-            .padding(.horizontal, ExitSpacing.md)
-            .padding(.vertical, ExitSpacing.sm)
-            .background(
-                Capsule()
-                    .fill(Color.Exit.accent.opacity(0.15))
-            )
+            Text("더 빨리 탈출하기")
+                .font(.Exit.caption2)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Exit.accent)
+                .padding(.horizontal, ExitSpacing.md)
+                .padding(.vertical, ExitSpacing.sm)
+                .background(
+                    Capsule()
+                        .fill(Color.Exit.accent.opacity(0.15))
+                )
         }
         .buttonStyle(.plain)
     }
@@ -359,18 +364,6 @@ struct DashboardView: View {
                 .foregroundStyle(color)
         }
         .padding(.top, ExitSpacing.xs)
-    }
-    
-    private var calculateFormulaButton: some View {
-        // 계산방법 보기 버튼
-        Button {
-            showFormulaSheet = true
-        } label: {
-            Text("계산방법 보기")
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.tertiaryText)
-        }
-        .buttonStyle(.plain)
     }
     
     // MARK: - Simulation Prompt Button

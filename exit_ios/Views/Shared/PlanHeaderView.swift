@@ -95,6 +95,18 @@ struct PlanHeaderView: View {
             .padding(.bottom, ExitSpacing.xs)
         }
         .buttonStyle(HeaderButtonStyle())
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 10)
+                .onEnded { value in
+                    // 접힌 상태에서 아래로 스와이프하면 펼치기
+                    if !isExpanded && value.translation.height > 20 {
+                        HapticService.shared.light()
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            isExpanded = true
+                        }
+                    }
+                }
+        )
     }
     
     // MARK: - Info Row (한 줄 레이아웃)
@@ -320,6 +332,9 @@ struct PlanHeaderView: View {
     
     /// 설정만 적용 (애니메이션 없이, 외부에서 닫힐 때 사용)
     private func applyChangesWithoutAnimation() {
+        // 변경 사항이 있는지 확인
+        guard hasChanges else { return }
+        
         // 자산 업데이트
         appState.updateCurrentAsset(editingCurrentAsset)
         
@@ -330,6 +345,19 @@ struct PlanHeaderView: View {
             preRetirementReturnRate: editingPreReturnRate,
             postRetirementReturnRate: editingPostReturnRate
         )
+    }
+    
+    /// 편집 중인 값이 기존 값과 다른지 확인
+    private var hasChanges: Bool {
+        guard let profile = appState.userProfile else { return false }
+        
+        let assetChanged = abs(editingCurrentAsset - appState.currentAssetAmount) > 1
+        let incomeChanged = abs(editingMonthlyIncome - profile.desiredMonthlyIncome) > 1
+        let investmentChanged = abs(editingMonthlyInvestment - profile.monthlyInvestment) > 1
+        let preRateChanged = abs(editingPreReturnRate - profile.preRetirementReturnRate) > 0.01
+        let postRateChanged = abs(editingPostReturnRate - profile.postRetirementReturnRate) > 0.01
+        
+        return assetChanged || incomeChanged || investmentChanged || preRateChanged || postRateChanged
     }
 }
 
