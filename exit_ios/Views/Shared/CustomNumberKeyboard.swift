@@ -54,12 +54,6 @@ struct CustomNumberKeyboard: View {
                 QuickButton(title: "+1억") {
                     addAmount(100_000_000)
                 }
-                
-                QuickButton(title: "초기화", isDestructive: true) {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        value = 0
-                    }
-                }
             }
             .padding(.horizontal, ExitSpacing.xs)
         }
@@ -90,9 +84,9 @@ struct CustomNumberKeyboard: View {
                 NumberKey(digit: "9") { appendDigit("9") }
             }
             
-            // Row 4: ., 0, ←
+            // Row 4: C, 0, ←
             HStack(spacing: ExitSpacing.sm) {
-                NumberKey(digit: "00") { appendDigit("00") }
+                ResetKey { resetValue() }
                 NumberKey(digit: "0") { appendDigit("0") }
                 NumberKey(digit: "←", isAction: true) { deleteLastDigit() }
             }
@@ -142,6 +136,12 @@ struct CustomNumberKeyboard: View {
             withAnimation(.easeInOut(duration: 0.1)) {
                 value = 0
             }
+        }
+    }
+    
+    private func resetValue() {
+        withAnimation(.easeInOut(duration: 0.15)) {
+            value = 0
         }
     }
 }
@@ -197,6 +197,30 @@ private struct NumberKey: View {
                 .background(
                     RoundedRectangle(cornerRadius: ExitRadius.md)
                         .fill(Color.Exit.secondaryCardBackground)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Reset Key
+
+private struct ResetKey: View {
+    let action: () -> Void
+    
+    var body: some View {
+        Button {
+            HapticService.shared.soft()
+            action()
+        } label: {
+            Text("C")
+                .font(.Exit.keypad)
+                .foregroundStyle(Color.Exit.warning)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(
+                    RoundedRectangle(cornerRadius: ExitRadius.md)
+                        .fill(Color.Exit.warning.opacity(0.15))
                 )
         }
         .buttonStyle(.plain)

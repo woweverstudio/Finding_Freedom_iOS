@@ -25,6 +25,9 @@ struct PlanHeaderView: View {
     @State private var editingPreReturnRate: Double = 6.5
     @State private var editingPostReturnRate: Double = 5.0
     
+    /// 금액 편집 시트 상태
+    @State private var showAmountEditSheet: AmountEditType? = nil
+    
     /// 기본 이니셜라이저 (외부 바인딩 사용)
     init(hideAmounts: Bool, isExpanded: Binding<Bool>) {
         self.hideAmounts = hideAmounts
@@ -176,27 +179,31 @@ struct PlanHeaderView: View {
     
     private var editPanel: some View {
         VStack(spacing: ExitSpacing.md) {
-            // 현재 자산 (순자산) + 조정 버튼
-            assetSliderWithButtons
-            
-            // 매월 투자금액
-            sliderRow(
-                label: "매월 투자금액",
-                value: $editingMonthlyInvestment,
-                range: 0...10_000_000,
-                step: 100_000,
-                formatter: { ExitNumberFormatter.formatToManWon($0) },
-                color: Color.Exit.positive
+            // 현재 자산 (직접입력)
+            amountEditRow(
+                label: "현재 자산",
+                value: editingCurrentAsset,
+                formatter: { ExitNumberFormatter.formatToEokManWon($0) },
+                color: Color.Exit.primaryText,
+                editType: .currentAsset
             )
             
-            // 은퇴 후 희망 월수입
-            sliderRow(
-                label: "은퇴 후 희망 월수입",
-                value: $editingMonthlyIncome,
-                range: 500_000...20_000_000,
-                step: 100_000,
+            // 매월 투자금액 (직접입력)
+            amountEditRow(
+                label: "매월 투자금액",
+                value: editingMonthlyInvestment,
                 formatter: { ExitNumberFormatter.formatToManWon($0) },
-                color: Color.Exit.accent
+                color: Color.Exit.positive,
+                editType: .monthlyInvestment
+            )
+            
+            // 은퇴 후 희망 월수입 (직접입력)
+            amountEditRow(
+                label: "은퇴 후 희망 월수입",
+                value: editingMonthlyIncome,
+                formatter: { ExitNumberFormatter.formatToManWon($0) },
+                color: Color.Exit.accent,
+                editType: .desiredMonthlyIncome
             )
             
             // 은퇴 전 목표 수익률 (슬라이더 + 버튼)
@@ -228,57 +235,87 @@ struct PlanHeaderView: View {
         }
         .padding(.horizontal, ExitSpacing.md)
         .padding(.bottom, ExitSpacing.md)
+        .fullScreenCover(item: $showAmountEditSheet) { type in
+            AmountEditSheet(
+                type: type,
+                initialValue: initialValueForType(type),
+                onConfirm: { newValue in
+                    applyAmountChange(type: type, value: newValue)
+                    showAmountEditSheet = nil
+                },
+                onDismiss: {
+                    showAmountEditSheet = nil
+                }
+            )
+        }
     }
     
-    // MARK: - Asset Slider with Adjustment Buttons
+    // MARK: - Amount Edit Row (전체 행 탭 가능)
     
-    private var assetSliderWithButtons: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-            // 라벨 + 값
+    private func amountEditRow(
+        label: String,
+        value: Double,
+        formatter: @escaping (Double) -> String,
+        color: Color,
+        editType: AmountEditType
+    ) -> some View {
+        Button {
+            showAmountEditSheet = editType
+        } label: {
             HStack {
-                Text("현재 자산")
+                // 라벨
+                Text(label)
                     .font(.Exit.caption)
                     .foregroundStyle(Color.Exit.secondaryText)
                 
                 Spacer()
                 
-                Text(ExitNumberFormatter.formatToEokManWon(editingCurrentAsset))
-                    .font(.Exit.caption)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.Exit.primaryText)
+                // 값 + 편집 아이콘
+                HStack(spacing: ExitSpacing.sm) {
+                    // 현재 값 (더 크게)
+                    Text(formatter(value))
+                        .font(.Exit.body)
+                        .fontWeight(.bold)
+                        .foregroundStyle(color)
+                    
+                    // 편집 표시
+                    Text("▸")
+                        .font(.Exit.body)
+                        .foregroundStyle(color.opacity(0.6))
+                }
             }
-            
-            // 슬라이더
-            Slider(value: $editingCurrentAsset, in: 0...10_000_000_000, step: 10_000_000)
-                .tint(Color.Exit.primaryText)
-            
-            // 조정 버튼들
-            HStack(spacing: ExitSpacing.xs) {
-                assetAdjustButton("+10만", amount: 100_000)
-                assetAdjustButton("+100만", amount: 1_000_000)
-                assetAdjustButton("+1000만", amount: 10_000_000)
-                assetAdjustButton("+1억", amount: 100_000_000)
-            }
+            .padding(.horizontal, ExitSpacing.md)
+            .padding(.vertical, ExitSpacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: ExitRadius.md)
+                    .fill(color.opacity(0.08))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    
+    // MARK: - Amount Edit Helpers
+    
+    private func initialValueForType(_ type: AmountEditType) -> Double {
+        switch type {
+        case .currentAsset:
+            return editingCurrentAsset
+        case .monthlyInvestment:
+            return editingMonthlyInvestment
+        case .desiredMonthlyIncome:
+            return editingMonthlyIncome
         }
     }
     
-    // MARK: - Asset Adjust Button
-    
-    private func assetAdjustButton(_ title: String, amount: Double) -> some View {
-        Button {
-            editingCurrentAsset = min(editingCurrentAsset + amount, 10_000_000_000)
-        } label: {
-            Text(title)
-                .font(Font.Exit.caption)
-                .foregroundStyle(Color.Exit.accent)
-                .padding(.horizontal, ExitSpacing.md)
-                .padding(.vertical, ExitSpacing.sm)
-                .background(
-                    RoundedRectangle(cornerRadius: ExitRadius.sm)
-                        .fill(Color.Exit.accent.opacity(0.1))
-                )
+    private func applyAmountChange(type: AmountEditType, value: Double) {
+        switch type {
+        case .currentAsset:
+            editingCurrentAsset = value
+        case .monthlyInvestment:
+            editingMonthlyInvestment = value
+        case .desiredMonthlyIncome:
+            editingMonthlyIncome = value
         }
-        .buttonStyle(.plain)
     }
     
     // MARK: - Slider Row
