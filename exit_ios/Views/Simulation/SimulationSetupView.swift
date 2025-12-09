@@ -234,11 +234,13 @@ struct SimulationSetupView: View {
                     HStack(spacing: ExitSpacing.xs) {
                         Image(systemName: "info.circle")
                             .font(.system(size: 11))
-                            .foregroundStyle(Color.Exit.tertiaryText)
+                            .foregroundStyle(Color.Exit.secondaryText)
                         
                         Text("목표 \(formatPeriod(originalMonths)) → \(formatPeriod(failureMonths)) 초과 시 실패")
                             .font(.Exit.caption2)
-                            .foregroundStyle(Color.Exit.tertiaryText)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                        
+                        Spacer()
                     }
                 }
             }
