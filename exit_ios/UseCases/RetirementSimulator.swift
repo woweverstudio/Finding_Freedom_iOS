@@ -287,8 +287,7 @@ enum RetirementSimulator {
         // 목표 자산 계산
         let targetAsset = RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome: profile.desiredMonthlyIncome,
-            postRetirementReturnRate: profile.postRetirementReturnRate,
-            inflationRate: profile.inflationRate
+            postRetirementReturnRate: profile.postRetirementReturnRate
         )
         
         return simulate(

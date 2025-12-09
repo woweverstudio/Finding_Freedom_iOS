@@ -23,8 +23,7 @@ struct RetirementShortTermChart: View {
     private var calculatedTargetAsset: Double {
         RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome: userProfile.desiredMonthlyIncome,
-            postRetirementReturnRate: userProfile.postRetirementReturnRate,
-            inflationRate: userProfile.inflationRate
+            postRetirementReturnRate: userProfile.postRetirementReturnRate
         )
     }
     
@@ -142,7 +141,7 @@ struct RetirementShortTermChart: View {
             HStack(spacing: ExitSpacing.lg) {
                 dataItem(label: "시작 자산", value: ExitNumberFormatter.formatChartAxis(startingAsset))
                 dataItem(label: "월 지출", value: ExitNumberFormatter.formatToManWon(userProfile.desiredMonthlyIncome))
-                dataItem(label: "은퇴 후 수익률", value: String(format: "%.1f%%", userProfile.postRetirementReturnRate))
+                dataItem(label: "수익률", value: String(format: "%.1f%%", userProfile.postRetirementReturnRate))
             }
         }
     }

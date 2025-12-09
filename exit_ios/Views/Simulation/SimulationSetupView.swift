@@ -20,8 +20,7 @@ struct SimulationSetupView: View {
     @State private var editingMonthlyInvestment: Double = 500_000
     @State private var editingMonthlyIncome: Double = 3_000_000
     @State private var editingPreReturnRate: Double = 6.5
-    @State private var editingPostReturnRate: Double = 5.0
-    @State private var editingInflationRate: Double = 2.5
+    @State private var editingPostReturnRate: Double = 4.0
     @State private var failureThreshold: Double = 1.1
     
     var body: some View {
@@ -188,7 +187,7 @@ struct SimulationSetupView: View {
                     color: Color.Exit.accent
                 )
                 
-                // 은퇴 후 수익률
+                // 은퇴 후 수익률 (물가상승률 반영하여 설정)
                 sliderRow(
                     label: "은퇴 후 수익률",
                     value: $editingPostReturnRate,
@@ -196,19 +195,6 @@ struct SimulationSetupView: View {
                     step: 0.5,
                     formatter: { String(format: "%.1f%%", $0) },
                     color: Color.Exit.caution
-                )
-                
-                Divider()
-                    .background(Color.Exit.divider)
-                
-                // 물가 상승률
-                sliderRow(
-                    label: "물가 상승률",
-                    value: $editingInflationRate,
-                    range: 0.0...10.0,
-                    step: 0.1,
-                    formatter: { String(format: "%.1f%%", $0) },
-                    color: Color.Exit.warning
                 )
             }
             .padding(ExitSpacing.md)
@@ -299,8 +285,7 @@ struct SimulationSetupView: View {
             
             let targetAsset = RetirementCalculator.calculateTargetAssets(
                 desiredMonthlyIncome: editingMonthlyIncome,
-                postRetirementReturnRate: editingPostReturnRate,
-                inflationRate: editingInflationRate
+                postRetirementReturnRate: editingPostReturnRate
             )
             let preVolatility = SimulationViewModel.calculateVolatility(for: editingPreReturnRate)
             let postVolatility = SimulationViewModel.calculateVolatility(for: editingPostReturnRate)
@@ -413,7 +398,6 @@ struct SimulationSetupView: View {
         editingMonthlyIncome = profile.desiredMonthlyIncome
         editingPreReturnRate = profile.preRetirementReturnRate
         editingPostReturnRate = profile.postRetirementReturnRate
-        editingInflationRate = profile.inflationRate
     }
     
     private func applySettingsAndStart() {
@@ -425,8 +409,7 @@ struct SimulationSetupView: View {
             desiredMonthlyIncome: editingMonthlyIncome,
             monthlyInvestment: editingMonthlyInvestment,
             preRetirementReturnRate: editingPreReturnRate,
-            postRetirementReturnRate: editingPostReturnRate,
-            inflationRate: editingInflationRate
+            postRetirementReturnRate: editingPostReturnRate
         )
         
         // 3. 실패 조건 저장
@@ -447,8 +430,7 @@ struct SimulationSetupView: View {
     private func calculateOriginalMonths() -> Int {
         let targetAsset = RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome: editingMonthlyIncome,
-            postRetirementReturnRate: editingPostReturnRate,
-            inflationRate: editingInflationRate
+            postRetirementReturnRate: editingPostReturnRate
         )
         
         return RetirementCalculator.calculateMonthsToRetirement(

@@ -17,8 +17,7 @@ struct SimulationInfoCard: View {
     private var targetAsset: Double {
         RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome: userProfile.desiredMonthlyIncome,
-            postRetirementReturnRate: userProfile.postRetirementReturnRate,
-            inflationRate: userProfile.inflationRate
+            postRetirementReturnRate: userProfile.postRetirementReturnRate
         )
     }
     
@@ -60,7 +59,6 @@ struct SimulationInfoCard: View {
             infoSection(title: "은퇴 후 시뮬레이션") {
                 infoRow(label: "목표 수익률", value: String(format: "%.1f%%", userProfile.postRetirementReturnRate))
                 infoRow(label: "수익률 변동성", value: String(format: "%.1f%%", postRetirementVolatility), valueColor: Color.Exit.secondaryText)
-                infoRow(label: "물가 상승률", value: String(format: "%.1f%%", userProfile.inflationRate))
             }
             
             // 시뮬레이션 결과

@@ -52,6 +52,7 @@ struct SettingsView: View {
         .alert("데이터 삭제", isPresented: $viewModel.showDeleteConfirm) {
             Button("취소", role: .cancel) { }
             Button("삭제", role: .destructive) {
+                appState.resetToHomeTab() // 탭을 홈으로 초기화
                 viewModel.deleteAllData()
                 shouldNavigateToWelcome = true
             }

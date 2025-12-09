@@ -11,6 +11,7 @@ import SwiftData
 /// 온보딩 메인 뷰
 struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.appState) private var appState
     @State private var viewModel = OnboardingViewModel()
     
     var body: some View {
@@ -139,6 +140,7 @@ struct OnboardingView: View {
             // 다음/완료 버튼
             Button {
                 if viewModel.isLastStep {
+                    appState.resetToHomeTab() // 탭을 홈으로 초기화
                     viewModel.completeOnboarding(context: modelContext)
                 } else {
                     viewModel.goToNextStep()

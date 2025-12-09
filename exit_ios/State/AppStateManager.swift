@@ -43,6 +43,11 @@ final class AppStateManager {
     /// 현재 선택된 탭
     var selectedTab: MainTab = .dashboard
     
+    /// 탭을 홈으로 초기화
+    func resetToHomeTab() {
+        selectedTab = .dashboard
+    }
+    
     /// 금액 숨김 여부
     var hideAmounts: Bool = false
     
@@ -215,8 +220,7 @@ final class AppStateManager {
         desiredMonthlyIncome: Double? = nil,
         monthlyInvestment: Double? = nil,
         preRetirementReturnRate: Double? = nil,
-        postRetirementReturnRate: Double? = nil,
-        inflationRate: Double? = nil
+        postRetirementReturnRate: Double? = nil
     ) {
         guard let context = modelContext, let profile = userProfile else { return }
         
@@ -224,8 +228,7 @@ final class AppStateManager {
             desiredMonthlyIncome: desiredMonthlyIncome,
             monthlyInvestment: monthlyInvestment,
             preRetirementReturnRate: preRetirementReturnRate,
-            postRetirementReturnRate: postRetirementReturnRate,
-            inflationRate: inflationRate
+            postRetirementReturnRate: postRetirementReturnRate
         )
         
         try? context.save()

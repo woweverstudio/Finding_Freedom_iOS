@@ -138,8 +138,7 @@ struct DDayRollingView: View {
                 }
                 
                 if step == steps {
-                    isAnimating = false
-                    HapticService.shared.success()
+                    isAnimating = false                    
                 }
             }
         }

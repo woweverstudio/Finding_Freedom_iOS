@@ -100,8 +100,7 @@ struct AssetPathChart: View {
             
             let targetAsset = RetirementCalculator.calculateTargetAssets(
                 desiredMonthlyIncome: userProfile.desiredMonthlyIncome,
-                postRetirementReturnRate: userProfile.postRetirementReturnRate,
-                inflationRate: userProfile.inflationRate
+                postRetirementReturnRate: userProfile.postRetirementReturnRate
             )
             
             HStack(spacing: ExitSpacing.md) {
@@ -169,8 +168,7 @@ struct AssetPathChart: View {
             // 목표 자산 선
             let targetAsset = RetirementCalculator.calculateTargetAssets(
                 desiredMonthlyIncome: userProfile.desiredMonthlyIncome,
-                postRetirementReturnRate: userProfile.postRetirementReturnRate,
-                inflationRate: userProfile.inflationRate
+                postRetirementReturnRate: userProfile.postRetirementReturnRate
             )
             
             RuleMark(y: .value("목표", targetAsset))

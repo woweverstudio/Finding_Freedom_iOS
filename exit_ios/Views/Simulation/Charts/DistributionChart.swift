@@ -129,8 +129,7 @@ struct DistributionChart: View {
             
             let targetAsset = RetirementCalculator.calculateTargetAssets(
                 desiredMonthlyIncome: profile.desiredMonthlyIncome,
-                postRetirementReturnRate: profile.postRetirementReturnRate,
-                inflationRate: profile.inflationRate
+                postRetirementReturnRate: profile.postRetirementReturnRate
             )
             
             HStack(spacing: ExitSpacing.md) {

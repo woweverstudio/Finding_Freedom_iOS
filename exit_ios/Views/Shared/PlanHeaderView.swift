@@ -345,6 +345,8 @@ struct PlanHeaderView: View {
             preRetirementReturnRate: editingPreReturnRate,
             postRetirementReturnRate: editingPostReturnRate
         )
+        
+        HapticService.shared.success()
     }
     
     /// 편집 중인 값이 기존 값과 다른지 확인

@@ -22,10 +22,10 @@ final class UserProfile {
     /// 은퇴 전 연 목표 수익률 (%)
     var preRetirementReturnRate: Double = 6.5
     
-    /// 은퇴 후 연 목표 수익률 (%)
-    var postRetirementReturnRate: Double = 5.0
+    /// 은퇴 후 연 목표 수익률 (%) - 물가상승률을 고려하여 사용자가 직접 설정
+    var postRetirementReturnRate: Double = 4.0
     
-    /// 예상 물가 상승률 (%)
+    /// @deprecated 물가상승률 개념 삭제됨 - DB 호환성을 위해 유지
     var inflationRate: Double = 2.5
     
     /// 온보딩 완료 여부
@@ -44,15 +44,14 @@ final class UserProfile {
         currentNetAssets: Double,
         monthlyInvestment: Double,
         preRetirementReturnRate: Double = 6.5,
-        postRetirementReturnRate: Double = 5.0,
-        inflationRate: Double = 2.5
+        postRetirementReturnRate: Double = 4.0
     ) {
         self.desiredMonthlyIncome = desiredMonthlyIncome
         self.currentNetAssets = currentNetAssets
         self.monthlyInvestment = monthlyInvestment
         self.preRetirementReturnRate = preRetirementReturnRate
         self.postRetirementReturnRate = postRetirementReturnRate
-        self.inflationRate = inflationRate
+        self.inflationRate = 2.5  // DB 호환성을 위해 기본값 유지
         self.hasCompletedOnboarding = true
         self.createdAt = Date()
         self.updatedAt = Date()
@@ -63,14 +62,12 @@ final class UserProfile {
         desiredMonthlyIncome: Double? = nil,
         monthlyInvestment: Double? = nil,
         preRetirementReturnRate: Double? = nil,
-        postRetirementReturnRate: Double? = nil,
-        inflationRate: Double? = nil
+        postRetirementReturnRate: Double? = nil
     ) {
         if let value = desiredMonthlyIncome { self.desiredMonthlyIncome = value }
         if let value = monthlyInvestment { self.monthlyInvestment = value }
         if let value = preRetirementReturnRate { self.preRetirementReturnRate = value }
         if let value = postRetirementReturnRate { self.postRetirementReturnRate = value }
-        if let value = inflationRate { self.inflationRate = value }
         self.updatedAt = Date()
     }
 }

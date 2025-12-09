@@ -48,56 +48,52 @@ struct RetirementCalculationResult {
 
 /// 은퇴 계산 유스케이스
 /// 목표 자산 계산 및 D-DAY 산출
+/// 4% 룰 기반: 목표 자산 = 연간 지출 / 수익률
+/// 사용자가 물가상승률을 반영한 수익률을 직접 입력하도록 함
 /// nonisolated로 선언하여 어떤 actor에서든 호출 가능
 enum RetirementCalculator {
     
     // MARK: - 목표 자산 계산
     
-    /// 은퇴 시 필요 자산 계산 (실질 4% 룰 적용)
-    /// 필요 자산 = (희망 월 수입 × 12) ÷ (은퇴 후 수익률 – 물가 상승률)
+    /// 은퇴 시 필요 자산 계산 (4% 룰)
+    /// 목표 자산 = (희망 월 수입 × 12) / (은퇴 후 수익률 / 100)
+    ///
     /// - Parameters:
     ///   - desiredMonthlyIncome: 은퇴 후 희망 월 수입 (원 단위)
-    ///   - postRetirementReturnRate: 은퇴 후 연 목표 수익률 (%, 예: 5.0)
-    ///   - inflationRate: 예상 물가 상승률 (%, 예: 2.5)
+    ///   - postRetirementReturnRate: 은퇴 후 연 목표 수익률 (%, 예: 4.0)
+    ///        사용자가 물가상승률을 고려하여 직접 입력
     /// - Returns: 필요 자산 (원 단위)
     nonisolated static func calculateTargetAssets(
         desiredMonthlyIncome: Double,
-        postRetirementReturnRate: Double,
-        inflationRate: Double
+        postRetirementReturnRate: Double
     ) -> Double {
         let annualIncome = desiredMonthlyIncome * 12
-        let realReturnRate = (postRetirementReturnRate - inflationRate) / 100
+        let returnRate = postRetirementReturnRate / 100
         
-        // 실질 수익률이 0 이하인 경우 방지
-        // (물가 상승률 >= 수익률이면 자산이 실질적으로 줄어듦)
-        guard realReturnRate > 0 else {
-            return annualIncome * 50  // 50년치 자산 필요로 대체 (매우 보수적)
+        // 수익률이 0 이하인 경우 방지
+        guard returnRate > 0 else {
+            return annualIncome * 50  // 50년치 자산
         }
         
-        return annualIncome / realReturnRate
+        return annualIncome / returnRate
     }
     
     // MARK: - 필요 수익률 역산
     
     /// 현재 자산으로 희망 월수입을 만들기 위한 최소 필요 수익률 계산
-    /// 필요 수익률 = (희망 월수입 × 12) / 현재 자산 + 물가상승률
+    /// 필요 수익률 = (희망 월수입 × 12) / 현재 자산 × 100
     /// - Parameters:
     ///   - currentAssets: 현재 자산 (원 단위)
     ///   - desiredMonthlyIncome: 희망 월 수입 (원 단위)
-    ///   - inflationRate: 물가 상승률 (%, 예: 2.5)
     /// - Returns: 필요 연 수익률 (%)
     nonisolated static func calculateRequiredReturnRate(
         currentAssets: Double,
-        desiredMonthlyIncome: Double,
-        inflationRate: Double
+        desiredMonthlyIncome: Double
     ) -> Double {
         guard currentAssets > 0 else { return 0 }
         
         let annualIncome = desiredMonthlyIncome * 12
-        let realReturnRateNeeded = annualIncome / currentAssets * 100  // 실질 수익률 (%)
-        let nominalReturnRate = realReturnRateNeeded + inflationRate   // 명목 수익률 (%)
-        
-        return nominalReturnRate
+        return annualIncome / currentAssets * 100
     }
     
     // MARK: - D-DAY 계산
@@ -148,8 +144,7 @@ enum RetirementCalculator {
     nonisolated static func calculate(from profile: UserProfile, currentAsset: Double) -> RetirementCalculationResult {
         let targetAssets = calculateTargetAssets(
             desiredMonthlyIncome: profile.desiredMonthlyIncome,
-            postRetirementReturnRate: profile.postRetirementReturnRate,
-            inflationRate: profile.inflationRate
+            postRetirementReturnRate: profile.postRetirementReturnRate
         )
         
         let months = calculateMonthsToRetirement(
@@ -164,8 +159,7 @@ enum RetirementCalculator {
         // 이미 은퇴 가능한 경우 필요 수익률 계산
         let requiredRate: Double? = months == 0 ? calculateRequiredReturnRate(
             currentAssets: currentAsset,
-            desiredMonthlyIncome: profile.desiredMonthlyIncome,
-            inflationRate: profile.inflationRate
+            desiredMonthlyIncome: profile.desiredMonthlyIncome
         ) : nil
         
         return RetirementCalculationResult(
@@ -183,13 +177,11 @@ enum RetirementCalculator {
         currentNetAssets: Double,
         monthlyInvestment: Double,
         preRetirementReturnRate: Double = 6.5,
-        postRetirementReturnRate: Double = 5.0,
-        inflationRate: Double = 2.5
+        postRetirementReturnRate: Double = 4.0
     ) -> RetirementCalculationResult {
         let targetAssets = calculateTargetAssets(
             desiredMonthlyIncome: desiredMonthlyIncome,
-            postRetirementReturnRate: postRetirementReturnRate,
-            inflationRate: inflationRate
+            postRetirementReturnRate: postRetirementReturnRate
         )
         
         let months = calculateMonthsToRetirement(
@@ -204,8 +196,7 @@ enum RetirementCalculator {
         // 이미 은퇴 가능한 경우 필요 수익률 계산
         let requiredRate: Double? = months == 0 ? calculateRequiredReturnRate(
             currentAssets: currentNetAssets,
-            desiredMonthlyIncome: desiredMonthlyIncome,
-            inflationRate: inflationRate
+            desiredMonthlyIncome: desiredMonthlyIncome
         ) : nil
         
         return RetirementCalculationResult(

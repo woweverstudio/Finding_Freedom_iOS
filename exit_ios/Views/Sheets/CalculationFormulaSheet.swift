@@ -103,11 +103,6 @@ struct CalculationFormulaSheet: View {
                         value: String(format: "%.1f%%", profile.postRetirementReturnRate),
                         valueColor: Color.Exit.accent
                     )
-                    FormulaValueRow(
-                        label: "물가상승률",
-                        value: String(format: "%.1f%%", profile.inflationRate),
-                        valueColor: Color.Exit.caution
-                    )
                     
                     FormulaValueRow(
                         label: "계산된 목표 자산",

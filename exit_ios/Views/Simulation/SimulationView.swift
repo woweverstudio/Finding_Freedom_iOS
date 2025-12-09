@@ -275,8 +275,7 @@ struct SimulationView: View {
             if let profile = viewModel.userProfile {
                 let requiredRate = RetirementCalculator.calculateRequiredReturnRate(
                     currentAssets: viewModel.currentAssetAmount,
-                    desiredMonthlyIncome: profile.desiredMonthlyIncome,
-                    inflationRate: profile.inflationRate
+                    desiredMonthlyIncome: profile.desiredMonthlyIncome
                 )
                 
                 VStack(spacing: ExitSpacing.xs) {

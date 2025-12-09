@@ -118,8 +118,7 @@ final class SimulationViewModel {
         guard let profile = userProfile else { return 0 }
         return RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome: profile.desiredMonthlyIncome,
-            postRetirementReturnRate: profile.postRetirementReturnRate,
-            inflationRate: profile.inflationRate
+            postRetirementReturnRate: profile.postRetirementReturnRate
         )
     }
     
@@ -161,7 +160,6 @@ final class SimulationViewModel {
         let simCount = self.simulationCount
         let desiredMonthlyIncome = profile.desiredMonthlyIncome
         let postRetirementReturnRate = profile.postRetirementReturnRate
-        let inflationRate = profile.inflationRate
         let monthlyInvestment = profile.monthlyInvestment
         let preRetirementReturnRate = profile.preRetirementReturnRate
         let preRetirementVolatility = self.effectiveVolatility
@@ -170,8 +168,7 @@ final class SimulationViewModel {
         
         let targetAsset = RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome: desiredMonthlyIncome,
-            postRetirementReturnRate: postRetirementReturnRate,
-            inflationRate: inflationRate
+            postRetirementReturnRate: postRetirementReturnRate
         )
         
         // 기존 D-Day 계산 (확정적 계산)
@@ -211,7 +208,7 @@ final class SimulationViewModel {
                 self.simulationPhase = .postRetirement
             }
             
-            // Phase 2: 은퇴 후 시뮬레이션 (은퇴 후 수익률/변동성 사용)
+            // Phase 2: 은퇴 후 시뮬레이션
             // 이미 은퇴 가능한 경우 현재 자산을 시작점으로 사용, 아닌 경우 목표 자산 사용
             let retirementStartAsset = originalDDay == 0 ? currentAsset : targetAsset
             
