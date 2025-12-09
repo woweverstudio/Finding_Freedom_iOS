@@ -189,16 +189,6 @@ struct PlanHeaderView: View {
                 color: Color.Exit.positive
             )
             
-            // 은퇴 전 목표 수익률
-            sliderRow(
-                label: "은퇴 전 수익률",
-                value: $editingPreReturnRate,
-                range: 0.5...50.0,
-                step: 0.5,
-                formatter: { String(format: "%.1f%%", $0) },
-                color: Color.Exit.accent
-            )
-            
             // 은퇴 후 희망 월수입
             sliderRow(
                 label: "은퇴 후 희망 월수입",
@@ -209,13 +199,23 @@ struct PlanHeaderView: View {
                 color: Color.Exit.accent
             )
             
-            // 은퇴 후 목표 수익률
-            sliderRow(
+            // 은퇴 전 목표 수익률 (슬라이더 + 버튼)
+            rateSliderWithButtons(
+                label: "은퇴 전 수익률",
+                value: $editingPreReturnRate,
+                minValue: 0.5,
+                maxValue: 50.0,
+                step: 0.5,
+                color: Color.Exit.accent
+            )
+            
+            // 은퇴 후 목표 수익률 (슬라이더 + 버튼)
+            rateSliderWithButtons(
                 label: "은퇴 후 수익률",
                 value: $editingPostReturnRate,
-                range: 0.5...50.0,
+                minValue: 0.5,
+                maxValue: 50.0,
                 step: 0.5,
-                formatter: { String(format: "%.1f%%", $0) },
                 color: Color.Exit.caution
             )
             
@@ -309,6 +309,88 @@ struct PlanHeaderView: View {
                 .tint(color)
         }
     }
+    
+    // MARK: - Rate Slider with Buttons (슬라이더 + 버튼)
+    
+    private func rateSliderWithButtons(
+        label: String,
+        value: Binding<Double>,
+        minValue: Double,
+        maxValue: Double,
+        step: Double,
+        color: Color
+    ) -> some View {
+        VStack(spacing: ExitSpacing.xs) {
+            // 라벨 + 값 + 버튼
+            HStack {
+                // 라벨
+                Text(label)
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                Spacer()
+                
+                // +/- 버튼과 값
+                HStack(spacing: ExitSpacing.sm) {
+                    // - 버튼
+                    rateButton(
+                        text: "−",
+                        enabled: value.wrappedValue > minValue,
+                        color: color
+                    ) {
+                        value.wrappedValue = max(value.wrappedValue - step, minValue)
+                    }
+                    
+                    // 현재 값
+                    Text(String(format: "%.1f%%", value.wrappedValue))
+                        .font(.Exit.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(color)
+                        .frame(width: 52)
+                    
+                    // + 버튼
+                    rateButton(
+                        text: "+",
+                        enabled: value.wrappedValue < maxValue,
+                        color: color
+                    ) {
+                        value.wrappedValue = min(value.wrappedValue + step, maxValue)
+                    }
+                }
+            }
+            
+            // 슬라이더
+            Slider(value: value, in: minValue...maxValue, step: step)
+                .tint(color)
+        }
+    }
+    
+    // MARK: - Rate Button
+    
+    private func rateButton(
+        text: String,
+        enabled: Bool,
+        color: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            action()
+        } label: {
+            Text(text)
+                .font(.Exit.body)
+                .fontWeight(.bold)
+                .foregroundStyle(enabled ? color : Color.Exit.tertiaryText)
+                .padding(.horizontal, ExitSpacing.md)
+                .padding(.vertical, ExitSpacing.xs)
+                .background(
+                    RoundedRectangle(cornerRadius: ExitRadius.sm)
+                        .fill(enabled ? color.opacity(0.15) : Color.Exit.divider.opacity(0.5))
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+    }
+    
     
     // MARK: - Helper Methods
     
