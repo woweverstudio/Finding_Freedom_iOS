@@ -23,6 +23,9 @@ struct SimulationSetupView: View {
     @State private var editingPostReturnRate: Double = 4.0
     @State private var failureThreshold: Double = 1.1
     
+    // Amount Edit Sheet
+    @State private var showAmountEditSheet: AmountEditType? = nil
+    
     var body: some View {
         ZStack {
             Color.Exit.background.ignoresSafeArea()
@@ -54,6 +57,43 @@ struct SimulationSetupView: View {
         }
         .onAppear {
             syncEditingValues()
+        }
+        .fullScreenCover(item: $showAmountEditSheet) { type in
+            AmountEditSheet(
+                type: type,
+                initialValue: initialValueForType(type),
+                onConfirm: { newValue in
+                    applyAmountChange(type: type, value: newValue)
+                    showAmountEditSheet = nil
+                },
+                onDismiss: {
+                    showAmountEditSheet = nil
+                }
+            )
+        }
+    }
+    
+    // MARK: - Amount Edit Helpers
+    
+    private func initialValueForType(_ type: AmountEditType) -> Double {
+        switch type {
+        case .currentAsset:
+            return editingCurrentAsset
+        case .monthlyInvestment:
+            return editingMonthlyInvestment
+        case .desiredMonthlyIncome:
+            return editingMonthlyIncome
+        }
+    }
+    
+    private func applyAmountChange(type: AmountEditType, value: Double) {
+        switch type {
+        case .currentAsset:
+            editingCurrentAsset = value
+        case .monthlyInvestment:
+            editingMonthlyInvestment = value
+        case .desiredMonthlyIncome:
+            editingMonthlyIncome = value
         }
     }
     
@@ -95,26 +135,30 @@ struct SimulationSetupView: View {
             
             VStack(spacing: ExitSpacing.md) {
                 // 현재 자산
-                assetSliderWithButtons
+                amountEditRow(
+                    label: "현재 자산",
+                    value: editingCurrentAsset,
+                    formatter: { ExitNumberFormatter.formatToEokManWon($0) },
+                    color: Color.Exit.primaryText,
+                    editType: .currentAsset
+                )
                 
                 // 매월 투자금액
-                sliderRow(
+                amountEditRow(
                     label: "매월 투자금액",
-                    value: $editingMonthlyInvestment,
-                    range: 0...10_000_000,
-                    step: 100_000,
+                    value: editingMonthlyInvestment,
                     formatter: { ExitNumberFormatter.formatToManWon($0) },
-                    color: Color.Exit.positive
+                    color: Color.Exit.positive,
+                    editType: .monthlyInvestment
                 )
                 
                 // 은퇴 후 희망 월수입
-                sliderRow(
+                amountEditRow(
                     label: "은퇴 후 월수입",
-                    value: $editingMonthlyIncome,
-                    range: 500_000...20_000_000,
-                    step: 100_000,
+                    value: editingMonthlyIncome,
                     formatter: { ExitNumberFormatter.formatToManWon($0) },
-                    color: Color.Exit.accent
+                    color: Color.Exit.accent,
+                    editType: .desiredMonthlyIncome
                 )
             }
             .padding(ExitSpacing.md)
@@ -124,50 +168,50 @@ struct SimulationSetupView: View {
         .padding(.horizontal, ExitSpacing.lg)
     }
     
-    // MARK: - Asset Slider with Buttons
+    // MARK: - Amount Edit Row
     
-    private var assetSliderWithButtons: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-            HStack {
-                Text("현재 자산")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                
-                Spacer()
-                
-                Text(ExitNumberFormatter.formatToEokManWon(editingCurrentAsset))
+    private func amountEditRow(
+        label: String,
+        value: Double,
+        formatter: @escaping (Double) -> String,
+        color: Color,
+        editType: AmountEditType
+    ) -> some View {
+        HStack {
+            // 라벨
+            Text(label)
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.secondaryText)
+            
+            Spacer()
+            
+            // 값 + 편집 버튼
+            HStack(spacing: ExitSpacing.sm) {
+                // 현재 값
+                Text(formatter(value))
                     .font(.Exit.caption)
                     .fontWeight(.bold)
-                    .foregroundStyle(Color.Exit.primaryText)
-            }
-            
-            Slider(value: $editingCurrentAsset, in: 0...10_000_000_000, step: 10_000_000)
-                .tint(Color.Exit.primaryText)
-            
-            HStack(spacing: ExitSpacing.xs) {
-                assetAdjustButton("+10만", amount: 100_000)
-                assetAdjustButton("+100만", amount: 1_000_000)
-                assetAdjustButton("+1000만", amount: 10_000_000)
-                assetAdjustButton("+1억", amount: 100_000_000)
+                    .foregroundStyle(color)
+                
+                // 편집 버튼 (수익률 +/- 버튼과 동일한 스타일)
+                Button {
+                    HapticService.shared.soft()
+                    showAmountEditSheet = editType
+                } label: {
+                    Text("편집")
+                        .font(.Exit.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(color)
+                        .padding(.horizontal, ExitSpacing.md)
+                        .padding(.vertical, ExitSpacing.xs)
+                        .background(
+                            RoundedRectangle(cornerRadius: ExitRadius.sm)
+                                .fill(color.opacity(0.15))
+                        )
+                }
+                .buttonStyle(.plain)
             }
         }
-    }
-    
-    private func assetAdjustButton(_ title: String, amount: Double) -> some View {
-        Button {
-            editingCurrentAsset = min(editingCurrentAsset + amount, 10_000_000_000)
-        } label: {
-            Text(title)
-                .font(Font.Exit.caption)
-                .foregroundStyle(Color.Exit.accent)
-                .padding(.horizontal, ExitSpacing.md)
-                .padding(.vertical, ExitSpacing.sm)
-                .background(
-                    RoundedRectangle(cornerRadius: ExitRadius.sm)
-                        .fill(Color.Exit.accent.opacity(0.1))
-                )
-        }
-        .buttonStyle(.plain)
     }
     
     // MARK: - Return Rate Section
@@ -178,22 +222,22 @@ struct SimulationSetupView: View {
             
             VStack(spacing: ExitSpacing.md) {
                 // 은퇴 전 수익률
-                sliderRow(
+                rateSliderWithButtons(
                     label: "은퇴 전 수익률",
                     value: $editingPreReturnRate,
-                    range: 0.5...50.0,
+                    minValue: 0.5,
+                    maxValue: 50.0,
                     step: 0.5,
-                    formatter: { String(format: "%.1f%%", $0) },
                     color: Color.Exit.accent
                 )
                 
-                // 은퇴 후 수익률 (물가상승률 반영하여 설정)
-                sliderRow(
+                // 은퇴 후 수익률
+                rateSliderWithButtons(
                     label: "은퇴 후 수익률",
                     value: $editingPostReturnRate,
-                    range: 0.5...50.0,
+                    minValue: 0.5,
+                    maxValue: 50.0,
                     step: 0.5,
-                    formatter: { String(format: "%.1f%%", $0) },
                     color: Color.Exit.caution
                 )
             }
@@ -202,6 +246,88 @@ struct SimulationSetupView: View {
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         }
         .padding(.horizontal, ExitSpacing.lg)
+    }
+    
+    // MARK: - Rate Slider with Buttons
+    
+    private func rateSliderWithButtons(
+        label: String,
+        value: Binding<Double>,
+        minValue: Double,
+        maxValue: Double,
+        step: Double,
+        color: Color
+    ) -> some View {
+        VStack(spacing: ExitSpacing.xs) {
+            // 라벨 + 값 + 버튼
+            HStack {
+                // 라벨
+                Text(label)
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                Spacer()
+                
+                // +/- 버튼과 값
+                HStack(spacing: ExitSpacing.sm) {
+                    // - 버튼
+                    rateButton(
+                        text: "−",
+                        enabled: value.wrappedValue > minValue,
+                        color: color
+                    ) {
+                        value.wrappedValue = max(value.wrappedValue - step, minValue)
+                    }
+                    
+                    // 현재 값
+                    Text(String(format: "%.1f%%", value.wrappedValue))
+                        .font(.Exit.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(color)
+                        .frame(width: 52)
+                    
+                    // + 버튼
+                    rateButton(
+                        text: "+",
+                        enabled: value.wrappedValue < maxValue,
+                        color: color
+                    ) {
+                        value.wrappedValue = min(value.wrappedValue + step, maxValue)
+                    }
+                }
+            }
+            
+            // 슬라이더
+            Slider(value: value, in: minValue...maxValue, step: step)
+                .tint(color)
+        }
+    }
+    
+    // MARK: - Rate Button
+    
+    private func rateButton(
+        text: String,
+        enabled: Bool,
+        color: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            HapticService.shared.soft()
+            action()
+        } label: {
+            Text(text)
+                .font(.Exit.body)
+                .fontWeight(.bold)
+                .foregroundStyle(enabled ? color : Color.Exit.tertiaryText)
+                .padding(.horizontal, ExitSpacing.md)
+                .padding(.vertical, ExitSpacing.xs)
+                .background(
+                    RoundedRectangle(cornerRadius: ExitRadius.sm)
+                        .fill(enabled ? color.opacity(0.15) : Color.Exit.divider.opacity(0.5))
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
     }
     
     // MARK: - Failure Threshold Section
@@ -348,33 +474,6 @@ struct SimulationSetupView: View {
             .font(.Exit.caption)
             .foregroundStyle(Color.Exit.secondaryText)
             .padding(.horizontal, ExitSpacing.lg)
-    }
-    
-    private func sliderRow(
-        label: String,
-        value: Binding<Double>,
-        range: ClosedRange<Double>,
-        step: Double,
-        formatter: @escaping (Double) -> String,
-        color: Color
-    ) -> some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-            HStack {
-                Text(label)
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                
-                Spacer()
-                
-                Text(formatter(value.wrappedValue))
-                    .font(.Exit.caption)
-                    .fontWeight(.bold)
-                    .foregroundStyle(color)
-            }
-            
-            Slider(value: value, in: range, step: step)
-                .tint(color)
-        }
     }
     
     private func summaryRow(_ label: String, _ value: String, valueColor: Color = Color.Exit.primaryText) -> some View {
