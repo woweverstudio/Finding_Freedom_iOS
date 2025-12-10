@@ -172,13 +172,21 @@ struct SimulationView: View {
                     // 은퇴 후 단기(1~10년) 자산 변화
                     if let retirementResult = viewModel.retirementResult,
                        let profile = viewModel.userProfile {
-                        RetirementShortTermChart(result: retirementResult, userProfile: profile)
+                        RetirementShortTermChart(
+                            result: retirementResult,
+                            userProfile: profile,
+                            spendingRatio: viewModel.spendingRatio
+                        )
                     }
                     
                     // 은퇴 후 장기(40년) 자산 변화 예측
                     if let retirementResult = viewModel.retirementResult,
                        let profile = viewModel.userProfile {
-                        RetirementProjectionChart(result: retirementResult, userProfile: profile)
+                        RetirementProjectionChart(
+                            result: retirementResult,
+                            userProfile: profile,
+                            spendingRatio: viewModel.spendingRatio
+                        )
                     }
                     
                     // 시뮬레이션 정보 카드
@@ -228,13 +236,21 @@ struct SimulationView: View {
                     // 4. 은퇴 후 단기(1~10년) 자산 변화
                     if let retirementResult = viewModel.retirementResult,
                        let profile = viewModel.userProfile {
-                        RetirementShortTermChart(result: retirementResult, userProfile: profile)
+                        RetirementShortTermChart(
+                            result: retirementResult,
+                            userProfile: profile,
+                            spendingRatio: viewModel.spendingRatio
+                        )
                     }
                     
                     // 5. 은퇴 후 장기(40년) 자산 변화 예측
                     if let retirementResult = viewModel.retirementResult,
                        let profile = viewModel.userProfile {
-                        RetirementProjectionChart(result: retirementResult, userProfile: profile)
+                        RetirementProjectionChart(
+                            result: retirementResult,
+                            userProfile: profile,
+                            spendingRatio: viewModel.spendingRatio
+                        )
                     }
                     
                     // 6. 시뮬레이션 정보 카드

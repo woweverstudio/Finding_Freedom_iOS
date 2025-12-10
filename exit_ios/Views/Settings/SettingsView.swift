@@ -326,7 +326,7 @@ struct SettingsView: View {
                 
                 Spacer()
                 
-                Text("1.0.1")
+                Text("1.0.2")
                     .font(.Exit.body)
                     .foregroundStyle(Color.Exit.tertiaryText)
             }

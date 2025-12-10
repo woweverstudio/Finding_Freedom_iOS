@@ -285,7 +285,7 @@ struct PlanHeaderView: View {
                         .fontWeight(.medium)
                         .foregroundStyle(color)
                         .padding(.horizontal, ExitSpacing.md)
-                        .padding(.vertical, ExitSpacing.xs)
+                        .padding(.vertical, ExitSpacing.sm)
                         .background(
                             RoundedRectangle(cornerRadius: ExitRadius.sm)
                                 .fill(color.opacity(0.15))
@@ -294,6 +294,7 @@ struct PlanHeaderView: View {
                 .buttonStyle(.plain)
             }
         }
+        .padding(.vertical, ExitSpacing.xs)
     }
     
     // MARK: - Amount Edit Helpers

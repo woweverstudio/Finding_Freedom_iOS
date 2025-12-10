@@ -12,6 +12,7 @@ import Charts
 struct RetirementProjectionChart: View {
     let result: RetirementSimulationResult
     let userProfile: UserProfile
+    var spendingRatio: Double = 1.0
     
     // 시뮬레이션 시작 자산 (실제 시뮬레이션에서 사용된 값)
     private var startingAsset: Double {
@@ -491,15 +492,20 @@ struct RetirementProjectionChart: View {
     // MARK: - Simulation Condition
     
     private var simulationConditionSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+        let actualSpending = userProfile.desiredMonthlyIncome * spendingRatio
+        let spendingDisplayValue = spendingRatio < 1.0
+            ? "\(ExitNumberFormatter.formatToManWon(actualSpending))(\(String(format: "%.0f", spendingRatio * 100))%)"
+            : ExitNumberFormatter.formatToManWon(actualSpending)
+        
+        return VStack(alignment: .leading, spacing: ExitSpacing.sm) {
             Text("📊 시뮬레이션 조건")
                 .font(.Exit.caption)
                 .fontWeight(.medium)
                 .foregroundStyle(Color.Exit.secondaryText)
             
-            HStack(spacing: ExitSpacing.lg) {
+            HStack(spacing: ExitSpacing.sm) {
                 dataItem(label: "시작 자산", value: ExitNumberFormatter.formatChartAxis(startingAsset))
-                dataItem(label: "월 지출", value: ExitNumberFormatter.formatToManWon(userProfile.desiredMonthlyIncome))
+                dataItem(label: "월 지출", value: spendingDisplayValue)
                 dataItem(label: "수익률", value: String(format: "%.1f%%", userProfile.postRetirementReturnRate))
             }
         }
@@ -510,10 +516,13 @@ struct RetirementProjectionChart: View {
             Text(label)
                 .font(.Exit.caption2)
                 .foregroundStyle(Color.Exit.tertiaryText)
+                .lineLimit(1)
             Text(value)
                 .font(.Exit.caption)
                 .fontWeight(.medium)
                 .foregroundStyle(Color.Exit.primaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity)
     }

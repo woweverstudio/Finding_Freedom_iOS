@@ -21,6 +21,7 @@ struct SimulationSetupView: View {
     @State private var editingMonthlyIncome: Double = 3_000_000
     @State private var editingPreReturnRate: Double = 6.5
     @State private var editingPostReturnRate: Double = 4.0
+    @State private var spendingRatio: Double = 1.0
     @State private var failureThreshold: Double = 1.1
     
     // Amount Edit Sheet
@@ -41,6 +42,9 @@ struct SimulationSetupView: View {
                         
                         // 수익률 설정 섹션
                         returnRateSection
+                        
+                        // 생활비 사용 비율 섹션
+                        spendingRatioSection
                         
                         // 실패 조건 섹션
                         failureThresholdSection
@@ -330,6 +334,79 @@ struct SimulationSetupView: View {
         .disabled(!enabled)
     }
     
+    // MARK: - Spending Ratio Section
+    
+    private var spendingRatioSection: some View {
+        let actualSpending = editingMonthlyIncome * spendingRatio
+        
+        return VStack(alignment: .leading, spacing: ExitSpacing.md) {
+            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                sectionHeader("생활비 사용 비율")
+                
+                Text("은퇴 후 희망 월수입 중 실제로 사용할 비율을 설정합니다")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .padding(.horizontal, ExitSpacing.lg)
+            }
+            
+            VStack(spacing: ExitSpacing.sm) {
+                // 생활비 비율 선택 버튼들
+                HStack(spacing: ExitSpacing.sm) {
+                    spendingRatioOption(0.5, label: "50%")
+                    spendingRatioOption(0.7, label: "70%")
+                    spendingRatioOption(0.85, label: "85%")
+                    spendingRatioOption(1.0, label: "100%")
+                }
+                
+                // 현재 설정 예시
+                HStack(spacing: ExitSpacing.xs) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.Exit.secondaryText)
+                    
+                    Text("월 \(ExitNumberFormatter.formatToManWon(editingMonthlyIncome)) × \(String(format: "%.0f", spendingRatio * 100))% = \(ExitNumberFormatter.formatToManWon(actualSpending)) 사용")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                    
+                    Spacer()
+                }
+            }
+            .padding(ExitSpacing.md)
+            .background(Color.Exit.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+        }
+        .padding(.horizontal, ExitSpacing.lg)
+    }
+    
+    private func spendingRatioOption(_ value: Double, label: String) -> some View {
+        let isSelected = abs(spendingRatio - value) < 0.01
+        
+        return Button {
+            HapticService.shared.soft()
+            withAnimation(.easeInOut(duration: 0.2)) {
+                spendingRatio = value
+            }
+        } label: {
+            Text(label)
+                .font(.Exit.caption)
+                .fontWeight(isSelected ? .semibold : .regular)
+                .foregroundStyle(isSelected ? .white : Color.Exit.secondaryText)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, ExitSpacing.sm)
+                .background(
+                    isSelected
+                        ? AnyShapeStyle(Color.Exit.positive)
+                        : AnyShapeStyle(Color.Exit.background)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+                .overlay(
+                    RoundedRectangle(cornerRadius: ExitRadius.sm)
+                        .stroke(isSelected ? Color.clear : Color.Exit.divider, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+    
     // MARK: - Failure Threshold Section
     
     private var failureThresholdSection: some View {
@@ -493,6 +570,7 @@ struct SimulationSetupView: View {
     private func syncEditingValues() {
         editingCurrentAsset = appState.currentAssetAmount
         failureThreshold = viewModel.failureThresholdMultiplier
+        spendingRatio = viewModel.spendingRatio
         
         guard let profile = appState.userProfile else { return }
         editingMonthlyInvestment = profile.monthlyInvestment
@@ -516,15 +594,18 @@ struct SimulationSetupView: View {
         // 3. 실패 조건 저장
         viewModel.updateFailureThreshold(failureThreshold)
         
-        // 4. 변동성 자동 계산 (목표 수익률 기반)
+        // 4. 생활비 사용 비율 저장
+        viewModel.updateSpendingRatio(spendingRatio)
+        
+        // 5. 변동성 자동 계산 (목표 수익률 기반)
         let autoVolatility = SimulationViewModel.calculateVolatility(for: editingPreReturnRate)
         viewModel.updateVolatility(autoVolatility)
         
-        // 5. 데이터 로드 및 시뮬레이션 시작
+        // 6. 데이터 로드 및 시뮬레이션 시작
         viewModel.loadData()
         viewModel.refreshSimulation()
         
-        // 6. 화면 전환
+        // 7. 화면 전환
         onStart()
     }
     

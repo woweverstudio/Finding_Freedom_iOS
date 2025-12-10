@@ -47,6 +47,9 @@ final class SimulationViewModel {
     /// 실패 조건 배수 (기본값 1.1 = 목표 기간의 110%)
     var failureThresholdMultiplier: Double = 1.1
     
+    /// 생활비 사용 비율 (기본값 1.0 = 100%)
+    var spendingRatio: Double = 1.0
+    
     // MARK: - Simulation Phase
     
     enum SimulationPhase {
@@ -165,6 +168,10 @@ final class SimulationViewModel {
         let preRetirementVolatility = self.effectiveVolatility
         let postRetirementVolatility = Self.calculateVolatility(for: postRetirementReturnRate)
         let failureMultiplier = self.failureThresholdMultiplier
+        let spendingRatio = self.spendingRatio
+        
+        // 실제 월 지출액 = 희망 월수입 × 생활비 사용 비율
+        let actualMonthlySpending = desiredMonthlyIncome * spendingRatio
         
         let targetAsset = RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome: desiredMonthlyIncome,
@@ -214,7 +221,7 @@ final class SimulationViewModel {
             
             let retirementResult = RetirementSimulator.simulate(
                 initialAsset: retirementStartAsset,
-                monthlySpending: desiredMonthlyIncome,
+                monthlySpending: actualMonthlySpending,  // 생활비 사용 비율 적용
                 annualReturn: postRetirementReturnRate,
                 volatility: postRetirementVolatility,
                 simulationCount: simCount,
@@ -270,10 +277,21 @@ final class SimulationViewModel {
         failureThresholdMultiplier = 1.1
     }
     
+    /// 생활비 사용 비율 변경
+    func updateSpendingRatio(_ ratio: Double) {
+        spendingRatio = ratio
+    }
+    
+    /// 생활비 사용 비율 초기화
+    func resetSpendingRatio() {
+        spendingRatio = 1.0
+    }
+    
     /// 모든 설정 초기화
     func resetAllSettings() {
         resetVolatility()
         resetFailureThreshold()
+        resetSpendingRatio()
     }
     
     // MARK: - Volatility Calculation
