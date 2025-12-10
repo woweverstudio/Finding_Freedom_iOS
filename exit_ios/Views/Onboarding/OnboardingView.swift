@@ -146,12 +146,12 @@ struct OnboardingView: View {
                     viewModel.goToNextStep()
                 }
             } label: {
-                Text(viewModel.isLastStep ? "완료하고 시작하기" : "다음")
+                Text(viewModel.isLastStep ? "시작하기" : "다음")
                     .exitPrimaryButton(isEnabled: viewModel.canProceed)
             }
             .disabled(!viewModel.canProceed)
         }
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
         .padding(.bottom, ExitSpacing.xl)
     }
 }

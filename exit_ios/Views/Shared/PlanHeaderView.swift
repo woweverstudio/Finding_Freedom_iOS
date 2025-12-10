@@ -259,39 +259,41 @@ struct PlanHeaderView: View {
         color: Color,
         editType: AmountEditType
     ) -> some View {
-        Button {
-            showAmountEditSheet = editType
-        } label: {
-            HStack {
-                // 라벨
-                Text(label)
+        HStack {
+            // 라벨
+            Text(label)
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.secondaryText)
+            
+            Spacer()
+            
+            // 값 + 편집 버튼
+            HStack(spacing: ExitSpacing.sm) {
+                // 현재 값
+                Text(formatter(value))
                     .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
+                    .fontWeight(.bold)
+                    .foregroundStyle(color)
                 
-                Spacer()
-                
-                // 값 + 편집 아이콘
-                HStack(spacing: ExitSpacing.sm) {
-                    // 현재 값 (더 크게)
-                    Text(formatter(value))
-                        .font(.Exit.body)
-                        .fontWeight(.bold)
+                // 편집 버튼 (수익률 +/- 버튼과 동일한 스타일)
+                Button {
+                    HapticService.shared.soft()
+                    showAmountEditSheet = editType
+                } label: {
+                    Text("편집")
+                        .font(.Exit.caption)
+                        .fontWeight(.medium)
                         .foregroundStyle(color)
-                    
-                    // 편집 표시
-                    Text("▸")
-                        .font(.Exit.body)
-                        .foregroundStyle(color.opacity(0.6))
+                        .padding(.horizontal, ExitSpacing.md)
+                        .padding(.vertical, ExitSpacing.xs)
+                        .background(
+                            RoundedRectangle(cornerRadius: ExitRadius.sm)
+                                .fill(color.opacity(0.15))
+                        )
                 }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, ExitSpacing.md)
-            .padding(.vertical, ExitSpacing.sm)
-            .background(
-                RoundedRectangle(cornerRadius: ExitRadius.md)
-                    .fill(color.opacity(0.08))
-            )
         }
-        .buttonStyle(.plain)
     }
     
     // MARK: - Amount Edit Helpers

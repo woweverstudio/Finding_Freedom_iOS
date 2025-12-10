@@ -154,7 +154,7 @@ struct AmountEditSheet: View {
                     .exitPrimaryButton(isEnabled: true)
             }
         }
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
         .padding(.bottom, ExitSpacing.xl)
     }
 }
