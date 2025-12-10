@@ -29,34 +29,41 @@ struct CustomNumberKeyboard: View {
     // MARK: - Quick Amount Buttons
     
     private var quickAmountButtons: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: ExitSpacing.sm) {
-                if showNegativeToggle {
-                    QuickButton(title: value >= 0 ? "음수" : "양수") {
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            value = -value
-                        }
-                    }
+        GeometryReader { geometry in
+            let spacing = ExitSpacing.sm
+            let totalSpacing = spacing * 4 // 5개 버튼 사이 4개의 spacing
+            let availableWidth = geometry.size.width - totalSpacing
+            let totalWeight: CGFloat = 0.85 + 1.05 + 1.1 + 1.15 + 0.85 // 5.0
+            let unitWidth = availableWidth / totalWeight
+            
+            HStack(spacing: spacing) {
+                QuickButton(title: "+1만") {
+                    addAmount(10_000)
                 }
+                .frame(width: unitWidth * 0.85)
                 
                 QuickButton(title: "+10만") {
                     addAmount(100_000)
                 }
+                .frame(width: unitWidth * 1.05)
                 
                 QuickButton(title: "+100만") {
                     addAmount(1_000_000)
                 }
+                .frame(width: unitWidth * 1.1)
                 
                 QuickButton(title: "+1000만") {
                     addAmount(10_000_000)
                 }
+                .frame(width: unitWidth * 1.15)
                 
                 QuickButton(title: "+1억") {
                     addAmount(100_000_000)
                 }
+                .frame(width: unitWidth * 0.85)
             }
-            .padding(.horizontal, ExitSpacing.xs)
         }
+        .frame(height: 36)
     }
     
     // MARK: - Number Pad
@@ -84,12 +91,24 @@ struct CustomNumberKeyboard: View {
                 NumberKey(digit: "9") { appendDigit("9") }
             }
             
-            // Row 4: C, 0, ←
+            // Row 4: C, -, 0, ←
             HStack(spacing: ExitSpacing.sm) {
-                ResetKey { resetValue() }
+                // C와 -는 한 칸을 나눠서 사용
+                HStack(spacing: ExitSpacing.xs) {
+                    ResetKey { resetValue() }
+                    if showNegativeToggle {
+                        NegativeKey { toggleSign() }
+                    }
+                }
                 NumberKey(digit: "0") { appendDigit("0") }
-                NumberKey(digit: "←", isAction: true) { deleteLastDigit() }
+                DeleteKey { deleteLastDigit() }
             }
+        }
+    }
+    
+    private func toggleSign() {
+        withAnimation(.easeInOut(duration: 0.15)) {
+            value = -value
         }
     }
     
@@ -150,7 +169,6 @@ struct CustomNumberKeyboard: View {
 
 private struct QuickButton: View {
     let title: String
-    var isDestructive: Bool = false
     let action: () -> Void
     
     var body: some View {
@@ -161,16 +179,18 @@ private struct QuickButton: View {
             Text(title)
                 .font(.Exit.caption)
                 .fontWeight(.medium)
-                .foregroundStyle(isDestructive ? Color.Exit.warning : Color.Exit.accent)
-                .padding(.horizontal, ExitSpacing.md)
-                .padding(.vertical, ExitSpacing.sm)
+                .foregroundStyle(Color.Exit.accent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
                 .background(
                     RoundedRectangle(cornerRadius: ExitRadius.sm)
-                        .fill(isDestructive ? Color.Exit.warning.opacity(0.15) : Color.Exit.accent.opacity(0.15))
+                        .fill(Color.Exit.accent.opacity(0.15))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: ExitRadius.sm)
-                        .stroke(isDestructive ? Color.Exit.warning.opacity(0.3) : Color.Exit.accent.opacity(0.3), lineWidth: 1)
+                        .stroke(Color.Exit.accent.opacity(0.3), lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)
@@ -181,7 +201,6 @@ private struct QuickButton: View {
 
 private struct NumberKey: View {
     let digit: String
-    var isAction: Bool = false
     let action: () -> Void
     
     var body: some View {
@@ -191,7 +210,55 @@ private struct NumberKey: View {
         } label: {
             Text(digit)
                 .font(.Exit.keypad)
-                .foregroundStyle(isAction ? Color.Exit.accent : Color.Exit.primaryText)
+                .foregroundStyle(Color.Exit.primaryText)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(
+                    RoundedRectangle(cornerRadius: ExitRadius.md)
+                        .fill(Color.Exit.secondaryCardBackground)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Delete Key
+
+private struct DeleteKey: View {
+    let action: () -> Void
+    
+    var body: some View {
+        Button {
+            HapticService.shared.soft()
+            action()
+        } label: {
+            Image(systemName: "delete.backward.fill")
+                .font(.system(size: 24))
+                .foregroundStyle(Color.Exit.accent)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(
+                    RoundedRectangle(cornerRadius: ExitRadius.md)
+                        .fill(Color.Exit.secondaryCardBackground)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Negative Key
+
+private struct NegativeKey: View {
+    let action: () -> Void
+    
+    var body: some View {
+        Button {
+            HapticService.shared.soft()
+            action()
+        } label: {
+            Text("-")
+                .font(.Exit.keypad)
+                .foregroundStyle(Color.Exit.accent)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
                 .background(
