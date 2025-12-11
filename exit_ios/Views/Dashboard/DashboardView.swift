@@ -33,6 +33,20 @@ struct DashboardView: View {
                         // 진행률 섹션
                         progressSection
                         
+                        // 자산 성장 차트 (은퇴 전 사용자만)
+                        if let result = appState.retirementResult,
+                           let profile = appState.userProfile,
+                           !result.isRetirementReady {
+                            AssetGrowthChart(
+                                currentAsset: result.currentAssets,
+                                targetAsset: result.targetAssets,
+                                monthlyInvestment: profile.monthlyInvestment,
+                                preRetirementReturnRate: profile.preRetirementReturnRate,
+                                monthsToRetirement: result.monthsToRetirement,
+                                animationID: appState.dDayAnimationTrigger
+                            )
+                        }
+                        
                         // 시뮬레이션 유도 버튼
                         simulationPromptButton
                     }
@@ -72,13 +86,6 @@ struct DashboardView: View {
         ZStack(alignment: .topTrailing) {
             VStack(spacing: ExitSpacing.md) {
                 dDayMainTitle
-                
-                // 10년 이상 남았을 때만 설정 조정 힌트 표시
-                if let result = appState.retirementResult,
-                   result.monthsToRetirement >= 120,
-                   !result.isRetirementReady {
-                    adjustmentHintButton
-                }
             }
             .padding(.vertical, ExitSpacing.lg)
             .padding(.horizontal, ExitSpacing.md)
@@ -103,27 +110,6 @@ struct DashboardView: View {
         .padding(.horizontal, ExitSpacing.md)
     }
     
-    /// 컴팩트한 설정 조정 힌트 버튼
-    private var adjustmentHintButton: some View {
-        Button {
-            HapticService.shared.light()
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                isHeaderExpanded = true
-            }
-        } label: {
-            Text("더 빨리 탈출하기")
-                .font(.Exit.caption2)
-                .fontWeight(.medium)
-                .foregroundStyle(Color.Exit.accent)
-                .padding(.horizontal, ExitSpacing.md)
-                .padding(.vertical, ExitSpacing.sm)
-                .background(
-                    Capsule()
-                        .fill(Color.Exit.accent.opacity(0.15))
-                )
-        }
-        .buttonStyle(.plain)
-    }
     
     private var dDayMainTitle: some View {
         Group {
@@ -342,6 +328,7 @@ struct DashboardView: View {
                                 .font(.Exit.subheadline)
                                 .foregroundStyle(Color.Exit.secondaryText)
                         }
+                        
                     }
                 }
             }
