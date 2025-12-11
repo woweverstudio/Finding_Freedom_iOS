@@ -18,6 +18,7 @@ struct AssetGrowthChart: View {
     let animationID: UUID
     
     @State private var selectedProgress: Double? = nil
+    @State private var isInteracting: Bool = false
     
     private var chartData: [ChartPoint] {
         generateChartData()
@@ -111,33 +112,63 @@ struct AssetGrowthChart: View {
     
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            HStack(spacing: ExitSpacing.sm) {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .foregroundStyle(Color.Exit.accent)
-                Text("자산 성장 예측")
-                    .font(.Exit.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.primaryText)
-            }
-            // 선택된 데이터 표시
-            if let data = selectedData {
+            HStack {
                 HStack(spacing: ExitSpacing.sm) {
-                    Text(data.date)
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .foregroundStyle(Color.Exit.accent)
+                    Text("자산 성장 예측")
+                        .font(.Exit.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.Exit.primaryText)
+                }
+                
+                Spacer()
+                
+                // 인터랙션 토글 버튼
+                Button {
+                    HapticService.shared.light()
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isInteracting.toggle()
+                        if !isInteracting {
+                            selectedProgress = nil
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: isInteracting ? "hand.tap.fill" : "hand.tap")
+                            .font(.system(size: 12))
+                        Text(isInteracting ? "탐색 중" : "탐색")
+                            .font(.Exit.caption2)
+                    }
+                    .foregroundStyle(isInteracting ? Color.Exit.background : Color.Exit.accent)
+                    .padding(.horizontal, ExitSpacing.sm)
+                    .padding(.vertical, ExitSpacing.xs)
+                    .background(isInteracting ? Color.Exit.accent : Color.Exit.accent.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+                }
+            }
+            
+            // 선택된 데이터 표시
+            if isInteracting {
+                if let data = selectedData {
+                    HStack(spacing: ExitSpacing.sm) {
+                        Text(data.date)
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                        Text(ExitNumberFormatter.formatToEokMan(data.asset))
+                            .font(.Exit.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.Exit.accent)
+                    }
+                    .padding(.horizontal, ExitSpacing.sm)
+                    .padding(.vertical, ExitSpacing.xs)
+                    .background(Color.Exit.accent.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+                } else {
+                    Text("차트를 드래그하여 시점별 자산을 확인하세요")
                         .font(.Exit.caption)
                         .foregroundStyle(Color.Exit.secondaryText)
-                    Text(ExitNumberFormatter.formatToEokMan(data.asset))
-                        .font(.Exit.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.accent)
                 }
-                .padding(.horizontal, ExitSpacing.sm)
-                .padding(.vertical, ExitSpacing.xs)
-                .background(Color.Exit.accent.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
-            } else {
-                Text("차트를 터치하여 시점별 자산을 확인하세요")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
             }
         }
     }
@@ -237,17 +268,10 @@ struct AssetGrowthChart: View {
                                     selectedProgress = max(0, min(1, progress))
                                 }
                             }
-                            .onEnded { _ in
-                                // 드래그 끝나도 선택 유지 (원하면 nil로 설정)
-                            }
                     )
-                    .onTapGesture { location in
-                        if let progress = proxy.value(atX: location.x, as: Double.self) {
-                            selectedProgress = max(0, min(1, progress))
-                        }
-                    }
             }
         }
+        .allowsHitTesting(isInteracting)
         .id(animationID)
     }
     
