@@ -229,9 +229,20 @@ struct PlanHeaderView: View {
             Button {
                 applyChanges()
             } label: {
-                Text("적용")
-                    .exitSecondaryButton()
+                Text(hasChanges ? "적용" : "확인")
+                    .font(.Exit.body)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(hasChanges ? Color.Exit.accent : Color.Exit.secondaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, ExitSpacing.md)
+                    .background(Color.Exit.cardBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: ExitRadius.md)
+                            .stroke(hasChanges ? Color.Exit.accent : Color.Exit.divider, lineWidth: 1)
+                    )
             }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, ExitSpacing.md)
         .padding(.bottom, ExitSpacing.md)
