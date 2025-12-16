@@ -294,6 +294,14 @@ final class SimulationViewModel {
         resetSpendingRatio()
     }
     
+    /// 시뮬레이션 결과 초기화 (Plan 설정 변경 시 호출)
+    func resetSimulationResults() {
+        monteCarloResult = nil
+        retirementResult = nil
+        simulationProgress = 0.0
+        simulationPhase = .idle
+    }
+    
     // MARK: - Volatility Calculation
     
     /// 목표 수익률 기반 변동성 자동 계산

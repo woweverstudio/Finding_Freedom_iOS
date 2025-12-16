@@ -54,6 +54,9 @@ final class AppStateManager {
     /// D-Day 애니메이션 트리거 (설정 변경 시 애니메이션 재시작)
     var dDayAnimationTrigger: UUID = UUID()
     
+    /// Plan 설정 변경 트리거 (시뮬레이션 결과 초기화용)
+    var planSettingsChangeTrigger: UUID = UUID()
+    
     // MARK: - Sheet States
     
     /// 입금 시트 표시
@@ -236,6 +239,9 @@ final class AppStateManager {
         
         // D-Day 애니메이션 트리거 (0부터 다시 카운트)
         dDayAnimationTrigger = UUID()
+        
+        // Plan 설정 변경 트리거 (시뮬레이션 결과 초기화용)
+        planSettingsChangeTrigger = UUID()
     }
     
     // MARK: - Deposit Actions
@@ -341,6 +347,9 @@ final class AppStateManager {
         
         try? context.save()
         calculateResults()
+        
+        // Plan 설정 변경 트리거 (시뮬레이션 결과 초기화용)
+        planSettingsChangeTrigger = UUID()
     }
     
     /// 자산 변동 업데이트

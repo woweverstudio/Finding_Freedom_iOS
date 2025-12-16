@@ -62,6 +62,17 @@ struct SimulationView: View {
                 }
             }
         }
+        .onChange(of: appState.planSettingsChangeTrigger) { _, _ in
+            // Plan 설정이 변경되면 결과 화면에서 setup 화면으로 리셋
+            // 단, 시뮬레이션 결과가 있고 시뮬레이션 중이 아닐 때만 리셋
+            // (SimulationSetupView에서 시작 시 설정 업데이트로 인한 오작동 방지)
+            if currentScreen == .results && viewModel.displayResult != nil && !viewModel.isSimulating {
+                viewModel.resetSimulationResults()
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    currentScreen = .setup
+                }
+            }
+        }
     }
     
     // MARK: - Empty Screen

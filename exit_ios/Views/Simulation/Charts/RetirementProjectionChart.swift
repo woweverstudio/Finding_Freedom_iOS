@@ -51,12 +51,15 @@ struct RetirementProjectionChart: View {
         return (last - first) / first * 100
     }
     
-    // 금액 간략 포맷
+    // 금액 간략 포맷 (억단위로 표시, 소수점 둘째자리)
     private func formatSimple(_ amount: Double) -> String {
         if amount <= 0 { return "0원" }
         let eok = amount / 100_000_000
         if eok >= 1 {
-            return String(format: "%.1f억", eok)
+            return String(format: "%.2f억", eok)
+        } else if eok >= 0.01 {
+            // 100만원 이상 억단위로 표시 (예: 7430만원 → 0.74억)
+            return String(format: "%.2f억", eok)
         } else {
             let man = amount / 10_000
             return String(format: "%.0f만원", man)
