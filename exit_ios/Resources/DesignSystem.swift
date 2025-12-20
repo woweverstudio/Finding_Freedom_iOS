@@ -232,6 +232,21 @@ struct ExitSecondaryButtonStyle: ViewModifier {
     }
 }
 
+struct ExitPromptButtonStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(ExitSpacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: ExitRadius.lg)
+                    .fill(Color.Exit.cardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: ExitRadius.lg)
+                            .stroke(Color.Exit.accent, lineWidth: 1)
+                    )
+            )
+    }
+}
+
 extension View {
     func exitCard() -> some View {
         modifier(ExitCardStyle())
@@ -243,6 +258,10 @@ extension View {
     
     func exitSecondaryButton() -> some View {
         modifier(ExitSecondaryButtonStyle())
+    }
+    
+    func exitPromptButton() -> some View {
+        modifier(ExitPromptButtonStyle())
     }
 }
 

@@ -20,6 +20,11 @@
       "internalID" : "6756113431",
       "localizations" : [
         {
+          "description" : "Unlocks the Monte Carlo simulation feature",
+          "displayName" : "MonteCarlo Simulation",
+          "locale" : "en_US"
+        },
+        {
           "description" : "30,000가지 미래를 만들어 당신의 은퇴 계획을 분석해드립니다.",
           "displayName" : "몬테카를로 시뮬레이션",
           "locale" : "ko"
@@ -27,6 +32,26 @@
       ],
       "productID" : "montecarlo_simulation",
       "referenceName" : "montecarlo_simulation",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "6756816126",
+      "localizations" : [
+        {
+          "description" : "Unlock returns, risk & allocation analysis.",
+          "displayName" : "Portfolio Analysis Unlock",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "포트폴리오를 다양한 지표를 기반으로 분석합니다.",
+          "displayName" : "포트폴리오 분석",
+          "locale" : "ko"
+        }
+      ],
+      "productID" : "portfolio_analysis",
+      "referenceName" : "portfolio_analysis",
       "type" : "NonConsumable"
     }
   ],
@@ -38,7 +63,7 @@
     "_developerTeamID" : "F7Z9SYW6N5",
     "_disableDialogs" : false,
     "_failTransactionsEnabled" : false,
-    "_lastSynchronizedDate" : 786541853.64234197,
+    "_lastSynchronizedDate" : 787938235.77895296,
     "_locale" : "en_US",
     "_renewalBillingIssuesEnabled" : false,
     "_storefront" : "USA",

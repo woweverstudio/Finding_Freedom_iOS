@@ -33,6 +33,9 @@ struct DashboardView: View {
                         // 진행률 섹션
                         progressSection
                         
+                        // 포트폴리오 분석 유도 버튼
+                        portfolioPromptButton
+                        
                         // 자산 성장 차트 (은퇴 전 사용자만)
                         if let result = appState.retirementResult,
                            let profile = appState.userProfile,
@@ -202,6 +205,16 @@ struct DashboardView: View {
         }
     }
     
+    // MARK: - Portfolio Prompt Button
+    
+    private var portfolioPromptButton: some View {
+        PromptButton(
+            title: "📈 수익률을 모르겠다면?",
+            subtitle: "내 포트폴리오 분석으로 예상 수익률 확인하기",
+            destinationTab: .portfolio
+        )
+    }
+    
     // MARK: - Amount Visibility Toggle
     
     private var amountVisibilityToggle: some View {
@@ -356,18 +369,38 @@ struct DashboardView: View {
     // MARK: - Simulation Prompt Button
     
     private var simulationPromptButton: some View {
+        PromptButton(
+            title: "🎲 만약 주식이 떨어지면 어떻게 돼요?",
+            subtitle: "30,000가지 미래로 더 자세히 분석해드려요",
+            destinationTab: .simulation
+        )
+    }
+}
+
+// MARK: - Prompt Button Component
+
+/// 공통 프롬프트 버튼 컴포넌트
+/// 타이틀, 서브타이틀, 이동할 탭을 파라미터로 받아 표시
+struct PromptButton: View {
+    @Environment(\.appState) private var appState
+    
+    let title: String
+    let subtitle: String
+    let destinationTab: MainTab
+    
+    var body: some View {
         Button {
-            appState.selectedTab = .simulation
+            appState.selectedTab = destinationTab
         } label: {
             HStack(spacing: ExitSpacing.md) {
                 // 텍스트
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("🎲 내 은퇴 성공 확률은 몇 %?")
+                VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                    Text(title)
                         .font(.Exit.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Exit.primaryText)
                     
-                    Text("30,000가지 미래로 더 자세히 분석해드려요")
+                    Text(subtitle)
                         .font(.Exit.caption)
                         .foregroundStyle(Color.Exit.secondaryText)
                 }
@@ -377,24 +410,12 @@ struct DashboardView: View {
                 // 화살표
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.Exit.caution)
+                    .foregroundStyle(Color.Exit.accent)
             }
-            .padding(ExitSpacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: ExitRadius.lg)
-                    .fill(Color.Exit.cardBackground)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: ExitRadius.lg)
-                            .stroke(
-                                Color.Exit.caution,
-                                lineWidth: 1
-                            )
-                    )
-            )
+            .exitPromptButton()
         }
         .buttonStyle(.plain)
         .padding(.horizontal, ExitSpacing.md)
-        .padding(.top, ExitSpacing.md)
     }
 }
 
