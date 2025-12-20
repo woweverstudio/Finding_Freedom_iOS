@@ -211,7 +211,7 @@ struct PlanHeaderView: View {
                 label: "은퇴 전 수익률",
                 value: $editingPreReturnRate,
                 minValue: 0.5,
-                maxValue: 50.0,
+                maxValue: 30.0,
                 step: 0.5,
                 color: Color.Exit.accent
             )
@@ -221,7 +221,7 @@ struct PlanHeaderView: View {
                 label: "은퇴 후 수익률",
                 value: $editingPostReturnRate,
                 minValue: 0.5,
-                maxValue: 50.0,
+                maxValue: 30.0,
                 step: 0.5,
                 color: Color.Exit.caution
             )
