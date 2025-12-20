@@ -617,7 +617,7 @@ enum PortfolioInsightsGenerator {
                 details.append("")
                 details.append("[주의] 수익률이 낮은 종목:")
                 for stock in underperformers {
-                    details.append("    • \(stock.name): CAGR \(String(format: "%.1f", stock.value * 100))% - 비중 조정 고려")
+                    details.append("• \(stock.name): CAGR \(String(format: "%.1f", stock.value * 100))% - 비중 조정 고려")
                 }
             }
             
@@ -639,9 +639,9 @@ enum PortfolioInsightsGenerator {
             }
             details.append("")
             details.append("[제안] 개선 방안:")
-            details.append("    1. 해당 종목의 미래 전망 재검토")
-            details.append("    2. 비중 축소 또는 손절 고려")
-            details.append("    3. 더 나은 성과의 대체 종목 탐색")
+            details.append("1. 해당 종목의 미래 전망 재검토")
+            details.append("2. 비중 축소 또는 손절 고려")
+            details.append("3. 더 나은 성과의 대체 종목 탐색")
             
             insights.append(Insight(
                 type: .warning,
@@ -681,20 +681,20 @@ enum PortfolioInsightsGenerator {
             volDetails.append("")
             volDetails.append("[주의] 높은 변동성 종목 (\(highVolStocks.count)개):")
             for stock in highVolStocks {
-                volDetails.append("    • \(stock.name) - 포트폴리오 변동성의 주요 원인")
+                volDetails.append("• \(stock.name) - 포트폴리오 변동성의 주요 원인")
             }
             volDetails.append("")
             volDetails.append("[제안] 변동성 관리 방안:")
-            volDetails.append("    1. 고변동성 종목 비중 축소")
-            volDetails.append("    2. 저변동성 ETF(예: SCHD, VTI) 추가")
-            volDetails.append("    3. 채권 ETF 일부 편입 고려")
+            volDetails.append("1. 고변동성 종목 비중 축소")
+            volDetails.append("2. 저변동성 ETF(예: SCHD, VTI) 추가")
+            volDetails.append("3. 채권 ETF 일부 편입 고려")
         }
         
         if !lowVolStocks.isEmpty {
             volDetails.append("")
             volDetails.append("[좋음] 안정적인 종목 (\(lowVolStocks.count)개):")
             for stock in lowVolStocks {
-                volDetails.append("    • \(stock.name) - 포트폴리오 안정화에 기여")
+                volDetails.append("• \(stock.name) - 포트폴리오 안정화에 기여")
             }
         }
         
@@ -725,13 +725,13 @@ enum PortfolioInsightsGenerator {
             mddDetails.append("")
             mddDetails.append("[경고] 심각한 낙폭 경험 종목:")
             for stock in severeDrawdownStocks {
-                mddDetails.append("    • \(stock.name): 과거 \(String(format: "%.0f", abs(stock.value) * 100))% 하락 경험")
+                mddDetails.append("• \(stock.name): 과거 \(String(format: "%.0f", abs(stock.value) * 100))% 하락 경험")
             }
             mddDetails.append("")
             mddDetails.append("[제안] 낙폭 위험 관리:")
-            mddDetails.append("    1. 시장 하락 시 해당 종목 손실 대비")
-            mddDetails.append("    2. 분할 매수 전략 활용")
-            mddDetails.append("    3. 방어주/배당주 비중 확대 고려")
+            mddDetails.append("1. 시장 하락 시 해당 종목 손실 대비")
+            mddDetails.append("2. 분할 매수 전략 활용")
+            mddDetails.append("3. 방어주/배당주 비중 확대 고려")
         }
         
         let worstMDD = mddBreakdown.max(by: { abs($0.value) < abs($1.value) })
@@ -772,7 +772,7 @@ enum PortfolioInsightsGenerator {
             details.append("")
             details.append("[좋음] 효율적인 종목 (Sharpe ≥ 1.0):")
             for stock in efficientStocks {
-                details.append("    • \(stock.name) - 위험 대비 좋은 수익")
+                details.append("• \(stock.name) - 위험 대비 좋은 수익")
             }
         }
         
@@ -780,13 +780,13 @@ enum PortfolioInsightsGenerator {
             details.append("")
             details.append("[주의] 비효율적인 종목 (Sharpe < 0.5):")
             for stock in inefficientStocks {
-                details.append("    • \(stock.name) - 감수하는 위험 대비 수익이 낮음")
+                details.append("• \(stock.name) - 감수하는 위험 대비 수익이 낮음")
             }
             details.append("")
             details.append("[제안] 효율성 개선 방안:")
-            details.append("    1. 비효율 종목 비중 축소 고려")
-            details.append("    2. Sharpe Ratio 높은 ETF로 대체 검토")
-            details.append("    3. 전체 포트폴리오 리밸런싱")
+            details.append("1. 비효율 종목 비중 축소 고려")
+            details.append("2. Sharpe Ratio 높은 ETF로 대체 검토")
+            details.append("3. 전체 포트폴리오 리밸런싱")
         }
         
         let bestSharpe = sharpeBreakdown.first
@@ -841,7 +841,7 @@ enum PortfolioInsightsGenerator {
             details.append("[좋음] 고배당 종목 (\(highDividendStocks.count)개):")
             for stock in highDividendStocks {
                 let contribution = stock.contribution * 100
-                details.append("    • \(stock.name): 배당률 \(String(format: "%.2f", stock.yield * 100))%, 포트폴리오 기여 \(String(format: "%.2f", contribution))%p")
+                details.append("• \(stock.name): 배당률 \(String(format: "%.2f", stock.yield * 100))%, 포트폴리오 기여 \(String(format: "%.2f", contribution))%p")
             }
         }
         
@@ -849,7 +849,7 @@ enum PortfolioInsightsGenerator {
             details.append("")
             details.append("[강점] 배당 성장 종목:")
             for stock in growingDividendStocks {
-                details.append("    • \(stock.name): 5년 배당성장률 +\(String(format: "%.1f", stock.growthRate * 100))%")
+                details.append("• \(stock.name): 5년 배당성장률 +\(String(format: "%.1f", stock.growthRate * 100))%")
             }
         }
         
@@ -857,7 +857,7 @@ enum PortfolioInsightsGenerator {
             details.append("")
             details.append("무배당 종목 (\(noDividendStocks.count)개):")
             for stock in noDividendStocks {
-                details.append("    • \(stock.name) - 성장에 집중하는 종목")
+                details.append("• \(stock.name) - 성장에 집중하는 종목")
             }
         }
         
@@ -865,16 +865,16 @@ enum PortfolioInsightsGenerator {
         details.append("")
         if result.dividendYield >= 0.03 {
             details.append("[좋음] 배당 전략 평가: 우수")
-            details.append("    • 안정적인 현금흐름 확보됨")
-            details.append("    • 시장 하락 시 배당으로 일부 방어 가능")
+            details.append("• 안정적인 현금흐름 확보됨")
+            details.append("• 시장 하락 시 배당으로 일부 방어 가능")
         } else if result.dividendYield >= 0.01 {
             details.append("[제안] 배당 확대 고려:")
-            details.append("    • 현금흐름 강화를 원하면 배당주 비중 확대")
-            details.append("    • 추천: SCHD, VIG 등 배당성장 ETF")
+            details.append("• 현금흐름 강화를 원하면 배당주 비중 확대")
+            details.append("• 추천: SCHD, VIG 등 배당성장 ETF")
         } else {
             details.append("[제안] 배당 전략:")
-            details.append("    • 현재 성장주 중심 포트폴리오")
-            details.append("    • 안정성 원하면 배당주/ETF 추가 고려")
+            details.append("• 현재 성장주 중심 포트폴리오")
+            details.append("• 안정성 원하면 배당주/ETF 추가 고려")
         }
         
         let dividendType: InsightType = result.dividendYield >= 0.02 ? .strength : .suggestion
@@ -937,9 +937,9 @@ enum PortfolioInsightsGenerator {
         if let top = topSector, top.weight >= 0.6 {
             details.append("")
             details.append("[경고] 섹터 집중 위험:")
-            details.append("    • \(top.sector) 섹터 비중이 \(String(format: "%.0f", top.weight * 100))%로 높음")
+            details.append("• \(top.sector) 섹터 비중이 \(String(format: "%.0f", top.weight * 100))%로 높음")
             details.append("[제안] 다른 섹터 종목 추가로 리스크 분산 권장")
-            details.append("    예: 헬스케어, 필수소비재, 금융 섹터")
+            details.append("예: 헬스케어, 필수소비재, 금융 섹터")
         }
         
         // 지역 집중도
@@ -947,7 +947,7 @@ enum PortfolioInsightsGenerator {
             let region = regionAllocation[0]
             details.append("")
             details.append("[경고] 지역 집중 위험:")
-            details.append("    • \(region.region) 시장에만 100% 투자 중")
+            details.append("• \(region.region) 시장에만 100% 투자 중")
             details.append("[제안] 글로벌 분산으로 국가별 리스크 완화 권장")
         }
         

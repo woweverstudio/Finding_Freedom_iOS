@@ -24,21 +24,30 @@ struct StockBreakdownCard: View {
     
     @State private var isExpanded = false
     
+    /// 확장 가능 여부 (종목이 2개 이상일 때만)
+    private var canExpand: Bool {
+        stocks.count > 1
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
-            // 헤더 (탭하면 확장)
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    isExpanded.toggle()
+            // 헤더 (종목이 2개 이상일 때만 탭하면 확장)
+            if canExpand {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        isExpanded.toggle()
+                    }
+                    HapticService.shared.light()
+                } label: {
+                    headerView
                 }
-                HapticService.shared.light()
-            } label: {
+                .buttonStyle(.plain)
+            } else {
                 headerView
             }
-            .buttonStyle(.plain)
             
             // 확장된 종목별 상세
-            if isExpanded {
+            if isExpanded && canExpand {
                 expandedContent
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .move(edge: .top)),
@@ -64,11 +73,12 @@ struct StockBreakdownCard: View {
             // 타이틀
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
+                    .font(.Exit.body)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.Exit.primaryText)
                 
                 Text(subtitle)
-                    .font(.Exit.caption2)
+                    .font(.Exit.caption)
                     .foregroundStyle(Color.Exit.tertiaryText)
             }
             
@@ -88,10 +98,12 @@ struct StockBreakdownCard: View {
             }
             .buttonStyle(.plain)
             
-            // 확장 화살표
-            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.Exit.tertiaryText)
+            // 확장 화살표 (종목이 2개 이상일 때만 표시)
+            if canExpand {
+                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Exit.tertiaryText)
+            }
         }
         .padding(ExitSpacing.md)
     }
@@ -330,7 +342,7 @@ struct DividendBreakdownCard: View {
                     .foregroundStyle(Color.Exit.primaryText)
                 
                 Text("종목별 배당률 및 성장률")
-                    .font(.Exit.caption2)
+                    .font(.Exit.caption)
                     .foregroundStyle(Color.Exit.tertiaryText)
             }
             

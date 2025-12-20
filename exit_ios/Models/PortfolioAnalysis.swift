@@ -60,30 +60,6 @@ struct PortfolioAnalysisResult {
     var analysisPeriodYears: Int {
         5  // Mock 데이터 기준
     }
-    
-    /// 요약 텍스트
-    var summary: String {
-        """
-        📊 포트폴리오 분석 결과
-        
-        💰 수익성
-        • CAGR: \(String(format: "%.1f", cagr * 100))%
-        • 배당 포함 CAGR: \(String(format: "%.1f", cagrWithDividends * 100))%
-        • 총 수익률: \(String(format: "%.1f", totalReturn * 100))%
-          - 가격 상승: \(String(format: "%.1f", priceReturn * 100))%
-          - 배당 수익: \(String(format: "%.1f", dividendReturn * 100))%
-        
-        🛡️ 안정성
-        • 변동성: \(String(format: "%.1f", volatility * 100))%
-        • 최대 낙폭: \(String(format: "%.1f", mdd * 100))%
-        
-        ⚖️ 효율성
-        • Sharpe Ratio: \(String(format: "%.2f", sharpeRatio))
-        
-        💰 배당
-        • 배당률: \(String(format: "%.2f", dividendYield * 100))%
-        """
-    }
 }
 
 // MARK: - Portfolio Score

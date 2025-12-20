@@ -24,8 +24,8 @@ struct PortfolioAnalysisView: View {
                     if let result = viewModel.analysisResult {
                         PortfolioScoreCard(score: result.score)
                         
-                        // 수익성 지표
-                        profitabilitySection(result: result)
+                        // 수익성 지표 (CAGR)
+                        cagrSection(result: result)
                         
                         // 위험 지표
                         riskSection(result: result)
@@ -35,6 +35,9 @@ struct PortfolioAnalysisView: View {
                             portfolioYield: result.dividendYield,
                             stocks: viewModel.dividendBreakdown
                         )
+                        
+                        // 수익률 요약
+                        returnSummaryCard(result: result)
                         
                         // 섹터/지역 배분
                         if !viewModel.sectorAllocation.isEmpty {
@@ -102,48 +105,48 @@ struct PortfolioAnalysisView: View {
         .padding(.vertical, ExitSpacing.md)
     }
     
-    // MARK: - Profitability Section
+    // MARK: - CAGR Section
     
-    private func profitabilitySection(result: PortfolioAnalysisResult) -> some View {
-        VStack(spacing: ExitSpacing.md) {
-            // CAGR (종목별 상세)
-            StockBreakdownCard(
-                title: "연평균 수익률",
-                subtitle: "CAGR (배당 포함)",
-                emoji: "📈",
-                portfolioValue: String(format: "%.1f%%", result.cagrWithDividends * 100),
-                portfolioValueColor: cagrColor(result.cagrWithDividends),
-                stocks: viewModel.cagrBreakdown,
-                isHigherBetter: true,
-                onInfoTap: { selectedMetric = .cagr(result.cagrWithDividends) }
-            )
-            
-            // 상세 수익률 요약
-            MetricGroupCard(
-                title: "수익률 요약",
-                emoji: "💰",
-                metrics: [
-                    .init(
-                        label: "5년 총 수익률",
-                        value: String(format: "%.1f%%", result.totalReturn * 100),
-                        color: result.totalReturn >= 0 ? .Exit.positive : .Exit.warning,
-                        isHighlighted: true
-                    ),
-                    .init(
-                        label: "└ 가격 상승분",
-                        value: String(format: "%.1f%%", result.priceReturn * 100),
-                        color: .Exit.secondaryText,
-                        isHighlighted: false
-                    ),
-                    .init(
-                        label: "└ 배당 수익분",
-                        value: String(format: "%.1f%%", result.dividendReturn * 100),
-                        color: .Exit.secondaryText,
-                        isHighlighted: false
-                    )
-                ]
-            )
-        }
+    private func cagrSection(result: PortfolioAnalysisResult) -> some View {
+        StockBreakdownCard(
+            title: "연평균 수익률",
+            subtitle: "CAGR (배당 포함)",
+            emoji: "📈",
+            portfolioValue: String(format: "%.1f%%", result.cagrWithDividends * 100),
+            portfolioValueColor: cagrColor(result.cagrWithDividends),
+            stocks: viewModel.cagrBreakdown,
+            isHigherBetter: true,
+            onInfoTap: { selectedMetric = .cagr(result.cagrWithDividends) }
+        )
+    }
+    
+    // MARK: - Return Summary Card
+    
+    private func returnSummaryCard(result: PortfolioAnalysisResult) -> some View {
+        MetricGroupCard(
+            title: "수익률 요약",
+            emoji: "💰",
+            metrics: [
+                .init(
+                    label: "5년 총 수익률",
+                    value: String(format: "%.1f%%", result.totalReturn * 100),
+                    color: result.totalReturn >= 0 ? .Exit.positive : .Exit.warning,
+                    isHighlighted: true
+                ),
+                .init(
+                    label: "└ 가격 상승분",
+                    value: String(format: "%.1f%%", result.priceReturn * 100),
+                    color: .Exit.secondaryText,
+                    isHighlighted: false
+                ),
+                .init(
+                    label: "└ 배당 수익분",
+                    value: String(format: "%.1f%%", result.dividendReturn * 100),
+                    color: .Exit.secondaryText,
+                    isHighlighted: false
+                )
+            ]
+        )
     }
     
     private func cagrColor(_ value: Double) -> Color {

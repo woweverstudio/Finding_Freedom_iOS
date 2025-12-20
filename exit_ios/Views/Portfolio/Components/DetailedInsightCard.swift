@@ -13,6 +13,12 @@ struct DetailedInsightCard: View {
     let insight: PortfolioInsightsGenerator.Insight
     @State private var isExpanded = false
     
+    /// 상세 정보가 있는지 여부
+    private var hasDetails: Bool {
+        guard let details = insight.details else { return false }
+        return !details.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.isEmpty
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // 메인 카드 영역
@@ -71,9 +77,9 @@ struct DetailedInsightCard: View {
                 .lineSpacing(4)
                 .fixedSize(horizontal: false, vertical: true)
             
-            // 확장 버튼 (상세 정보가 있는 경우)
-            if let details = insight.details, !details.isEmpty {
-                expandButton(detailsCount: details.count)
+            // 확장 버튼 (상세 정보가 있는 경우에만)
+            if hasDetails {
+                expandButton
             }
         }
         .padding(ExitSpacing.md)
@@ -100,26 +106,87 @@ struct DetailedInsightCard: View {
             if detail.isEmpty {
                 Spacer()
                     .frame(height: ExitSpacing.sm)
+            } else if let parsed = parseTaggedText(detail) {
+                // 태그가 있는 경우: 제목과 내용 분리
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(parsed.tag)
+                        .font(.Exit.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(parsed.tagColor)
+                    
+                    if !parsed.content.isEmpty {
+                        Text(parsed.content)
+                            .font(.Exit.subheadline)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
             } else {
+                // 일반 텍스트
                 Text(detail)
                     .font(.Exit.subheadline)
-                    .foregroundStyle(detailColor(for: detail))
+                    .foregroundStyle(Color.Exit.secondaryText)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
     
+    /// 태그가 있는 텍스트 파싱 (예: "[주의] 안정성(17/30점): 내용")
+    private func parseTaggedText(_ text: String) -> (tag: String, content: String, tagColor: Color)? {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        
+        // 태그 패턴 확인
+        let tagPatterns: [(prefix: String, color: Color)] = [
+            ("[좋음]", Color.Exit.positive),
+            ("[우수]", Color.Exit.positive),
+            ("[강점]", Color.Exit.positive),
+            ("[주의]", Color.Exit.warning),
+            ("[경고]", Color.Exit.warning),
+            ("[위험]", Color.Exit.warning),
+            ("[제안]", Color.Exit.caution),
+            ("[팁]", Color.Exit.caution)
+        ]
+        
+        for (prefix, color) in tagPatterns {
+            if trimmed.hasPrefix(prefix) {
+                // 태그 뒤의 내용 추출
+                let afterTag = String(trimmed.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
+                
+                // 콜론(:)이 있으면 제목과 내용 분리
+                if let colonIndex = afterTag.firstIndex(of: ":") {
+                    let title = prefix + " " + String(afterTag[..<colonIndex])
+                    let content = String(afterTag[afterTag.index(after: colonIndex)...]).trimmingCharacters(in: .whitespaces)
+                    return (title, content, color)
+                } else {
+                    // 콜론이 없으면 전체가 제목
+                    return (trimmed, "", color)
+                }
+            }
+        }
+        
+        // 대괄호로 시작하는 제목 스타일 (예: [종목별 CAGR 순위])
+        if trimmed.hasPrefix("[") && trimmed.contains("]") {
+            if let endIndex = trimmed.firstIndex(of: "]") {
+                let tag = String(trimmed[...endIndex])
+                let afterTag = String(trimmed[trimmed.index(after: endIndex)...]).trimmingCharacters(in: .whitespaces)
+                return (tag, afterTag, Color.Exit.primaryText)
+            }
+        }
+        
+        return nil
+    }
+    
     // MARK: - Expand Button
     
-    private func expandButton(detailsCount: Int) -> some View {
+    private var expandButton: some View {
         Button {
             withAnimation(.easeInOut(duration: 0.25)) {
                 isExpanded.toggle()
             }
         } label: {
             HStack(spacing: ExitSpacing.xs) {
-                Text(isExpanded ? "접기" : "상세 보기 (\(detailsCount)개 항목)")
+                Text(isExpanded ? "접기" : "상세 보기")
                     .font(.Exit.caption)
                     .fontWeight(.medium)
                     .foregroundStyle(Color.Exit.accent)
@@ -192,28 +259,6 @@ struct DetailedInsightCard: View {
             return .Exit.primaryText
         }
     }
-    
-    /// 상세 텍스트 색상 결정 (prefix 기반)
-    private func detailColor(for text: String) -> Color {
-        let trimmed = text.trimmingCharacters(in: .whitespaces)
-        
-        // [좋음], [양호] 등의 태그로 판단
-        if trimmed.hasPrefix("[좋음]") || trimmed.hasPrefix("[우수]") || trimmed.hasPrefix("[강점]") {
-            return Color.Exit.positive
-        } else if trimmed.hasPrefix("[주의]") || trimmed.hasPrefix("[경고]") || trimmed.hasPrefix("[위험]") {
-            return Color.Exit.warning
-        } else if trimmed.hasPrefix("[제안]") || trimmed.hasPrefix("[팁]") {
-            return Color.Exit.caution
-        } else if trimmed.hasPrefix("•") || trimmed.hasPrefix("-") {
-            // 목록 항목
-            return Color.Exit.secondaryText
-        } else if text.hasPrefix("    ") || text.hasPrefix("\t") {
-            // 들여쓰기된 상세 항목
-            return Color.Exit.secondaryText
-        } else {
-            return Color.Exit.secondaryText
-        }
-    }
 }
 
 // MARK: - 기존 InsightCard (호환성 유지)
@@ -232,18 +277,14 @@ struct InsightCard: View {
     let sampleInsights: [PortfolioInsightsGenerator.Insight] = [
         .init(
             type: .strength,
-            category: .profitability,
-            title: "수익률 분석: AAPL이 주도",
-            message: "AAPL이 가장 높은 CAGR 23.5%를 기록하며 포트폴리오 수익에 11.8%p 기여하고 있어요. 포트폴리오 전체 CAGR은 15.3%입니다.",
-            emoji: "📈",
+            category: .overall,
+            title: "종합 평가: A등급 (85점)",
+            message: "우수한 포트폴리오입니다! 총점 85점으로 대부분의 영역에서 좋은 성과를 보이고 있어요.",
+            emoji: "👍",
             details: [
-                "[종목별 CAGR 순위]",
-                "1. AAPL: CAGR 23.5% [좋음] (기여 +11.8%p)",
-                "2. MSFT: CAGR 18.2% [좋음] (기여 +9.1%p)",
-                "3. VTI: CAGR 12.1% (기여 +6.1%p)",
-                "",
-                "[주의] 수익률이 낮은 종목:",
-                "    • INTC: CAGR 2.1% - 비중 조정 고려"
+                "[좋음] 수익성: 양호한 수준",
+                "[주의] 안정성(17/30점): 변동성 낮은 ETF나 배당주 추가 권장",
+                "[좋음] 효율성: 양호한 수준"
             ]
         ),
         .init(
@@ -255,12 +296,15 @@ struct InsightCard: View {
             details: [
                 "[종목별 변동성]",
                 "• AAPL: 28.5% 보통",
-                "• TSLA: 45.2% [위험] 높음",
-                "• VTI: 15.3% [좋음] 낮음",
+                "• TSLA: 45.2% 높음",
+                "• VTI: 15.3% 낮음",
+                "",
+                "[주의] 높은 변동성 종목 (1개):",
+                "• TSLA - 포트폴리오 변동성의 주요 원인",
                 "",
                 "[제안] 변동성 관리 방안:",
-                "    1. 고변동성 종목 비중 축소",
-                "    2. 저변동성 ETF(예: SCHD, VTI) 추가"
+                "1. 고변동성 종목 비중 축소",
+                "2. 저변동성 ETF(예: SCHD, VTI) 추가"
             ]
         ),
         .init(
@@ -271,13 +315,13 @@ struct InsightCard: View {
             emoji: "📊",
             details: [
                 "[섹터별 배분]",
-                "• 기술: 60% [주의] 높음",
+                "• 기술: 60% 높음",
                 "• 금융: 25% 적정",
                 "• 헬스케어: 15% 적정",
                 "",
-                "[지역별 배분]",
-                "• 미국: 80%",
-                "• 한국: 20%"
+                "[경고] 섹터 집중 위험:",
+                "• 기술 섹터 비중이 60%로 높음",
+                "[제안] 다른 섹터 종목 추가로 리스크 분산 권장: 헬스케어, 필수소비재, 금융 섹터"
             ]
         )
     ]

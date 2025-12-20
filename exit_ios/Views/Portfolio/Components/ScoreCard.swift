@@ -62,26 +62,28 @@ struct PortfolioScoreCard: View {
             
             // 세부 점수
             HStack(spacing: ExitSpacing.lg) {
+                Spacer()
                 ScoreDetailItem(
                     title: "수익성",
                     score: score.profitability,
                     maxScore: 40,
                     color: .Exit.accent
                 )
-                
+                Spacer()
                 ScoreDetailItem(
                     title: "안정성",
                     score: score.stability,
                     maxScore: 30,
                     color: .Exit.positive
                 )
-                
+                Spacer()
                 ScoreDetailItem(
                     title: "효율성",
                     score: score.efficiency,
                     maxScore: 30,
                     color: Color(hex: "5856D6")
                 )
+                Spacer()
             }
         }
         .padding(ExitSpacing.lg)
@@ -102,7 +104,7 @@ struct ScoreDetailItem: View {
     }
     
     var body: some View {
-        VStack(spacing: ExitSpacing.xs) {
+        VStack(spacing: ExitSpacing.sm) {
             // 프로그레스 링
             ZStack {
                 Circle()
@@ -127,7 +129,7 @@ struct ScoreDetailItem: View {
                 .foregroundStyle(Color.Exit.secondaryText)
             
             // 만점
-            Text("/\(maxScore)")
+            Text("최대 \(maxScore)")
                 .font(.Exit.caption2)
                 .foregroundStyle(Color.Exit.tertiaryText)
         }
