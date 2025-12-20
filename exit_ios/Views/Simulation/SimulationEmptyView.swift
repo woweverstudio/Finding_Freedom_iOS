@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Charts
 import StoreKit
 
 /// 몬테카를로 시뮬레이션 소개 및 구매 유도 화면
@@ -50,8 +49,8 @@ struct SimulationEmptyView: View {
                 // 무엇을 알 수 있는가? 섹션
                 whatYouGetSection
                 
-                // 데모 카드들 (별도 파일로 분리)
-                SimulationDemoCards()
+                // 예시 이미지 섹션
+                exampleImagesSection
                 
                 // 가격 및 가치 제안
                 valuePropositionSection
@@ -838,18 +837,30 @@ struct SimulationEmptyView: View {
         }
     }
     
-    // MARK: - Helper Views
+    // MARK: - Example Images Section
     
-    private var demoBadge: some View {
-        Text("예시")
-            .font(.Exit.caption2)
-            .fontWeight(.semibold)
-            .foregroundStyle(Color(hex: "FFD700"))
-            .padding(.horizontal, ExitSpacing.sm)
-            .padding(.vertical, ExitSpacing.xs)
-            .background(Color(hex: "FFD700").opacity(0.2))
-            .clipShape(Capsule())
+    private var exampleImagesSection: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.lg) {
+            sectionHeader(icon: "photo.on.rectangle", title: "이런 결과를 볼 수 있어요")
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: ExitSpacing.md) {
+                    ForEach(["sample1", "sample2", "sample3", "sample4"], id: \.self) { imageName in
+                        Image(imageName)
+                            .resizable()
+                            .scaledToFit()                            
+                            .frame(height: 400)
+                            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+                            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    }
+                }
+                .padding(.horizontal, ExitSpacing.md)
+            }
+        }
+        .padding(.horizontal, ExitSpacing.md)
     }
+    
+    // MARK: - Helper Views
     
     private func sectionHeader(icon: String, title: String) -> some View {
         HStack(spacing: ExitSpacing.sm) {
@@ -892,54 +903,6 @@ struct SimulationEmptyView: View {
                 .foregroundStyle(color)
         }
         .frame(maxWidth: .infinity)
-    }
-    
-    private func formatYears(_ months: Int) -> String {
-        let years = months / 12
-        let remainingMonths = months % 12
-        
-        if remainingMonths == 0 {
-            return "\(years)년"
-        } else if years == 0 {
-            return "\(remainingMonths)개월"
-        } else {
-            return "\(years)년 \(remainingMonths)개월"
-        }
-    }
-    
-    private func formatChartAxis(_ amount: Double) -> String {
-        if amount >= 100_000_000 {
-            return String(format: "%.1f억", amount / 100_000_000)
-        } else if amount >= 10_000 {
-            return String(format: "%.0f만", amount / 10_000)
-        } else {
-            return String(format: "%.0f", amount)
-        }
-    }
-    
-    // MARK: - Demo Data
-    
-    private var demoAssetData: (best: [Double], median: [Double], worst: [Double]) {
-        // 15년치 데이터 (연 단위, 월 환산을 위해 index*12로 표시)
-        let best: [Double] = [100_000_000, 180_000_000, 280_000_000, 420_000_000, 580_000_000, 780_000_000, 1_020_000_000, 1_300_000_000, 1_650_000_000, 2_050_000_000, 2_500_000_000, 3_000_000_000, 3_550_000_000, 4_150_000_000, 4_800_000_000]
-        let median: [Double] = [100_000_000, 150_000_000, 210_000_000, 280_000_000, 360_000_000, 450_000_000, 560_000_000, 680_000_000, 820_000_000, 980_000_000, 1_160_000_000, 1_360_000_000, 1_580_000_000, 1_820_000_000, 2_100_000_000]
-        let worst: [Double] = [100_000_000, 120_000_000, 140_000_000, 170_000_000, 210_000_000, 260_000_000, 320_000_000, 390_000_000, 470_000_000, 560_000_000, 670_000_000, 800_000_000, 950_000_000, 1_120_000_000, 1_320_000_000]
-        return (best, median, worst)
-    }
-    
-    private var demoDistributionData: [(year: Int, probability: Double)] {
-        [
-            (year: 8, probability: 4.5),
-            (year: 9, probability: 8.9),
-            (year: 10, probability: 14.2),
-            (year: 11, probability: 18.5),
-            (year: 12, probability: 21.0),
-            (year: 13, probability: 16.8),
-            (year: 14, probability: 9.8),
-            (year: 15, probability: 4.2),
-            (year: 16, probability: 1.5),
-            (year: 17, probability: 0.6)
-        ]
     }
 }
 
