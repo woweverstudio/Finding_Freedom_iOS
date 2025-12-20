@@ -12,12 +12,14 @@ import SwiftData
 enum MainTab: String, CaseIterable {
     case dashboard = "홈"
     case simulation = "시뮬레이션"
+    case portfolio = "포트폴리오"
     case menu = "메뉴"
     
     var icon: String {
         switch self {
         case .dashboard: return "house.fill"
         case .simulation: return "chart.line.uptrend.xyaxis"
+        case .portfolio: return "chart.pie.fill"
         case .menu: return "line.3.horizontal"
         }
     }
@@ -50,12 +52,13 @@ struct ContentView: View {
     }
 }
 
-/// 메인 탭 뷰 (대시보드 + 기록 + 시뮬레이션 + 메뉴)
+/// 메인 탭 뷰 (대시보드 + 시뮬레이션 + 포트폴리오 + 메뉴)
 /// 구조: 상단 PlanHeader + 중앙 컨텐츠(스크롤) + 하단 탭바
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.appState) private var appState
     @State private var simulationViewModel = SimulationViewModel()
+    @State private var portfolioViewModel = PortfolioViewModel()
     @State private var settingsViewModel = SettingsViewModel()
     @State private var shouldNavigateToWelcome = false
     
@@ -81,6 +84,13 @@ struct MainTabView: View {
                             Text(MainTab.simulation.rawValue)
                         }
                         .tag(MainTab.simulation)
+                    
+                    PortfolioView(viewModel: portfolioViewModel)
+                        .tabItem {
+                            Image(systemName: MainTab.portfolio.icon)
+                            Text(MainTab.portfolio.rawValue)
+                        }
+                        .tag(MainTab.portfolio)
                     
                     SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
                         .tabItem {
