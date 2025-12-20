@@ -17,6 +17,7 @@ final class StoreKitService {
     
     enum ProductID: String, CaseIterable {
         case montecarloSimulation = "montecarlo_simulation"
+        case portfolioAnalysis = "portfolio_analysis"
     }
     
     // MARK: - State
@@ -43,6 +44,16 @@ final class StoreKitService {
     /// 몬테카를로 시뮬레이션 제품
     var montecarloProduct: Product? {
         products.first { $0.id == ProductID.montecarloSimulation.rawValue }
+    }
+    
+    /// 포트폴리오 분석 구입 여부
+    var hasPortfolioAnalysis: Bool {
+        purchasedProductIDs.contains(ProductID.portfolioAnalysis.rawValue)
+    }
+    
+    /// 포트폴리오 분석 제품
+    var portfolioAnalysisProduct: Product? {
+        products.first { $0.id == ProductID.portfolioAnalysis.rawValue }
     }
     
     // MARK: - Private
@@ -129,6 +140,16 @@ final class StoreKitService {
     @MainActor
     func purchaseMontecarloSimulation() async -> Bool {
         guard let product = montecarloProduct else {
+            errorMessage = "제품을 찾을 수 없습니다"
+            return false
+        }
+        return await purchase(product)
+    }
+    
+    /// 포트폴리오 분석 구매 (편의 메서드)
+    @MainActor
+    func purchasePortfolioAnalysis() async -> Bool {
+        guard let product = portfolioAnalysisProduct else {
             errorMessage = "제품을 찾을 수 없습니다"
             return false
         }

@@ -122,7 +122,7 @@ final class PortfolioViewModel {
     
     // MARK: - Data Loading
     
-    /// 초기 데이터 로드
+    /// 초기 데이터 로드 (viewState는 변경하지 않음)
     @MainActor
     func loadInitialData() async {
         isLoading = true
@@ -130,15 +130,10 @@ final class PortfolioViewModel {
         do {
             allStocks = try await dataService.fetchAllStocks()
             searchResults = allStocks
-            
-            if holdings.isEmpty {
-                viewState = .empty
-            } else {
-                viewState = .editing
-            }
+            // viewState는 여기서 변경하지 않음 - loadSavedHoldings()에서 처리
         } catch {
             errorMessage = error.localizedDescription
-            viewState = .error(error.localizedDescription)
+            // 에러가 발생해도 viewState는 유지 (allStocks 로드 실패 시에만 에러 표시)
         }
         
         isLoading = false
@@ -335,6 +330,18 @@ final class PortfolioViewModel {
         viewState = .editing
     }
     
+    /// 빈 상태로 돌아가기 (holdings는 유지)
+    @MainActor
+    func backToEmpty() {
+        viewState = .empty
+    }
+    
+    /// 분석 결과 화면으로 돌아가기
+    @MainActor
+    func backToAnalyzed() {
+        viewState = .analyzed
+    }
+    
     /// 포트폴리오 초기화
     @MainActor
     func resetPortfolio() {
@@ -356,6 +363,9 @@ final class PortfolioViewModel {
     
     // MARK: - Persistence
     
+    /// 초기화 완료 여부
+    private var isConfigured = false
+    
     private func saveHoldings() {
         // UserDefaults에 간단히 저장 (프로토타입용)
         let data = holdings.map { ["ticker": $0.ticker, "weight": $0.weight] as [String: Any] }
@@ -363,33 +373,41 @@ final class PortfolioViewModel {
     }
     
     private func loadSavedHoldings() {
-        guard let data = UserDefaults.standard.array(forKey: "portfolio_holdings") as? [[String: Any]] else {
-            return
-        }
+        // 이미 초기화되었으면 중복 실행 방지
+        guard !isConfigured else { return }
+        isConfigured = true
         
-        // 저장된 데이터로 holdings 복원
+        let savedData = UserDefaults.standard.array(forKey: "portfolio_holdings") as? [[String: Any]]
+        
+        // 저장된 데이터가 없어도 allStocks는 로드해야 함
         Task { @MainActor in
             await loadInitialData()
             
-            holdings = data.compactMap { dict -> PortfolioHoldingDisplay? in
-                guard let ticker = dict["ticker"] as? String,
-                      let weight = dict["weight"] as? Double,
-                      let stock = allStocks.first(where: { $0.ticker == ticker }) else {
-                    return nil
+            // 저장된 holdings 복원
+            if let data = savedData {
+                holdings = data.compactMap { dict -> PortfolioHoldingDisplay? in
+                    guard let ticker = dict["ticker"] as? String,
+                          let weight = dict["weight"] as? Double,
+                          let stock = allStocks.first(where: { $0.ticker == ticker }) else {
+                        return nil
+                    }
+                    
+                    return PortfolioHoldingDisplay(
+                        ticker: ticker,
+                        name: stock.displayName,
+                        exchange: stock.exchange,
+                        sectorEmoji: stock.sectorEmoji,
+                        weight: weight
+                    )
                 }
-                
-                return PortfolioHoldingDisplay(
-                    ticker: ticker,
-                    name: stock.displayName,
-                    exchange: stock.exchange,
-                    sectorEmoji: stock.sectorEmoji,
-                    weight: weight
-                )
             }
             
+            // holdings 복원 후 최종 viewState 결정
+            // (분석 결과가 있으면 analyzed로 갈 수도 있지만, 현재는 편집 화면으로)
             if !holdings.isEmpty {
                 viewState = .editing
             }
+            // holdings가 비어있으면 viewState = .empty 유지 (초기값)
         }
     }
     

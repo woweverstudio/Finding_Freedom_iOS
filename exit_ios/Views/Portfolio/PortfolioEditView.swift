@@ -11,7 +11,20 @@ import SwiftUI
 /// 포트폴리오 편집 뷰
 struct PortfolioEditView: View {
     @Bindable var viewModel: PortfolioViewModel
+    let onBack: () -> Void
+    let isPurchased: Bool
+    
     @State private var showSearchSheet = false
+    
+    init(
+        viewModel: PortfolioViewModel,
+        onBack: @escaping () -> Void,
+        isPurchased: Bool
+    ) {
+        self.viewModel = viewModel
+        self.onBack = onBack
+        self.isPurchased = isPurchased
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -48,6 +61,31 @@ struct PortfolioEditView: View {
     
     private var headerSection: some View {
         VStack(spacing: ExitSpacing.sm) {
+            HStack {
+                Button {
+                    onBack()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(Color.Exit.secondaryText)
+                }
+                
+                Spacer()
+                
+                Text("포트폴리오 편집")
+                    .font(.Exit.body)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.Exit.primaryText)
+                
+                Spacer()
+                
+                // 균형용
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.clear)
+            }
+            .padding(.bottom, ExitSpacing.md)
+            
             HStack {
                 Text("내 포트폴리오")
                     .font(.Exit.title2)
@@ -205,8 +243,13 @@ struct PortfolioEditView: View {
     
     private var analyzeButton: some View {
         Button {
-            Task {
-                await viewModel.analyze()
+            if isPurchased {
+                // 구매한 경우: 분석 실행
+                Task {
+                    await viewModel.analyze()
+                }
+            } else {
+                // 미구매: 구매 유도 (현재는 아무 동작 없음, 필요시 구매 화면으로 이동)
             }
         } label: {
             HStack(spacing: ExitSpacing.sm) {
@@ -214,26 +257,35 @@ struct PortfolioEditView: View {
                     ProgressView()
                         .tint(.white)
                 } else {
-                    Image(systemName: "chart.bar.xaxis")
-                        .font(.system(size: 18))
-                    
-                    Text("포트폴리오 분석하기")
-                        .font(.Exit.body)
-                        .fontWeight(.semibold)
+                    if isPurchased {
+                        Image(systemName: "chart.bar.xaxis")
+                            .font(.system(size: 18))
+                        
+                        Text("포트폴리오 분석하기")
+                            .font(.Exit.body)
+                            .fontWeight(.semibold)
+                    } else {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 18))
+                        
+                        Text("프리미엄 구매 후 분석 가능")
+                            .font(.Exit.body)
+                            .fontWeight(.semibold)
+                    }
                 }
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .background(
-                viewModel.canAnalyze
+                (isPurchased && viewModel.canAnalyze)
                     ? LinearGradient.exitAccent
                     : LinearGradient(colors: [Color.Exit.disabledBackground], startPoint: .leading, endPoint: .trailing)
             )
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
         .buttonStyle(.plain)
-        .disabled(!viewModel.canAnalyze || viewModel.isLoading)
+        .disabled((!isPurchased || !viewModel.canAnalyze) || viewModel.isLoading)
         .padding(.top, ExitSpacing.md)
     }
 }
@@ -339,7 +391,11 @@ struct StockSearchSheet: View {
     
     return ZStack {
         Color.Exit.background.ignoresSafeArea()
-        PortfolioEditView(viewModel: viewModel)
+        PortfolioEditView(
+            viewModel: viewModel,
+            onBack: {},
+            isPurchased: false
+        )
     }
     .onAppear {
         Task {
