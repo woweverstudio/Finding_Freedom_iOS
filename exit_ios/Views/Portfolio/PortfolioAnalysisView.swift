@@ -114,7 +114,9 @@ struct PortfolioAnalysisView: View {
             emoji: "📈",
             portfolioValue: String(format: "%.1f%%", result.cagrWithDividends * 100),
             portfolioValueColor: cagrColor(result.cagrWithDividends),
+            portfolioRawValue: result.cagrWithDividends,
             stocks: viewModel.cagrBreakdown,
+            benchmarks: BenchmarkMetric.benchmarks(for: .cagr),
             isHigherBetter: true,
             onInfoTap: { selectedMetric = .cagr(result.cagrWithDividends) }
         )
@@ -167,7 +169,9 @@ struct PortfolioAnalysisView: View {
                 emoji: "⚖️",
                 portfolioValue: String(format: "%.2f", result.sharpeRatio),
                 portfolioValueColor: sharpeColor(result.sharpeRatio),
+                portfolioRawValue: result.sharpeRatio,
                 stocks: viewModel.sharpeBreakdown,
+                benchmarks: BenchmarkMetric.benchmarks(for: .sharpeRatio),
                 isHigherBetter: true,
                 onInfoTap: { selectedMetric = .sharpeRatio(result.sharpeRatio) }
             )
@@ -179,7 +183,9 @@ struct PortfolioAnalysisView: View {
                 emoji: "🎢",
                 portfolioValue: String(format: "%.1f%%", result.volatility * 100),
                 portfolioValueColor: volatilityColor(result.volatility),
+                portfolioRawValue: result.volatility,
                 stocks: viewModel.volatilityBreakdown,
+                benchmarks: BenchmarkMetric.benchmarks(for: .volatility),
                 isHigherBetter: false,  // 낮을수록 좋음
                 onInfoTap: { selectedMetric = .volatility(result.volatility) }
             )
@@ -191,7 +197,9 @@ struct PortfolioAnalysisView: View {
                 emoji: "📉",
                 portfolioValue: String(format: "%.1f%%", result.mdd * 100),
                 portfolioValueColor: mddColor(result.mdd),
+                portfolioRawValue: result.mdd,
                 stocks: viewModel.mddBreakdown,
+                benchmarks: BenchmarkMetric.benchmarks(for: .mdd),
                 isHigherBetter: false,  // 낮을수록(절대값) 좋음
                 onInfoTap: { selectedMetric = .mdd(result.mdd) }
             )

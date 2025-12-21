@@ -202,8 +202,6 @@ struct MetricExplanation {
     let title: String
     let emoji: String
     let simpleExplanation: String
-    let analogy: String
-    let analogyEmoji: String
     let interpretationGuide: [(range: String, description: String, color: Color)]
     let tips: [String]?
     
@@ -212,9 +210,7 @@ struct MetricExplanation {
         MetricExplanation(
             title: "연평균 수익률 (CAGR)",
             emoji: "📈",
-            simpleExplanation: "매년 평균 몇 %씩 성장했는지 보여줘요",
-            analogy: "씨앗(초기 투자금)이 \(years)년 후 나무(현재 가치)가 되었을 때, 매년 동일한 비율로 자랐다면 그 비율이 바로 CAGR이에요!",
-            analogyEmoji: "🌳",
+            simpleExplanation: "매년 평균 몇 %씩 성장했는지 보여줘요. (최종가치/초기가치)^(1/년수) - 1 로 계산해요.",
             interpretationGuide: [
                 ("10% 이상", "매우 좋은 성과 (S&P500 장기 평균)", .Exit.accent),
                 ("5~10%", "양호한 성과", .Exit.positive),
@@ -230,9 +226,7 @@ struct MetricExplanation {
         MetricExplanation(
             title: "위험조정수익률 (Sharpe Ratio)",
             emoji: "⚖️",
-            simpleExplanation: "감수한 위험 대비 얼마나 효율적으로 수익을 냈는지 보여줘요",
-            analogy: "연비가 좋은 차가 같은 기름으로 더 멀리 가듯이, Sharpe Ratio가 높으면 같은 위험으로 더 많은 수익을 낸 거예요!",
-            analogyEmoji: "🚗",
+            simpleExplanation: "감수한 위험 대비 얼마나 효율적으로 수익을 냈는지 보여줘요. (수익률 - 무위험수익률) ÷ 변동성 으로 계산해요.",
             interpretationGuide: [
                 ("1.5 이상", "매우 우수 (헤지펀드 수준)", .Exit.accent),
                 ("1.0~1.5", "우수 (좋은 전략)", .Exit.positive),
@@ -252,9 +246,7 @@ struct MetricExplanation {
         MetricExplanation(
             title: "최대 낙폭 (MDD)",
             emoji: "📉",
-            simpleExplanation: "역대 최고점에서 최저점까지 얼마나 떨어졌는지 보여줘요",
-            analogy: "롤러코스터의 가장 높은 곳에서 가장 낮은 곳까지의 높이 차이예요. 내가 감당할 수 있는 하락폭인지 확인해보세요!",
-            analogyEmoji: "🎢",
+            simpleExplanation: "역대 최고점에서 최저점까지 얼마나 떨어졌는지 보여줘요. (최저점 - 최고점) ÷ 최고점 으로 계산해요. 내가 감당할 수 있는 하락폭인지 확인해보세요!",
             interpretationGuide: [
                 ("15% 이하", "안정적", .Exit.accent),
                 ("15~25%", "보통", .Exit.positive),
@@ -274,9 +266,7 @@ struct MetricExplanation {
         MetricExplanation(
             title: "변동성",
             emoji: "🎢",
-            simpleExplanation: "가격이 얼마나 출렁거리는지 보여줘요",
-            analogy: "바다 파도의 높이처럼, 변동성이 높으면 오르내림이 심해요. 변동성 20%면 1년간 ±20% 움직일 수 있다는 뜻이에요.",
-            analogyEmoji: "🌊",
+            simpleExplanation: "가격이 얼마나 출렁거리는지 보여줘요. 변동성 20%면 1년간 ±20% 움직일 수 있다는 뜻이에요.",
             interpretationGuide: [
                 ("15% 이하", "안정적", .Exit.accent),
                 ("15~25%", "보통", .Exit.positive),
@@ -292,9 +282,7 @@ struct MetricExplanation {
         MetricExplanation(
             title: "배당률",
             emoji: "💰",
-            simpleExplanation: "투자금 대비 매년 받는 배당금 비율이에요",
-            analogy: "월세 수익률처럼, 내 투자금 대비 매년 받는 현금이에요. 주가가 변해도 배당금은 안정적으로 받을 수 있어요!",
-            analogyEmoji: "🏠",
+            simpleExplanation: "투자금 대비 매년 받는 배당금 비율이에요. 연간 배당금 ÷ 현재 주가 로 계산해요.",
             interpretationGuide: [
                 ("4% 이상", "고배당", .Exit.accent),
                 ("2~4%", "적정 배당", .Exit.positive),
@@ -386,6 +374,126 @@ struct DividendStockBreakdown: Identifiable {
     
     var weightPercent: String {
         String(format: "%.0f%%", weight * 100)
+    }
+}
+
+// MARK: - Benchmark Data
+
+/// 벤치마크 지표 (비교군)
+struct BenchmarkMetric: Identifiable {
+    let id = UUID()
+    let name: String
+    let ticker: String
+    let emoji: String
+    let value: Double
+    let formattedValue: String
+    
+    /// S&P500과 미국 단기채권 비교군 예시 데이터 (추후 실제 데이터로 교체)
+    enum MetricType {
+        case cagr
+        case sharpeRatio
+        case volatility
+        case mdd
+    }
+    
+    /// 지표별 벤치마크 데이터 생성
+    static func benchmarks(for type: MetricType) -> [BenchmarkMetric] {
+        switch type {
+        case .cagr:
+            return [
+                BenchmarkMetric(
+                    name: "S&P 500",
+                    ticker: "SPY",
+                    emoji: "🇺🇸",
+                    value: 0.102,  // 10.2%
+                    formattedValue: "10.2%"
+                ),
+                BenchmarkMetric(
+                    name: "미국 단기채권",
+                    ticker: "SHY",
+                    emoji: "🏦",
+                    value: 0.021,  // 2.1%
+                    formattedValue: "2.1%"
+                )
+            ]
+        case .sharpeRatio:
+            return [
+                BenchmarkMetric(
+                    name: "S&P 500",
+                    ticker: "SPY",
+                    emoji: "🇺🇸",
+                    value: 0.82,
+                    formattedValue: "0.82"
+                ),
+                BenchmarkMetric(
+                    name: "미국 단기채권",
+                    ticker: "SHY",
+                    emoji: "🏦",
+                    value: 0.35,
+                    formattedValue: "0.35"
+                )
+            ]
+        case .volatility:
+            return [
+                BenchmarkMetric(
+                    name: "S&P 500",
+                    ticker: "SPY",
+                    emoji: "🇺🇸",
+                    value: 0.182,  // 18.2%
+                    formattedValue: "18.2%"
+                ),
+                BenchmarkMetric(
+                    name: "미국 단기채권",
+                    ticker: "SHY",
+                    emoji: "🏦",
+                    value: 0.032,  // 3.2%
+                    formattedValue: "3.2%"
+                )
+            ]
+        case .mdd:
+            return [
+                BenchmarkMetric(
+                    name: "S&P 500",
+                    ticker: "SPY",
+                    emoji: "🇺🇸",
+                    value: -0.338,  // -33.8%
+                    formattedValue: "-33.8%"
+                ),
+                BenchmarkMetric(
+                    name: "미국 단기채권",
+                    ticker: "SHY",
+                    emoji: "🏦",
+                    value: -0.048,  // -4.8%
+                    formattedValue: "-4.8%"
+                )
+            ]
+        }
+    }
+}
+
+/// 비교 결과 (포트폴리오 vs 벤치마크)
+struct BenchmarkComparison {
+    let portfolioValue: Double
+    let benchmarks: [BenchmarkMetric]
+    let isHigherBetter: Bool
+    
+    /// 포트폴리오가 벤치마크보다 좋은지
+    func isBetterThan(_ benchmark: BenchmarkMetric) -> Bool {
+        if isHigherBetter {
+            return portfolioValue > benchmark.value
+        } else {
+            return abs(portfolioValue) < abs(benchmark.value)
+        }
+    }
+    
+    /// S&P500 대비 상대 성과 (%)
+    var relativeToSP500: Double? {
+        guard let sp500 = benchmarks.first(where: { $0.ticker == "SPY" }) else { return nil }
+        if isHigherBetter {
+            return (portfolioValue - sp500.value) / abs(sp500.value)
+        } else {
+            return (abs(sp500.value) - abs(portfolioValue)) / abs(sp500.value)
+        }
     }
 }
 

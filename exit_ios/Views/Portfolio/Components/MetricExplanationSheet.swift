@@ -36,9 +36,6 @@ struct MetricExplanationSheet: View {
                     // 헤더
                     headerSection
                     
-                    // 비유 설명
-                    analogySection
-                    
                     // 해석 가이드
                     interpretationGuideSection
                     
@@ -64,7 +61,6 @@ struct MetricExplanationSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
     
@@ -86,28 +82,6 @@ struct MetricExplanationSheet: View {
                 .font(.Exit.body)
                 .foregroundStyle(Color.Exit.secondaryText)
         }
-    }
-    
-    private var analogySection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            HStack(spacing: ExitSpacing.xs) {
-                Text(explanation.analogyEmoji)
-                    .font(.system(size: 18))
-                
-                Text("쉽게 비유하면...")
-                    .font(.Exit.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.primaryText)
-            }
-            
-            Text(explanation.analogy)
-                .font(.Exit.subheadline)
-                .foregroundStyle(Color.Exit.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(ExitSpacing.md)
-        .background(metric.color.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
     }
     
     private var interpretationGuideSection: some View {
@@ -177,6 +151,8 @@ struct MetricExplanationSheet: View {
                     .font(.Exit.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.Exit.primaryText)
+                
+                Spacer()
             }
             
             VStack(alignment: .leading, spacing: ExitSpacing.xs) {

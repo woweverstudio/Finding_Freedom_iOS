@@ -18,7 +18,9 @@ struct StockBreakdownCard: View {
     let emoji: String
     let portfolioValue: String
     let portfolioValueColor: Color
+    let portfolioRawValue: Double  // 원시 값 (비교용)
     let stocks: [StockMetricBreakdown]
+    let benchmarks: [BenchmarkMetric]  // 비교군
     let isHigherBetter: Bool  // 높을수록 좋은지 (Sharpe: true, MDD: false, Volatility: false)
     let onInfoTap: () -> Void
     
@@ -29,21 +31,62 @@ struct StockBreakdownCard: View {
         stocks.count > 1
     }
     
+    /// 기본 생성자 (비교군 없음 - 기존 호환성)
+    init(
+        title: String,
+        subtitle: String,
+        emoji: String,
+        portfolioValue: String,
+        portfolioValueColor: Color,
+        stocks: [StockMetricBreakdown],
+        isHigherBetter: Bool,
+        onInfoTap: @escaping () -> Void
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.emoji = emoji
+        self.portfolioValue = portfolioValue
+        self.portfolioValueColor = portfolioValueColor
+        self.portfolioRawValue = 0
+        self.stocks = stocks
+        self.benchmarks = []
+        self.isHigherBetter = isHigherBetter
+        self.onInfoTap = onInfoTap
+    }
+    
+    /// 비교군 포함 생성자
+    init(
+        title: String,
+        subtitle: String,
+        emoji: String,
+        portfolioValue: String,
+        portfolioValueColor: Color,
+        portfolioRawValue: Double,
+        stocks: [StockMetricBreakdown],
+        benchmarks: [BenchmarkMetric],
+        isHigherBetter: Bool,
+        onInfoTap: @escaping () -> Void
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.emoji = emoji
+        self.portfolioValue = portfolioValue
+        self.portfolioValueColor = portfolioValueColor
+        self.portfolioRawValue = portfolioRawValue
+        self.stocks = stocks
+        self.benchmarks = benchmarks
+        self.isHigherBetter = isHigherBetter
+        self.onInfoTap = onInfoTap
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
-            // 헤더 (종목이 2개 이상일 때만 탭하면 확장)
-            if canExpand {
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        isExpanded.toggle()
-                    }
-                    HapticService.shared.light()
-                } label: {
-                    headerView
-                }
-                .buttonStyle(.plain)
-            } else {
-                headerView
+            // 헤더
+            headerView
+            
+            // 비교군 섹션 (항상 표시)
+            if !benchmarks.isEmpty {
+                benchmarkSection
             }
             
             // 확장된 종목별 상세
@@ -97,13 +140,6 @@ struct StockBreakdownCard: View {
                     .foregroundStyle(Color.Exit.tertiaryText)
             }
             .buttonStyle(.plain)
-            
-            // 확장 화살표 (종목이 2개 이상일 때만 표시)
-            if canExpand {
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.Exit.tertiaryText)
-            }
         }
         .padding(ExitSpacing.md)
     }
@@ -138,7 +174,7 @@ struct StockBreakdownCard: View {
                 }
                 
                 // 요약
-                summaryRow
+//                summaryRow
             }
             .padding(.bottom, ExitSpacing.md)
         }
@@ -148,8 +184,8 @@ struct StockBreakdownCard: View {
         HStack(spacing: ExitSpacing.sm) {
             // 종목 정보
             HStack(spacing: ExitSpacing.xs) {
-                Text(stock.emoji)
-                    .font(.system(size: 14))
+//                Text(stock.emoji)
+//                    .font(.system(size: 14))
                 
                 VStack(alignment: .leading, spacing: 0) {
                     Text(stock.name)
@@ -242,6 +278,54 @@ struct StockBreakdownCard: View {
             }
             .padding(.horizontal, ExitSpacing.md)
             .padding(.top, ExitSpacing.xs)
+        }
+    }
+    
+    // MARK: - Benchmark Section
+    
+    private var benchmarkSection: some View {
+        VStack(spacing: 0) {
+            Divider()
+                .background(Color.Exit.divider)
+            
+            VStack(spacing: ExitSpacing.xs) {
+                // 비교 바
+                BenchmarkComparisonBar(
+                    portfolioValue: portfolioRawValue,
+                    portfolioLabel: portfolioValue,
+                    portfolioColor: portfolioValueColor,
+                    benchmarks: benchmarks,
+                    isHigherBetter: isHigherBetter
+                )
+                .padding(.horizontal, ExitSpacing.md)
+                .padding(.top, ExitSpacing.sm)
+                
+                // 종목 상세 확장 버튼 (종목이 2개 이상일 때만)
+                if canExpand {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            isExpanded.toggle()
+                        }
+                        HapticService.shared.light()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(isExpanded ? "종목 상세 접기" : "종목 상세 보기")
+                                .font(.Exit.caption)
+                                .foregroundStyle(Color.Exit.tertiaryText)
+                            
+                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(Color.Exit.tertiaryText)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, ExitSpacing.sm)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Spacer()
+                        .frame(height: ExitSpacing.sm)
+                }
+            }
         }
     }
     
@@ -471,6 +555,108 @@ struct DividendBreakdownCard: View {
     }
 }
 
+// MARK: - Benchmark Comparison Chart (Swift Charts)
+
+import Charts
+
+/// 비교군 막대 차트 데이터
+struct BenchmarkBarData: Identifiable {
+    let id = UUID()
+    let name: String
+    let value: Double
+    let displayValue: String
+    let isPortfolio: Bool
+    let color: Color
+}
+
+/// 비교군 대비 포트폴리오를 수평 막대그래프로 시각화
+struct BenchmarkComparisonBar: View {
+    let portfolioValue: Double
+    let portfolioLabel: String
+    let portfolioColor: Color
+    let benchmarks: [BenchmarkMetric]
+    let isHigherBetter: Bool
+    
+    /// 차트 데이터 생성
+    private var chartData: [BenchmarkBarData] {
+        var data: [BenchmarkBarData] = []
+        
+        // 포트폴리오 추가
+        data.append(BenchmarkBarData(
+            name: "내 포트폴리오",
+            value: isHigherBetter ? portfolioValue : abs(portfolioValue),
+            displayValue: portfolioLabel,
+            isPortfolio: true,
+            color: portfolioColor
+        ))
+        
+        // 벤치마크들 추가
+        for benchmark in benchmarks {
+            data.append(BenchmarkBarData(
+                name: benchmark.name,
+                value: isHigherBetter ? benchmark.value : abs(benchmark.value),
+                displayValue: benchmark.formattedValue,
+                isPortfolio: false,
+                color: Color.Exit.tertiaryText
+            ))
+        }
+        
+        // 값 기준 정렬 (높은 순)
+        return data.sorted { $0.value > $1.value }
+    }
+    
+    /// 포트폴리오가 벤치마크보다 좋은지
+    private func isBetterThan(_ benchmark: BenchmarkMetric) -> Bool {
+        if isHigherBetter {
+            return portfolioValue > benchmark.value
+        } else {
+            return abs(portfolioValue) < abs(benchmark.value)
+        }
+    }
+    
+    /// 차트 최대값 (여백 포함)
+    private var chartMaxValue: Double {
+        let maxVal = chartData.map { $0.value }.max() ?? 1
+        return maxVal * 1.15
+    }
+    
+    var body: some View {
+        // 수평 막대 차트
+        Chart(chartData) { item in
+            BarMark(
+                x: .value("Value", item.value),
+                y: .value("Name", item.name)
+            )
+            .foregroundStyle(item.isPortfolio ? item.color : Color.Exit.divider)
+            .cornerRadius(4)
+            .annotation(position: .trailing, spacing: 6) {
+                Text(item.displayValue)
+                    .font(.Exit.caption)
+                    .fontWeight(item.isPortfolio ? .bold : .regular)
+                    .foregroundStyle(item.isPortfolio ? item.color : Color.Exit.secondaryText)
+            }
+        }
+        .chartXScale(domain: 0...chartMaxValue)
+        .chartXAxis(.hidden)
+        .chartYAxis {
+            AxisMarks(position: .leading) { value in
+                AxisValueLabel {
+                    if let name = value.as(String.self) {
+                        let item = chartData.first(where: { $0.name == name })
+                        let isPortfolio = item?.isPortfolio == true
+                        
+                        Text(name)
+                            .font(.Exit.caption)
+                            .foregroundStyle(isPortfolio ? Color.Exit.primaryText : Color.Exit.tertiaryText)
+                            .fontWeight(isPortfolio ? .semibold : .regular)
+                    }
+                }
+            }
+        }
+        .frame(height: CGFloat(chartData.count * 32 + 8))
+    }
+}
+
 // MARK: - Preview
 
 #Preview {
@@ -482,12 +668,30 @@ struct DividendBreakdownCard: View {
                 emoji: "⚖️",
                 portfolioValue: "1.25",
                 portfolioValueColor: .Exit.positive,
+                portfolioRawValue: 1.25,
                 stocks: [
                     StockMetricBreakdown(ticker: "SCHD", name: "슈왑 배당 ETF", emoji: "📊", value: 1.8, formattedValue: "1.80", weight: 0.3, contribution: 0.54, isPositive: true, rank: 1),
                     StockMetricBreakdown(ticker: "VTI", name: "뱅가드 ETF", emoji: "📊", value: 1.5, formattedValue: "1.50", weight: 0.3, contribution: 0.45, isPositive: true, rank: 2),
                     StockMetricBreakdown(ticker: "NVDA", name: "엔비디아", emoji: "💻", value: 0.8, formattedValue: "0.80", weight: 0.4, contribution: 0.32, isPositive: false, rank: 3)
                 ],
+                benchmarks: BenchmarkMetric.benchmarks(for: .sharpeRatio),
                 isHigherBetter: true,
+                onInfoTap: {}
+            )
+            
+            StockBreakdownCard(
+                title: "변동성",
+                subtitle: "Volatility",
+                emoji: "🎢",
+                portfolioValue: "22.5%",
+                portfolioValueColor: .Exit.caution,
+                portfolioRawValue: 0.225,
+                stocks: [
+                    StockMetricBreakdown(ticker: "SCHD", name: "슈왑 배당 ETF", emoji: "📊", value: 0.15, formattedValue: "15.0%", weight: 0.3, contribution: 0.045, isPositive: true, rank: 1),
+                    StockMetricBreakdown(ticker: "NVDA", name: "엔비디아", emoji: "💻", value: 0.45, formattedValue: "45.0%", weight: 0.4, contribution: 0.18, isPositive: false, rank: 2)
+                ],
+                benchmarks: BenchmarkMetric.benchmarks(for: .volatility),
+                isHigherBetter: false,
                 onInfoTap: {}
             )
             

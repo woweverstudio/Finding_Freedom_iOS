@@ -1039,5 +1039,323 @@ struct PortfolioScore {
 
 ---
 
+## 9. 투자 인사이트 UX 개선 방안
+
+### 9.1 현재 문제점
+
+현재 투자 인사이트는 **텍스트 중심의 긴 설명**으로 구성되어 있어 사용자가 읽다가 지치는 문제가 있습니다:
+
+| 문제점 | 영향 |
+|--------|------|
+| 글씨가 너무 많음 | 사용자 이탈, 핵심 메시지 전달 실패 |
+| 일관된 텍스트 스타일 | 중요한 정보와 부가 정보 구분 어려움 |
+| 수동적인 정보 전달 | 사용자 참여도 낮음 |
+| 단조로운 레이아웃 | 시각적 흥미 부족 |
+
+### 9.2 개선 전략: "스캔 → 이해 → 행동" 프레임워크
+
+사용자의 인사이트 소비 패턴을 3단계로 구분하여 설계합니다:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1️⃣ 스캔 (2초)           한눈에 핵심 파악                   │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │ 💪 수익성: 우수 │ ⚠️ 안정성: 주의 │ 👍 효율성: 양호    │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                              │
+│  2️⃣ 이해 (10초)          관심 영역 상세 확인                │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │ [카드 탭 시] 시각화 + 핵심 수치 + 짧은 해석              │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                              │
+│  3️⃣ 행동 (선택적)        구체적 개선 방안                   │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │ [더보기] 상세 분석 + 추천 종목/ETF + 액션 버튼           │ │
+│  └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 9.3 디자인 원칙
+
+#### 1) 👀 한눈에 보이는 핵심 (Visual First)
+
+**Before (현재):**
+```
+"포트폴리오 변동성이 22.5%로 적정 수준이에요. 
+일부 종목이 변동성을 높이고 있어요. 
+TSLA는 45.2%로 높은 변동성을 보이고..."
+```
+
+**After (개선):**
+```swift
+// 이모지 + 한 줄 요약 + 시각적 비교
+┌────────────────────────────────────────┐
+│ 🎢 변동성                              │
+│                                        │
+│ [====내 포트폴리오====]--[S&P500]---   │
+│         22.5%              18.2%       │
+│                                        │
+│ 📊 S&P500보다 약간 높아요 (+4.3%p)     │
+└────────────────────────────────────────┘
+```
+
+#### 2) 🧩 점진적 공개 (Progressive Disclosure)
+
+```swift
+// 1단계: 컴팩트 뷰 (기본)
+┌─────────────────────────────────────┐
+│ ⚠️ 변동성 주의                     │
+│ TSLA가 포트폴리오 변동성의 주요 원인  │
+│                            [더보기] │
+└─────────────────────────────────────┘
+
+// 2단계: 확장 뷰 (탭 시)
+┌─────────────────────────────────────┐
+│ ⚠️ 변동성 주의                     │
+│                                     │
+│ 📊 종목별 변동성                    │
+│ ├─ TSLA  ████████████ 45.2%  ⚠️    │
+│ ├─ AAPL  █████      28.5%          │
+│ └─ VTI   ██         15.3%  ✓       │
+│                                     │
+│ 💡 제안: TSLA 비중 ↓, 저변동 ETF ↑  │
+│                                     │
+│ [VTI 추가하기]  [SCHD 알아보기]      │
+└─────────────────────────────────────┘
+```
+
+#### 3) 🎮 게임화 요소 (Gamification)
+
+```swift
+// 점수 + 뱃지 시스템
+struct InsightBadge {
+    case dividendKing      // 배당률 4% 이상
+    case lowVolatility     // 변동성 15% 이하
+    case sharpeElite       // Sharpe 1.5 이상
+    case balanced          // 3개 이상 섹터 분산
+}
+
+// UI 예시
+┌─────────────────────────────────────┐
+│ 🏆 획득한 뱃지                      │
+│ [💰 배당킹] [🛡️ 안정투자] [⚖️ 균형] │
+│                                     │
+│ 🔒 잠긴 뱃지                        │
+│ [🎯 샤프마스터] Sharpe 1.5 달성 시  │
+└─────────────────────────────────────┘
+```
+
+#### 4) 📊 데이터 시각화 우선
+
+```swift
+// 숫자보다 시각화
+enum VisualizationType {
+    case comparisonBar     // 비교 막대 (vs S&P500)
+    case progressRing      // 진행률 링 (목표 대비)
+    case trendSparkline    // 미니 차트 (추세)
+    case heatmap           // 히트맵 (섹터별 기여도)
+    case radarChart        // 레이더 (종합 평가)
+}
+```
+
+### 9.4 구체적 UI 컴포넌트 제안
+
+#### A) 요약 카드 (Summary Card)
+
+```swift
+struct InsightSummaryCard: View {
+    let category: InsightCategory
+    let status: Status  // .good, .warning, .danger
+    let headline: String  // 최대 15자
+    let metric: String    // "22.5%", "1.25" 등
+    
+    var body: some View {
+        HStack {
+            // 상태 아이콘 (이모지 대신 SF Symbol 사용)
+            StatusIcon(status: status)
+                .frame(width: 44, height: 44)
+            
+            VStack(alignment: .leading) {
+                Text(category.title)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text(headline)
+                    .font(.body.bold())
+            }
+            
+            Spacer()
+            
+            Text(metric)
+                .font(.title2.bold())
+                .foregroundColor(status.color)
+        }
+        .padding()
+        .background(status.color.opacity(0.1))
+        .cornerRadius(12)
+    }
+}
+```
+
+#### B) 비교 슬라이더 (Comparison Slider)
+
+```swift
+struct ComparisonSlider: View {
+    let myValue: Double
+    let benchmark: Double
+    let label: String
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            // 시각적 비교 바
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    // 배경
+                    Capsule().fill(Color.gray.opacity(0.2))
+                    
+                    // 벤치마크 마커
+                    BenchmarkMarker(position: benchmarkPosition(in: geo))
+                    
+                    // 내 포트폴리오 마커
+                    MyMarker(position: myPosition(in: geo))
+                }
+            }
+            .frame(height: 24)
+            
+            // 간단한 해석
+            Text(interpretation)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+    
+    var interpretation: String {
+        let diff = myValue - benchmark
+        if diff > 0.05 {
+            return "S&P500보다 \(String(format: "%.1f", diff * 100))%p 높아요"
+        } else if diff < -0.05 {
+            return "S&P500보다 \(String(format: "%.1f", abs(diff) * 100))%p 낮아요"
+        } else {
+            return "S&P500과 비슷해요"
+        }
+    }
+}
+```
+
+#### C) 액션 카드 (Action Card)
+
+```swift
+struct InsightActionCard: View {
+    let insight: Insight
+    let suggestedActions: [SuggestedAction]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // 인사이트 요약
+            HStack {
+                insight.icon
+                Text(insight.shortMessage)
+                    .font(.body)
+            }
+            
+            // 추천 액션 버튼들
+            HStack(spacing: 8) {
+                ForEach(suggestedActions.prefix(2)) { action in
+                    ActionButton(action: action)
+                }
+            }
+        }
+        .padding()
+        .background(Color.Exit.cardBackground)
+        .cornerRadius(12)
+    }
+}
+
+struct SuggestedAction: Identifiable {
+    let id = UUID()
+    let icon: String      // "plus.circle"
+    let label: String     // "VTI 추가"
+    let action: () -> Void
+}
+```
+
+### 9.5 콘텐츠 작성 가이드
+
+#### 1) 문장 길이 제한
+
+| 레벨 | 최대 길이 | 용도 |
+|------|-----------|------|
+| 헤드라인 | 15자 | 카드 제목 |
+| 요약 | 30자 | 핵심 메시지 |
+| 설명 | 60자 | 상세 설명 (확장 시) |
+
+#### 2) 톤 & 매너
+
+```
+❌ Before: "포트폴리오의 변동성이 22.5%로 측정되었습니다."
+✅ After:  "S&P500보다 살짝 출렁거려요 (+4%p)"
+
+❌ Before: "Sharpe Ratio 1.25는 양호한 수준입니다."
+✅ After:  "위험 대비 수익 효율 👍 (S&P500 대비 +0.4)"
+
+❌ Before: "TSLA의 높은 변동성이 전체 포트폴리오 위험을 증가시킵니다."
+✅ After:  "🚗 테슬라가 파도를 만들어요 (변동성 45%)"
+```
+
+#### 3) 숫자 표현
+
+```swift
+// 숫자를 맥락과 함께 표현
+struct MetricWithContext {
+    let value: Double
+    let comparison: String  // "S&P500 대비"
+    let direction: String   // "+3.2%p 높음"
+    let meaning: String     // "위험이 조금 더 높아요"
+}
+
+// 예시
+// "22.5%" → "22.5% (S&P500보다 +4.3%p)"
+// "1.25" → "1.25 (상위 20% 수준)"
+```
+
+### 9.6 인터랙션 디자인
+
+#### 1) 탭 동작
+
+```
+[카드 탭] → 확장/축소 애니메이션
+[? 버튼] → 지표 설명 시트
+[추천 종목] → 종목 상세 또는 검색
+[공유] → 이미지로 내보내기
+```
+
+#### 2) 스와이프 동작
+
+```
+[좌 스와이프] → 다음 인사이트
+[우 스와이프] → 이전 인사이트  
+[아래 스와이프] → 인사이트 닫기
+```
+
+### 9.7 구현 우선순위
+
+| 단계 | 기능 | 난이도 | 효과 |
+|------|------|--------|------|
+| 1 | 비교군 바 추가 (완료) | 중 | 높음 |
+| 2 | 요약 카드 리디자인 | 중 | 높음 |
+| 3 | 점진적 공개 UI | 중 | 중 |
+| 4 | 액션 버튼 추가 | 낮음 | 중 |
+| 5 | 뱃지 시스템 | 높음 | 낮음 |
+
+### 9.8 예상 결과
+
+| 지표 | Before | After (예상) |
+|------|--------|--------------|
+| 인사이트 완독률 | 30% | 70% |
+| 평균 체류 시간 | 15초 | 45초 |
+| 액션 전환율 | 5% | 20% |
+| 사용자 만족도 | 3.5/5 | 4.5/5 |
+
+---
+
 *이 문서는 지속적으로 업데이트됩니다.*
-*버전 0.2 - 데이터 아키텍처 및 비즈니스 모델 수정*
+*버전 0.3 - 비교군 기능 및 투자 인사이트 UX 개선 방안 추가*
