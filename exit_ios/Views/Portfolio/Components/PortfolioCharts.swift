@@ -331,28 +331,88 @@ struct PortfolioProjectionChart: View {
     }
     
     private var resultSummary: some View {
-        HStack(spacing: ExitSpacing.md) {
-            resultCard(
-                label: "낙관적",
-                value: projection.finalReturnRange.best,
-                subtitle: "상위 20%",
-                color: .Exit.positive
-            )
+        VStack(spacing: ExitSpacing.sm) {
+            // 퍼센트 카드
+            HStack(spacing: ExitSpacing.md) {
+                resultCard(
+                    label: "낙관적",
+                    value: projection.finalReturnRange.best,
+                    subtitle: "상위 20%",
+                    color: .Exit.positive
+                )
+                
+                resultCard(
+                    label: "예상",
+                    value: projection.finalReturnRange.median,
+                    subtitle: "중앙값",
+                    color: .Exit.accent,
+                    isHighlighted: true
+                )
+                
+                resultCard(
+                    label: "보수적",
+                    value: projection.finalReturnRange.worst,
+                    subtitle: "하위 20%",
+                    color: .Exit.caution
+                )
+            }
             
-            resultCard(
-                label: "예상",
-                value: projection.finalReturnRange.median,
-                subtitle: "중앙값",
-                color: .Exit.accent,
-                isHighlighted: true
-            )
+            // 1억 기준 예상 금액
+            exampleAmountView
+        }
+    }
+    
+    /// 1억 기준 예상 금액 뷰
+    private var exampleAmountView: some View {
+        HStack(spacing: ExitSpacing.sm) {
+            Text("💰")
+                .font(.system(size: 14))
             
-            resultCard(
-                label: "보수적",
-                value: projection.finalReturnRange.worst,
-                subtitle: "하위 20%",
-                color: .Exit.caution
-            )
+            Text("1억 투자 시")
+                .font(.Exit.caption2)
+                .foregroundStyle(Color.Exit.tertiaryText)
+            
+            Spacer()
+            
+            HStack(spacing: ExitSpacing.xs) {
+                // 보수적
+                Text(formatAmount(1.0 + projection.finalReturnRange.worst))
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.caution)
+                
+                Text("~")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                
+                // 예상 (중앙값)
+                Text(formatAmount(1.0 + projection.finalReturnRange.median))
+                    .font(.Exit.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.Exit.accent)
+                
+                Text("~")
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                
+                // 낙관적
+                Text(formatAmount(1.0 + projection.finalReturnRange.best))
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.positive)
+            }
+        }
+        .padding(.horizontal, ExitSpacing.md)
+        .padding(.vertical, ExitSpacing.sm)
+        .background(Color.Exit.secondaryCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+    }
+    
+    /// 1억 기준 금액 포맷 (예: 2.8억)
+    private func formatAmount(_ multiplier: Double) -> String {
+        let amount = multiplier  // 1억 기준이므로 배수 = 억 단위
+        if amount >= 10 {
+            return String(format: "%.0f억", amount)
+        } else {
+            return String(format: "%.1f억", amount)
         }
     }
     
