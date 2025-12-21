@@ -84,6 +84,14 @@ final class PortfolioViewModel {
     /// 배당 종목별 분해
     private(set) var dividendBreakdown: [DividendStockBreakdown] = []
     
+    // MARK: - 차트 데이터
+    
+    /// 과거 5년 성과 데이터
+    private(set) var historicalData: PortfolioHistoricalData?
+    
+    /// 미래 10년 예측 데이터
+    private(set) var projectionData: PortfolioProjectionResult?
+    
     // MARK: - Computed Properties
     
     /// 총 비중 합계
@@ -313,6 +321,9 @@ final class PortfolioViewModel {
                     mddBreakdown: mddBreakdown,
                     dividendBreakdown: dividendBreakdown
                 )
+                
+                // 차트 데이터 계산
+                calculateChartData(result: result)
             }
             
             viewState = .analyzed
@@ -365,6 +376,8 @@ final class PortfolioViewModel {
         mddBreakdown = []
         cagrBreakdown = []
         dividendBreakdown = []
+        historicalData = nil
+        projectionData = nil
         viewState = .empty
         
         clearSavedHoldings()
@@ -565,6 +578,28 @@ final class PortfolioViewModel {
             ))
         }
         dividendBreakdown = dividendData.sorted { $0.yield > $1.yield }
+    }
+    
+    // MARK: - Chart Data Calculation
+    
+    /// 차트 데이터 계산 (과거 성과 + 미래 예측)
+    private func calculateChartData(result: PortfolioAnalysisResult) {
+        let holdingsData = holdings.map { (ticker: $0.ticker, weight: $0.weight) }
+        
+        // 과거 5년 성과 계산
+        historicalData = MonteCarloSimulator.calculateHistoricalPerformance(
+            holdings: holdingsData,
+            stocksData: stocksDataCache
+        )
+        
+        // 미래 10년 예측 시뮬레이션
+        // CAGR과 Volatility를 사용하여 몬테카를로 시뮬레이션
+        projectionData = MonteCarloSimulator.projectPortfolio(
+            cagr: result.cagrWithDividends,
+            volatility: result.volatility,
+            years: 10,
+            simulationCount: 5000
+        )
     }
     
     // MARK: - Helpers

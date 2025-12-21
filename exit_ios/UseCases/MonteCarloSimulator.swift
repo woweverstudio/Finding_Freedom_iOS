@@ -337,6 +337,192 @@ enum MonteCarloSimulator {
     }
 }
 
+// MARK: - Portfolio Projection
+
+/// 포트폴리오 미래 예측 결과 (10년)
+struct PortfolioProjectionResult {
+    /// 시작 자산 (현재 가치를 1.0으로 정규화)
+    let initialValue: Double
+    
+    /// 월별 최고 시나리오 (상위 10%)
+    let bestCase: [Double]
+    
+    /// 월별 중앙값 (50%)
+    let median: [Double]
+    
+    /// 월별 최악 시나리오 (하위 10%)
+    let worstCase: [Double]
+    
+    /// 시뮬레이션 횟수
+    let totalSimulations: Int
+    
+    /// 총 개월 수
+    var totalMonths: Int {
+        median.count - 1
+    }
+    
+    /// 최종 수익률 범위
+    var finalReturnRange: (best: Double, median: Double, worst: Double) {
+        let best = (bestCase.last ?? 1.0) - 1.0
+        let med = (median.last ?? 1.0) - 1.0
+        let worst = (worstCase.last ?? 1.0) - 1.0
+        return (best, med, worst)
+    }
+}
+
+/// 포트폴리오 과거 성과 데이터
+struct PortfolioHistoricalData {
+    /// 연도 레이블
+    let years: [String]
+    
+    /// 연도별 포트폴리오 가치 (시작 = 1.0)
+    let values: [Double]
+    
+    /// 총 수익률
+    var totalReturn: Double {
+        (values.last ?? 1.0) - 1.0
+    }
+    
+    /// CAGR
+    var cagr: Double {
+        let years = Double(values.count - 1)
+        guard years > 0 else { return 0 }
+        return pow(values.last ?? 1.0, 1.0 / years) - 1
+    }
+}
+
+extension MonteCarloSimulator {
+    
+    // MARK: - Portfolio Future Projection
+    
+    /// 포트폴리오 미래 10년 예측 시뮬레이션 (월별 샘플링으로 변동성 표현)
+    /// - Parameters:
+    ///   - cagr: 연평균 기대 수익률 (0.10 = 10%)
+    ///   - volatility: 연간 변동성 (0.20 = 20%)
+    ///   - years: 예측 기간 (기본 10년)
+    ///   - simulationCount: 시뮬레이션 횟수 (기본 5000회)
+    /// - Returns: 포트폴리오 예측 결과
+    nonisolated static func projectPortfolio(
+        cagr: Double,
+        volatility: Double,
+        years: Int = 10,
+        simulationCount: Int = 5000
+    ) -> PortfolioProjectionResult {
+        
+        let totalMonths = years * 12
+        
+        // 월별 파라미터 계산
+        let monthlyMean = log(1 + cagr) / 12.0 - 0.5 * (volatility * volatility) / 12.0
+        let monthlyVolatility = volatility / sqrt(12.0)
+        
+        // 모든 시뮬레이션 경로 저장 (월별)
+        var allPaths: [[Double]] = []
+        
+        for _ in 0..<simulationCount {
+            var path: [Double] = [1.0]  // 시작 = 1.0 (정규화)
+            var currentValue = 1.0
+            
+            for _ in 0..<totalMonths {
+                // 월별 로그 정규분포 (GBM)
+                let monthlyReturn = sampleNormalDistribution(
+                    mean: monthlyMean,
+                    standardDeviation: monthlyVolatility
+                )
+                currentValue *= exp(monthlyReturn)
+                path.append(currentValue)
+            }
+            
+            allPaths.append(path)
+        }
+        
+        // 월별로 percentile 계산 (60% 범위: 상위 20% ~ 하위 20%)
+        var bestCase: [Double] = [1.0]
+        var median: [Double] = [1.0]
+        var worstCase: [Double] = [1.0]
+        
+        for month in 1...totalMonths {
+            let valuesAtMonth = allPaths.map { $0[month] }.sorted()
+            
+            let p20Index = Int(Double(valuesAtMonth.count) * 0.2)
+            let p50Index = valuesAtMonth.count / 2
+            let p80Index = Int(Double(valuesAtMonth.count) * 0.8)
+            
+            // best = 상위 20% (80 percentile), worst = 하위 20% (20 percentile)
+            worstCase.append(valuesAtMonth[p20Index])
+            median.append(valuesAtMonth[p50Index])
+            bestCase.append(valuesAtMonth[min(p80Index, valuesAtMonth.count - 1)])
+        }
+        
+        return PortfolioProjectionResult(
+            initialValue: 1.0,
+            bestCase: bestCase,
+            median: median,
+            worstCase: worstCase,
+            totalSimulations: simulationCount
+        )
+    }
+    
+    /// 포트폴리오 과거 성과 계산
+    /// - Parameters:
+    ///   - holdings: 보유 종목 비중
+    ///   - stocksData: 종목별 데이터
+    /// - Returns: 과거 성과 데이터
+    static func calculateHistoricalPerformance(
+        holdings: [(ticker: String, weight: Double)],
+        stocksData: [StockWithData]
+    ) -> PortfolioHistoricalData {
+        
+        guard !holdings.isEmpty else {
+            return PortfolioHistoricalData(years: [], values: [])
+        }
+        
+        // 가장 긴 연도 수 찾기 (보통 5년)
+        let maxYears = stocksData.map { $0.priceHistory.annualReturns.count }.max() ?? 5
+        
+        // 연도별 포트폴리오 가중 수익률 계산
+        var portfolioValues: [Double] = [1.0]  // 시작 = 1.0
+        var currentValue = 1.0
+        
+        for yearIndex in 0..<maxYears {
+            var weightedReturn = 0.0
+            var totalWeight = 0.0
+            
+            for holding in holdings {
+                guard let stock = stocksData.first(where: { $0.info.ticker == holding.ticker }),
+                      yearIndex < stock.priceHistory.annualReturns.count else {
+                    continue
+                }
+                
+                let yearlyReturn = stock.priceHistory.annualReturns[yearIndex]
+                // 배당 수익률도 연간 수익에 추가
+                let dividendContribution = stock.dividendHistory.dividendYield
+                
+                weightedReturn += (yearlyReturn + dividendContribution) * holding.weight
+                totalWeight += holding.weight
+            }
+            
+            if totalWeight > 0 {
+                let normalizedReturn = weightedReturn / totalWeight
+                currentValue *= (1 + normalizedReturn)
+            }
+            
+            portfolioValues.append(currentValue)
+        }
+        
+        // 연도 레이블 생성 (현재 기준 과거)
+        let currentYear = Calendar.current.component(.year, from: Date())
+        var years: [String] = []
+        for i in 0...maxYears {
+            years.append("\(currentYear - maxYears + i)")
+        }
+        
+        return PortfolioHistoricalData(
+            years: years,
+            values: portfolioValues
+        )
+    }
+}
+
 // MARK: - Result Extensions
 
 extension MonteCarloResult {

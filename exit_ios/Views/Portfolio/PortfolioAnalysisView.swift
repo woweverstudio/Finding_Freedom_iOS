@@ -24,6 +24,21 @@ struct PortfolioAnalysisView: View {
                     if let result = viewModel.analysisResult {
                         PortfolioScoreCard(score: result.score)
                         
+                        // ✨ 과거 5년 성과 차트
+                        if let historicalData = viewModel.historicalData,
+                           !historicalData.values.isEmpty {
+                            PortfolioHistoricalChart(data: historicalData)
+                        }
+                        
+                        // ✨ 미래 10년 시뮬레이션 차트
+                        if let projectionData = viewModel.projectionData {
+                            PortfolioProjectionChart(
+                                projection: projectionData,
+                                cagr: result.cagrWithDividends,
+                                volatility: result.volatility
+                            )
+                        }
+                        
                         // 수익성 지표 (CAGR)
                         cagrSection(result: result)
                         
