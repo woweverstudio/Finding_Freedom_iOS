@@ -56,7 +56,7 @@ struct StockSearchCard: View {
     }
 }
 
-/// 포트폴리오 내 종목 카드
+/// 포트폴리오 내 종목 카드 (컴팩트 디자인)
 struct PortfolioStockCard: View {
     let holding: PortfolioHoldingDisplay
     let onWeightChange: (Double) -> Void
@@ -64,113 +64,145 @@ struct PortfolioStockCard: View {
     
     @State private var isEditing = false
     @State private var tempWeight: String = ""
+    @FocusState private var isInputFocused: Bool
+    
+    /// 비중 퍼센트 (0-100)
+    private var weightPercent: Double {
+        holding.weight * 100
+    }
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: ExitSpacing.sm) {
+            // 상단: 종목 정보 + 삭제 버튼
             HStack(spacing: ExitSpacing.md) {
-                // 섹터 이모지
-                Text(holding.sectorEmoji)
-                    .font(.system(size: 24))
-                    .frame(width: 40, height: 40)
-                    .background(Color.Exit.secondaryCardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+                // CI 이미지 placeholder
+                ZStack {
+                    Circle()
+                        .fill(Color.Exit.secondaryCardBackground)
+                        .frame(width: 40, height: 40)
+                    
+                    Text(String(holding.ticker.prefix(1)))
+                        .font(.Exit.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                }
                 
-                // 종목 정보
+                // 종목 정보 (넓게, 2줄 허용)
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: ExitSpacing.xs) {
-                        Text(holding.name)
-                            .font(.Exit.body)
-                            .fontWeight(.medium)
-                            .foregroundStyle(Color.Exit.primaryText)
-                            .lineLimit(1)
-                        
-                        Text(holding.exchange.flagEmoji)
-                            .font(.caption)
-                    }
+                    Text(holding.name)
+                        .font(.Exit.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color.Exit.primaryText)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                     
                     Text(holding.ticker)
-                        .font(.Exit.caption)
-                        .foregroundStyle(Color.Exit.secondaryText)
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
                 }
                 
                 Spacer()
                 
-                // 비중 표시 / 편집
-                if isEditing {
-                    HStack(spacing: ExitSpacing.xs) {
-                        TextField("", text: $tempWeight)
-                            .font(.Exit.body)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color.Exit.accent)
-                            .keyboardType(.decimalPad)
-                            .frame(width: 50)
-                            .multilineTextAlignment(.trailing)
-                            .onSubmit {
-                                applyWeight()
-                            }
-                        
-                        Text("%")
-                            .font(.Exit.body)
-                            .foregroundStyle(Color.Exit.accent)
-                    }
-                } else {
-                    Button {
-                        tempWeight = String(format: "%.1f", holding.weight * 100)
-                        isEditing = true
-                    } label: {
-                        Text(holding.weightPercent)
-                            .font(.Exit.body)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color.Exit.accent)
-                    }
-                    .buttonStyle(.plain)
-                }
-                
                 // 삭제 버튼
                 Button(action: onRemove) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(Color.Exit.tertiaryText)
+                        .frame(width: 24, height: 24)
+                        .background(Color.Exit.secondaryCardBackground)
+                        .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
             }
-            .padding(ExitSpacing.md)
             
-            // 비중 슬라이더
-            VStack(spacing: ExitSpacing.xs) {
-                // 프로그레스 바
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        // 배경
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.Exit.divider)
-                            .frame(height: 4)
-                        
-                        // 채워진 부분
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.Exit.accent)
-                            .frame(width: geometry.size.width * holding.weight, height: 4)
-                    }
+            // 하단: 비중 조절 컨트롤 (슬라이더 + 버튼)
+            HStack(spacing: ExitSpacing.sm) {
+                // 마이너스 버튼
+                Button {
+                    adjustWeight(by: -0.01)
+                } label: {
+                    Image(systemName: "minus")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Color.Exit.secondaryText)
+                        .frame(width: 28, height: 28)
+                        .background(Color.Exit.secondaryCardBackground)
+                        .clipShape(Circle())
                 }
-                .frame(height: 4)
+                .buttonStyle(.plain)
                 
-                // 슬라이더 (드래그)
+                // 슬라이더
                 Slider(value: Binding(
                     get: { holding.weight },
                     set: { onWeightChange($0) }
                 ), in: 0...1, step: 0.01)
                 .tint(Color.Exit.accent)
+                
+                // 플러스 버튼
+                Button {
+                    adjustWeight(by: 0.01)
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Color.Exit.secondaryText)
+                        .frame(width: 28, height: 28)
+                        .background(Color.Exit.secondaryCardBackground)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                
+                // 비중 표시 / 직접 입력
+                if isEditing {
+                    HStack(spacing: 2) {
+                        TextField("", text: $tempWeight)
+                            .font(.Exit.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.Exit.accent)
+                            .keyboardType(.decimalPad)
+                            .frame(width: 36)
+                            .multilineTextAlignment(.trailing)
+                            .focused($isInputFocused)
+                            .onSubmit {
+                                applyWeight()
+                            }
+                        
+                        Text("%")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.accent)
+                    }
+                    .padding(.horizontal, ExitSpacing.xs)
+                    .padding(.vertical, 4)
+                    .background(Color.Exit.accent.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                } else {
+                    Button {
+                        tempWeight = String(format: "%.0f", weightPercent)
+                        isEditing = true
+                        isInputFocused = true
+                    } label: {
+                        Text(String(format: "%.0f%%", weightPercent))
+                            .font(.Exit.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.Exit.accent)
+                            .frame(width: 44)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            .padding(.horizontal, ExitSpacing.md)
-            .padding(.bottom, ExitSpacing.md)
         }
+        .padding(ExitSpacing.md)
         .background(Color.Exit.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-        .onChange(of: isEditing) { _, newValue in
-            if !newValue {
+        .onChange(of: isInputFocused) { _, focused in
+            if !focused && isEditing {
                 applyWeight()
             }
         }
+    }
+    
+    private func adjustWeight(by delta: Double) {
+        let newWeight = max(0, min(1, holding.weight + delta))
+        onWeightChange(newWeight)
+        HapticService.shared.light()
     }
     
     private func applyWeight() {

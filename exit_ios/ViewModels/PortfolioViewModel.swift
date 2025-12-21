@@ -170,23 +170,16 @@ final class PortfolioViewModel {
             return
         }
         
-        // 초기 비중 계산 (균등 분배)
-        let newWeight = holdings.isEmpty ? 1.0 : 0.0
-        
+        // 새 종목은 비중 0으로 시작
         let holding = PortfolioHoldingDisplay(
             ticker: stock.ticker,
             name: stock.displayName,
             exchange: stock.exchange,
             sectorEmoji: stock.sectorEmoji,
-            weight: newWeight
+            weight: 0.0
         )
         
         holdings.append(holding)
-        
-        // 비중 자동 조정
-        if holdings.count > 1 {
-            equalizeWeights()
-        }
         
         viewState = .editing
         saveHoldings()
@@ -203,47 +196,63 @@ final class PortfolioViewModel {
         holdings.remove(at: index)
         
         if holdings.isEmpty {
-            viewState = .empty
+            // 빈 상태여도 편집 화면 유지 (빈 상태 안내는 PortfolioEditView에서 처리)
             analysisResult = nil
-        } else {
-            equalizeWeights()
         }
         
         saveHoldings()
     }
     
-    /// 비중 업데이트
+    /// 비중 업데이트 (정수 퍼센트로 반올림)
     @MainActor
     func updateWeight(for ticker: String, weight: Double) {
         guard let index = holdings.firstIndex(where: { $0.ticker == ticker }) else {
             return
         }
         
-        holdings[index].weight = max(0, min(1, weight))
+        // 1% 단위로 반올림 (소수점 오차 방지)
+        let roundedWeight = (weight * 100).rounded() / 100
+        holdings[index].weight = max(0, min(1, roundedWeight))
         saveHoldings()
     }
     
-    /// 비중 균등화
+    /// 비중 균등화 (정수 퍼센트로 반올림)
     @MainActor
     func equalizeWeights() {
         guard !holdings.isEmpty else { return }
         
-        let equalWeight = 1.0 / Double(holdings.count)
+        let count = holdings.count
+        let baseWeight = Int(100 / count)  // 정수 퍼센트
+        let remainder = 100 - (baseWeight * count)  // 나머지
+        
         for i in holdings.indices {
-            holdings[i].weight = equalWeight
+            // 앞에서부터 나머지를 1%씩 분배
+            let extra = i < remainder ? 1 : 0
+            holdings[i].weight = Double(baseWeight + extra) / 100.0
         }
         
         saveHoldings()
     }
     
-    /// 비중 정규화 (합계 100%로)
+    /// 비중 정규화 (합계 100%로, 정수 퍼센트로 반올림)
     @MainActor
     func normalizeWeights() {
         guard totalWeight > 0 else { return }
         
         let factor = 1.0 / totalWeight
+        var totalAssigned = 0
+        
+        // 먼저 모든 비중을 정수 퍼센트로 변환
         for i in holdings.indices {
-            holdings[i].weight *= factor
+            let newWeight = Int((holdings[i].weight * factor * 100).rounded())
+            holdings[i].weight = Double(newWeight) / 100.0
+            totalAssigned += newWeight
+        }
+        
+        // 반올림 오차로 100%가 안 되면 첫 번째 종목에 보정
+        if totalAssigned != 100 && !holdings.isEmpty {
+            let diff = 100 - totalAssigned
+            holdings[0].weight += Double(diff) / 100.0
         }
         
         saveHoldings()

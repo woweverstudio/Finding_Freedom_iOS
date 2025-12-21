@@ -78,13 +78,13 @@ struct DonutChart: View {
     
     var body: some View {
         ZStack {
-            ForEach(allocations.indices, id: \.self) { index in
+            ForEach(Array(allocations.enumerated()), id: \.element.id) { index, item in
                 let startAngle = startAngle(for: index)
                 let endAngle = endAngle(for: index)
                 
                 Circle()
                     .trim(from: startAngle, to: endAngle)
-                    .stroke(allocations[index].color, style: StrokeStyle(lineWidth: 16, lineCap: .butt))
+                    .stroke(item.color, style: StrokeStyle(lineWidth: 16, lineCap: .butt))
                     .rotationEffect(.degrees(-90))
             }
             
