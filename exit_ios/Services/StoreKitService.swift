@@ -235,3 +235,18 @@ enum StoreError: Error, LocalizedError {
     }
 }
 
+// MARK: - Environment Key
+
+import SwiftUI
+
+struct StoreKitServiceKey: EnvironmentKey {
+    static let defaultValue: StoreKitService = StoreKitService()
+}
+
+extension EnvironmentValues {
+    var storeService: StoreKitService {
+        get { self[StoreKitServiceKey.self] }
+        set { self[StoreKitServiceKey.self] = newValue }
+    }
+}
+

@@ -12,6 +12,7 @@ import SwiftData
 struct SettingsView: View {
     @Environment(\.appState) private var appState
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.storeService) private var storeService
     @Bindable var viewModel: SettingsViewModel
     @Binding var shouldNavigateToWelcome: Bool
     
@@ -25,6 +26,9 @@ struct SettingsView: View {
                 VStack(spacing: ExitSpacing.xl) {
                     // 공지사항 섹션
                     announcementSection
+                    
+                    // 인앱결제 섹션
+                    purchaseSection
                     
                     // 입금 알람 섹션
                     reminderSection
@@ -110,6 +114,83 @@ struct SettingsView: View {
             }
             .buttonStyle(.plain)
         }
+    }
+    
+    // MARK: - Purchase Section
+    
+    private var purchaseSection: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            HStack {
+                sectionHeader(title: "구매 항목")
+                
+                Spacer()
+                
+                Button {
+                    Task {
+                        await storeService.restorePurchases()
+                    }
+                } label: {
+                    Text("구매 복원")
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.accent)
+                }
+                .buttonStyle(.plain)
+            }
+            
+            VStack(spacing: 0) {
+                // 몬테카를로 시뮬레이션
+                purchaseRow(
+                    title: "몬테카를로 시뮬레이션",
+                    description: "은퇴 시뮬레이션 기능",
+                    isPurchased: storeService.hasMontecarloSimulation
+                )
+                
+                Divider()
+                    .background(Color.Exit.divider)
+                    .padding(.leading, ExitSpacing.md)
+                
+                // 포트폴리오 분석
+                purchaseRow(
+                    title: "포트폴리오 분석",
+                    description: "상세 포트폴리오 분석 기능",
+                    isPurchased: storeService.hasPortfolioAnalysis
+                )
+            }
+            .background(Color.Exit.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+        }
+    }
+    
+    private func purchaseRow(title: String, description: String, isPurchased: Bool) -> some View {
+        HStack(spacing: ExitSpacing.md) {
+            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                Text(title)
+                    .font(.Exit.body)
+                    .foregroundStyle(Color.Exit.primaryText)
+                
+                Text(description)
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+            }
+            
+            Spacer()
+            
+            // 구매 상태 표시
+            if isPurchased {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 14))
+                    Text("구매완료")
+                        .font(.Exit.caption)
+                }
+                .foregroundStyle(Color.Exit.accent)
+            } else {
+                Text("미구매")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+            }
+        }
+        .padding(ExitSpacing.md)
     }
     
     // MARK: - Reminder Section
@@ -645,5 +726,6 @@ struct ReminderEditSheet: View {
     )
     .preferredColorScheme(.dark)
     .environment(\.appState, AppStateManager())
+    .environment(\.storeService, StoreKitService())
 }
 

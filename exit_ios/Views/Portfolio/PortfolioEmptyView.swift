@@ -271,43 +271,43 @@ struct PortfolioEmptyView: View {
                 VStack(spacing: 4) {
                     Text("삼성전자")
                         .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
+                        .foregroundStyle(Color.Exit.secondaryText)
                     Text("40%")
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundStyle(Color.Exit.accent)
                 }
-                .padding(.horizontal, ExitSpacing.xs)
+                .padding(.horizontal, ExitSpacing.sm)
                 .padding(.vertical, ExitSpacing.xs)
                 .background(Color.Exit.accent.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 
                 Text("+")
                     .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .foregroundStyle(Color.Exit.secondaryText)
                 
                 // 종목 2
                 VStack(spacing: 4) {
                     Text("애플")
                         .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
+                        .foregroundStyle(Color.Exit.secondaryText)
                     Text("30%")
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundStyle(Color.Exit.accent)
                 }
-                .padding(.horizontal, ExitSpacing.xs)
+                .padding(.horizontal, ExitSpacing.sm)
                 .padding(.vertical, ExitSpacing.xs)
                 .background(Color.Exit.accent.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 
                 Text("+")
                     .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .foregroundStyle(Color.Exit.secondaryText)
                 
                 // 종목 3
                 VStack(spacing: 4) {
                     Text("...")
                         .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
+                        .foregroundStyle(Color.Exit.secondaryText)
                 }
                 
                 Image(systemName: "arrow.right")
@@ -317,12 +317,12 @@ struct PortfolioEmptyView: View {
                 VStack(spacing: 4) {
                     Text("포트폴리오")
                         .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
+                        .foregroundStyle(Color.Exit.secondaryText)
                     Text("100%")
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundStyle(Color.Exit.positive)
                 }
-                .padding(.horizontal, ExitSpacing.xs)
+                .padding(.horizontal, ExitSpacing.sm)
                 .padding(.vertical, ExitSpacing.xs)
                 .background(Color.Exit.positive.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 6))

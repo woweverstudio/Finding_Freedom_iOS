@@ -35,6 +35,9 @@ struct exit_iosApp: App {
     /// 전역 앱 상태 관리자
     @State private var appStateManager = AppStateManager()
     
+    /// 인앱결제 서비스
+    @State private var storeKitService = StoreKitService()
+    
     init() {
         // 앱 실행 기록 (리뷰 요청 조건 추적용)
         Task { @MainActor in
@@ -47,6 +50,7 @@ struct exit_iosApp: App {
             ContentView()
                 .preferredColorScheme(.dark)
                 .environment(\.appState, appStateManager)
+                .environment(\.storeService, storeKitService)
         }
         .modelContainer(sharedModelContainer)
     }
