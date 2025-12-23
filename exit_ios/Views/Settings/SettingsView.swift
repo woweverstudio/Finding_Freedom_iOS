@@ -11,6 +11,7 @@ import SwiftData
 /// 설정 화면 메인 뷰
 struct SettingsView: View {
     @Environment(\.appState) private var appState
+    @Environment(\.scenePhase) private var scenePhase
     @Bindable var viewModel: SettingsViewModel
     @Binding var shouldNavigateToWelcome: Bool
     
@@ -125,12 +126,20 @@ struct SettingsView: View {
                 } label: {
                     Text("추가")
                         .font(.Exit.caption)
-                        .foregroundStyle(Color.Exit.accent)
+                        .foregroundStyle(viewModel.isNotificationEnabled ? Color.Exit.accent : Color.Exit.tertiaryText)
                 }
                 .buttonStyle(.plain)
+                .disabled(!viewModel.isNotificationEnabled)
             }
             
             VStack(spacing: 0) {
+                // 알림 권한 토글 (항상 최상단)
+                notificationPermissionRow
+                
+                Divider()
+                    .background(Color.Exit.divider)
+                    .padding(.leading, ExitSpacing.md)
+                
                 if viewModel.depositReminders.isEmpty {
                     // 빈 상태
                     HStack {
@@ -156,7 +165,61 @@ struct SettingsView: View {
             }
             .background(Color.Exit.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            
+            // 알림 권한 안내 (권한이 꺼져있을 때만)
+            if !viewModel.isNotificationEnabled {
+                notificationPermissionGuide
+            }
         }
+        .onAppear {
+            viewModel.checkNotificationPermissionStatus()
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            // 앱이 포그라운드로 돌아올 때 권한 상태 재확인
+            if newPhase == .active {
+                viewModel.checkNotificationPermissionStatus()
+            }
+        }
+    }
+    
+    /// 알림 권한 토글 Row
+    private var notificationPermissionRow: some View {
+        HStack(spacing: ExitSpacing.md) {
+            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                Text("알림 권한")
+                    .font(.Exit.body)
+                    .foregroundStyle(Color.Exit.primaryText)
+                
+                Text("알림을 받으려면 권한이 필요해요")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: Binding(
+                get: { viewModel.isNotificationEnabled },
+                set: { _ in viewModel.toggleNotificationPermission() }
+            ))
+            .labelsHidden()
+            .tint(Color.Exit.accent)
+        }
+        .padding(ExitSpacing.md)
+    }
+    
+    /// 알림 권한 안내 문구 (권한 꺼져있을 때)
+    private var notificationPermissionGuide: some View {
+        Button {
+            if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                UIApplication.shared.open(settingsURL)
+            }
+        } label: {
+            Text("설정 → 알림에서 권한을 켜주세요")
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.warning)
+        }
+        .buttonStyle(.plain)
+        .padding(.leading, ExitSpacing.xs)
     }
     
     private func reminderRow(_ reminder: DepositReminder) -> some View {
@@ -165,7 +228,11 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: ExitSpacing.xs) {
                 Text(reminder.name)
                     .font(.Exit.body)
-                    .foregroundStyle(reminder.isEnabled ? Color.Exit.primaryText : Color.Exit.tertiaryText)
+                    .foregroundStyle(
+                        viewModel.isNotificationEnabled && reminder.isEnabled
+                        ? Color.Exit.primaryText
+                        : Color.Exit.tertiaryText
+                    )
                 
                 Text(reminder.descriptionText)
                     .font(.Exit.caption)
@@ -174,13 +241,14 @@ struct SettingsView: View {
             
             Spacer()
             
-            // 토글
+            // 토글 (알림 권한이 있을 때만 활성화)
             Toggle("", isOn: Binding(
                 get: { reminder.isEnabled },
                 set: { _ in viewModel.toggleReminder(reminder) }
             ))
             .labelsHidden()
             .tint(Color.Exit.accent)
+            .disabled(!viewModel.isNotificationEnabled)
         }
         .padding(ExitSpacing.md)
         .contentShape(Rectangle())

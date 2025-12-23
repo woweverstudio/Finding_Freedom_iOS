@@ -58,6 +58,9 @@ final class SettingsViewModel {
     /// 데이터 삭제 확인 얼럿 표시
     var showDeleteConfirm: Bool = false
     
+    /// 알림 권한 활성화 상태 (시스템 권한과 동기화)
+    var isNotificationEnabled: Bool = false
+    
     // MARK: - Reminder Input States
     
     var reminderName: String = ""
@@ -82,8 +85,62 @@ final class SettingsViewModel {
         // 알람 로드
         loadReminders()
         
-        // 알림 권한 요청 (비동기)
-        requestNotificationPermission()
+        // 알림 권한 상태 확인
+        checkNotificationPermissionStatus()
+    }
+    
+    /// 알림 권한 상태 확인 (시스템 설정과 동기화)
+    func checkNotificationPermissionStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
+            DispatchQueue.main.async {
+                let wasEnabled = self?.isNotificationEnabled ?? false
+                let isEnabled = settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional
+                self?.isNotificationEnabled = isEnabled
+                
+                // 권한이 꺼지면 모든 알람 비활성화
+                if wasEnabled && !isEnabled {
+                    self?.disableAllReminders()
+                }
+                // 권한이 켜지면 알림 스케줄 업데이트
+                else if isEnabled {
+                    self?.scheduleNotifications()
+                }
+            }
+        }
+    }
+    
+    /// 알림 권한 토글 (권한 요청 또는 설정 이동)
+    func toggleNotificationPermission() {
+        let center = UNUserNotificationCenter.current()
+        
+        center.getNotificationSettings { [weak self] settings in
+            DispatchQueue.main.async {
+                switch settings.authorizationStatus {
+                case .notDetermined:
+                    // 아직 요청 안 함 → 권한 요청
+                    center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+                        DispatchQueue.main.async {
+                            self?.isNotificationEnabled = granted
+                            if !granted {
+                                self?.disableAllReminders()
+                            }
+                        }
+                    }
+                case .denied:
+                    // 권한 거부됨 → 설정 앱으로 이동
+                    if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(settingsURL)
+                    }
+                case .authorized, .provisional:
+                    // 이미 권한 있음 → 설정 앱으로 이동 (권한 끄려면)
+                    if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(settingsURL)
+                    }
+                @unknown default:
+                    break
+                }
+            }
+        }
     }
     
     // MARK: - Data Loading
@@ -106,10 +163,35 @@ final class SettingsViewModel {
     
     // MARK: - Notification Permission
     
-    private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-            if let error = error {
-                print("Notification permission error: \(error)")
+    /// 알림 권한 요청 (알람 저장 시 호출)
+    private func requestNotificationPermissionIfNeeded(completion: @escaping (Bool) -> Void) {
+        let center = UNUserNotificationCenter.current()
+        
+        center.getNotificationSettings { [weak self] settings in
+            DispatchQueue.main.async {
+                switch settings.authorizationStatus {
+                case .authorized, .provisional:
+                    // 이미 권한이 있음
+                    self?.isNotificationEnabled = true
+                    completion(true)
+                case .notDetermined:
+                    // 아직 요청하지 않음 → 권한 요청
+                    center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+                        DispatchQueue.main.async {
+                            if let error = error {
+                                print("Notification permission error: \(error)")
+                            }
+                            self?.isNotificationEnabled = granted
+                            completion(granted)
+                        }
+                    }
+                case .denied:
+                    // 권한 거부됨
+                    self?.isNotificationEnabled = false
+                    completion(false)
+                @unknown default:
+                    completion(false)
+                }
             }
         }
     }
@@ -169,8 +251,15 @@ final class SettingsViewModel {
         try? context.save()
         loadReminders()
         
-        // 알람 스케줄 업데이트
-        scheduleNotifications()
+        // 알림 권한 요청 후 스케줄 업데이트
+        requestNotificationPermissionIfNeeded { [weak self] granted in
+            if granted {
+                self?.scheduleNotifications()
+            } else {
+                // 권한 거부 시 모든 알람 비활성화
+                self?.disableAllReminders()
+            }
+        }
         
         showReminderSheet = false
     }
@@ -191,11 +280,48 @@ final class SettingsViewModel {
     func toggleReminder(_ reminder: DepositReminder) {
         guard let context = modelContext else { return }
         
-        reminder.isEnabled.toggle()
-        reminder.updatedAt = Date()
+        let newState = !reminder.isEnabled
+        
+        if newState {
+            // 활성화하려는 경우: 권한 확인 후 활성화
+            requestNotificationPermissionIfNeeded { [weak self] granted in
+                guard let self = self else { return }
+                
+                if granted {
+                    reminder.isEnabled = true
+                    reminder.updatedAt = Date()
+                    try? context.save()
+                    self.loadReminders()
+                    self.scheduleNotifications()
+                } else {
+                    // 권한 거부 시 모든 알람 비활성화
+                    self.disableAllReminders()
+                }
+            }
+        } else {
+            // 비활성화하려는 경우: 바로 비활성화
+            reminder.isEnabled = false
+            reminder.updatedAt = Date()
+            try? context.save()
+            loadReminders()
+            scheduleNotifications()
+        }
+    }
+    
+    /// 모든 알람 비활성화 (권한 거부 시)
+    private func disableAllReminders() {
+        guard let context = modelContext else { return }
+        
+        for reminder in depositReminders {
+            reminder.isEnabled = false
+            reminder.updatedAt = Date()
+        }
         
         try? context.save()
-        scheduleNotifications()
+        loadReminders()
+        
+        // 예약된 알림 모두 취소
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
     }
     
     /// 로컬 알림 스케줄링
