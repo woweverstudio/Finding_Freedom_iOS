@@ -14,35 +14,15 @@ struct SimulationSettingsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
             // 헤더
-            HStack {
-                Image(systemName: "slider.horizontal.3")
-                    .foregroundStyle(Color.Exit.accent)
-                Text("시뮬레이션 설정")
-                    .font(.Exit.title3)
-                    .foregroundStyle(Color.Exit.primaryText)
-            }
-            
-            Divider()
-                .background(Color.Exit.divider)
+            ExitCardHeader(icon: "slider.horizontal.3", title: "시뮬레이션 설정")
             
             // 다시 실행 버튼
-            Button {
-                onRefresh()
-            } label: {
-                HStack {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 16, weight: .semibold))
-                    Text("다시 시뮬레이션")
-                        .font(.Exit.body)
-                        .fontWeight(.semibold)
-                }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, ExitSpacing.md)
-                .background(LinearGradient.exitAccent)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-            }
-            .buttonStyle(.plain)
+            ExitCTAButton(
+                title: "다시 시뮬레이션",
+                icon: "arrow.clockwise",
+                size: .medium,
+                action: onRefresh
+            )
             
             // Pro 기능 안내
             HStack(spacing: ExitSpacing.sm) {
@@ -57,9 +37,7 @@ struct SimulationSettingsCard: View {
             .background(Color.Exit.secondaryCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
         }
-        .padding(ExitSpacing.lg)
-        .background(Color.Exit.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+        .exitCard()
         .padding(.horizontal, ExitSpacing.md)
     }
 }

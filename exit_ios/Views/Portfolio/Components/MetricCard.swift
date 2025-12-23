@@ -47,9 +47,7 @@ struct MetricCard: View {
                     .font(.system(size: 16))
                     .foregroundStyle(Color.Exit.tertiaryText)
             }
-            .padding(ExitSpacing.md)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            .exitCard(.small)
         }
         .buttonStyle(.plain)
     }
@@ -104,9 +102,7 @@ struct MetricGroupCard: View {
                 }
             }
         }
-        .padding(ExitSpacing.lg)
-        .background(Color.Exit.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+        .exitCard()
     }
 }
 
@@ -188,9 +184,7 @@ struct DividendInfoCard: View {
                 }
             }
         }
-        .padding(ExitSpacing.lg)
-        .background(Color.Exit.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+        .exitCard()
     }
 }
 

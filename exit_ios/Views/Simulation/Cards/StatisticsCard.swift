@@ -16,16 +16,7 @@ struct StatisticsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
             // 헤더
-            HStack {
-                Image(systemName: "info.circle.fill")
-                    .foregroundStyle(Color.Exit.accent)
-                Text("시뮬레이션 상세")
-                    .font(.Exit.title3)
-                    .foregroundStyle(Color.Exit.primaryText)
-            }
-            
-            Divider()
-                .background(Color.Exit.divider)
+            ExitCardHeader(icon: "info.circle.fill", title: "시뮬레이션 상세")
             
             VStack(spacing: ExitSpacing.sm) {
                 statRow(label: "시뮬레이션 횟수", value: "\(result.totalSimulations.formatted())회")
@@ -41,9 +32,7 @@ struct StatisticsCard: View {
                 statRow(label: "월 저축액", value: ExitNumberFormatter.formatToManWon(userProfile.monthlyInvestment))
             }
         }
-        .padding(ExitSpacing.lg)
-        .background(Color.Exit.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+        .exitCard()
         .padding(.horizontal, ExitSpacing.md)
     }
     

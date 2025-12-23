@@ -276,23 +276,12 @@ struct PortfolioAnalysisView: View {
     // MARK: - Action Buttons
     
     private var actionButtons: some View {
-        Button {
-            viewModel.backToEdit()
-        } label: {
-            HStack(spacing: ExitSpacing.sm) {
-                Image(systemName: "pencil")
-                    .font(.system(size: 16))
-                Text("포트폴리오 수정")
-                    .font(.Exit.body)
-                    .fontWeight(.semibold)
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 48)
-            .background(LinearGradient.exitAccent)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-        }
-        .buttonStyle(.plain)
+        ExitCTAButton(
+            title: "포트폴리오 수정",
+            icon: "pencil",
+            size: .small,
+            action: { viewModel.backToEdit() }
+        )
         .padding(.top, ExitSpacing.md)
     }
 }

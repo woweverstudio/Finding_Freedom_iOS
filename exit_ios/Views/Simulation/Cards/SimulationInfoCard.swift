@@ -32,14 +32,7 @@ struct SimulationInfoCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.lg) {
             // 헤더
-            HStack {
-                Image(systemName: "info.circle.fill")
-                    .foregroundStyle(Color.Exit.accent)
-                Text("시뮬레이션 정보")
-                    .font(.Exit.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.primaryText)
-            }
+            ExitCardHeader(icon: "info.circle.fill", title: "시뮬레이션 정보", showDivider: false)
             
             // 기본 정보
             infoSection(title: "기본 정보") {
@@ -69,9 +62,7 @@ struct SimulationInfoCard: View {
                 infoRow(label: "성공률", value: String(format: "%.1f%%", result.successRate * 100), valueColor: Color.Exit.accent)
             }
         }
-        .padding(ExitSpacing.md)
-        .background(Color.Exit.secondaryCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+        .exitCard(.medium)
         .padding(.horizontal, ExitSpacing.md)
     }
     
@@ -88,7 +79,7 @@ struct SimulationInfoCard: View {
                 content()
             }
             .padding(ExitSpacing.sm)
-            .background(Color.Exit.cardBackground)
+            .background(Color.Exit.secondaryCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
         }
     }

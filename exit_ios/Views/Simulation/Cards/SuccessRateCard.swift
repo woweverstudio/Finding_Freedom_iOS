@@ -64,13 +64,7 @@ struct SuccessRateCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.lg) {
             // 1. 타이틀
-            HStack {
-                Image(systemName: "percent")
-                    .foregroundStyle(Color.Exit.accent)
-                Text("성공 확률")
-                    .font(.Exit.title3)
-                    .foregroundStyle(Color.Exit.primaryText)
-            }
+            ExitCardHeader(icon: "percent", title: "성공 확률", showDivider: false)
             
             // 2. 차트 및 데이터 (성공률 + 코칭 메시지)
             VStack(spacing: ExitSpacing.md) {
@@ -117,9 +111,7 @@ struct SuccessRateCard: View {
                 simulationConditionSection(profile: profile)
             }
         }
-        .padding(ExitSpacing.lg)
-        .background(Color.Exit.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.xl))
+        .exitCard()
         .padding(.horizontal, ExitSpacing.md)
     }
     

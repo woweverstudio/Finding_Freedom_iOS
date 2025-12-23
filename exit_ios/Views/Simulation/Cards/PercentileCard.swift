@@ -15,16 +15,7 @@ struct PercentileCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
             // 헤더
-            HStack {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .foregroundStyle(Color.Exit.accent)
-                Text("FIRE 달성 시점 비교")
-                    .font(.Exit.title3)
-                    .foregroundStyle(Color.Exit.primaryText)
-            }
-            
-            Divider()
-                .background(Color.Exit.divider)
+            ExitCardHeader(icon: "chart.line.uptrend.xyaxis", title: "FIRE 달성 시점 비교")
             
             // 기존 D-Day vs 시뮬레이션 결과
             VStack(spacing: ExitSpacing.md) {
@@ -69,9 +60,7 @@ struct PercentileCard: View {
             // 해석
             differenceExplanation
         }
-        .padding(ExitSpacing.lg)
-        .background(Color.Exit.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+        .exitCard()
         .padding(.horizontal, ExitSpacing.md)
     }
     

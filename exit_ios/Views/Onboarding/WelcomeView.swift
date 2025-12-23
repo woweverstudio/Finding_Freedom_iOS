@@ -143,16 +143,11 @@ struct WelcomeView: View {
     // MARK: - Start Button
     
     private var startButton: some View {
-        Button(action: onStart) {
-            Text("회사 탈출 계획 시작하기")
-                .font(.Exit.body)                
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(LinearGradient.exitAccent)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
-                .exitButtonShadow()
-        }
+        ExitCTAButton(
+            title: "회사 탈출 계획 시작하기",
+            action: onStart
+        )
+        .exitButtonShadow()
         .padding(.bottom, ExitSpacing.xxl)
     }
 }

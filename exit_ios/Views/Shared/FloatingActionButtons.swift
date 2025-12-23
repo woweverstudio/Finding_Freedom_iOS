@@ -14,51 +14,29 @@ struct FloatingActionButtons: View {
     var body: some View {
         HStack(spacing: ExitSpacing.md) {
             // 자산 변동 업데이트 (좌측)
-            Button {
-                // 현재 Asset 값으로 초기화
-                appState.totalAssetsInput = appState.currentAssetAmount
-                appState.showAssetUpdateSheet = true
-            } label: {
-                HStack(spacing: ExitSpacing.xs) {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("자산 업데이트")
-                        .font(.Exit.caption)
-                        .fontWeight(.semibold)
+            ExitCTAButton(
+                title: "자산 업데이트",
+                icon: "arrow.triangle.2.circlepath",
+                style: .secondary,
+                size: .medium,
+                action: {
+                    appState.totalAssetsInput = appState.currentAssetAmount
+                    appState.showAssetUpdateSheet = true
                 }
-                .foregroundStyle(Color.Exit.primaryText)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-                .overlay(
-                    RoundedRectangle(cornerRadius: ExitRadius.md)
-                        .stroke(Color.Exit.divider, lineWidth: 1)
-                )
-            }
-            .buttonStyle(.plain)
+            )
             
             // 입금하기 (우측)
-            Button {
-                appState.depositAmount = 0
-                appState.depositDate = Date()
-                appState.showDepositSheet = true
-            } label: {
-                HStack(spacing: ExitSpacing.xs) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("입금하기")
-                        .font(.Exit.caption)
-                        .fontWeight(.semibold)
+            ExitCTAButton(
+                title: "입금하기",
+                icon: "plus.circle.fill",
+                size: .medium,
+                action: {
+                    appState.depositAmount = 0
+                    appState.depositDate = Date()
+                    appState.showDepositSheet = true
                 }
-                .foregroundStyle(Color.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(LinearGradient.exitAccent)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-                .exitButtonShadow()
-            }
-            .buttonStyle(.plain)
+            )
+            .exitButtonShadow()
         }
         .padding(ExitSpacing.md)
         .background(

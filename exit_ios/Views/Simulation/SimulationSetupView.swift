@@ -523,23 +523,11 @@ struct SimulationSetupView: View {
     // MARK: - Start Button
     
     private var startButton: some View {
-        Button {
-            applySettingsAndStart()
-        } label: {
-            HStack(spacing: ExitSpacing.sm) {
-                Image(systemName: "play.fill")
-                    .font(.system(size: 14))
-                Text("시뮬레이션 시작")
-                    .font(.Exit.body)
-                    .fontWeight(.semibold)
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, ExitSpacing.md)
-            .background(LinearGradient.exitAccent)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
-        }
-        .buttonStyle(.plain)
+        ExitCTAButton(
+            title: "시뮬레이션 시작",
+            icon: "play.fill",
+            action: applySettingsAndStart
+        )
         .padding(.horizontal, ExitSpacing.lg)
         .padding(.bottom, ExitSpacing.xl)
     }

@@ -43,13 +43,14 @@ struct PortfolioEditView: View {
                     if !viewModel.holdings.isEmpty {
                         weightToolsSection
                     }
-                    
-                    // 분석 버튼
-                    if !viewModel.holdings.isEmpty {
-                        analyzeButton
-                    }
                 }
                 .padding(ExitSpacing.lg)
+                .padding(.bottom, !viewModel.holdings.isEmpty ? 80 : 0)
+            }
+            
+            // 플로팅 분석 버튼
+            if !viewModel.holdings.isEmpty {
+                analyzeButton
             }
         }
         .fullScreenCover(isPresented: $showSearchSheet) {
@@ -261,54 +262,24 @@ struct PortfolioEditView: View {
         }
     }
     
-    // MARK: - Analyze Button
+    // MARK: - Analyze Button (Floating)
     
     private var analyzeButton: some View {
-        Button {
-            if isPurchased {
-                // 구매한 경우: 분석 실행
-                Task {
-                    await viewModel.analyze()
-                }
-            } else {
-                // 미구매: 구매 유도 (현재는 아무 동작 없음, 필요시 구매 화면으로 이동)
-            }
-        } label: {
-            HStack(spacing: ExitSpacing.sm) {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .tint(.white)
-                } else {
-                    if isPurchased {
-                        Image(systemName: "chart.bar.xaxis")
-                            .font(.system(size: 18))
-                        
-                        Text("포트폴리오 분석하기")
-                            .font(.Exit.body)
-                            .fontWeight(.semibold)
-                    } else {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 18))
-                        
-                        Text("프리미엄 구매 후 분석 가능")
-                            .font(.Exit.body)
-                            .fontWeight(.semibold)
+        ExitCTAButton(
+            title: isPurchased ? "포트폴리오 분석하기" : "프리미엄 구매 후 분석 가능",
+            icon: isPurchased ? "play.fill" : "sparkles",
+            isEnabled: isPurchased && viewModel.canAnalyze,
+            isLoading: viewModel.isLoading,
+            action: {
+                if isPurchased {
+                    Task {
+                        await viewModel.analyze()
                     }
                 }
             }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(
-                (isPurchased && viewModel.canAnalyze)
-                    ? LinearGradient.exitAccent
-                    : LinearGradient(colors: [Color.Exit.disabledBackground], startPoint: .leading, endPoint: .trailing)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-        }
-        .buttonStyle(.plain)
-        .disabled((!isPurchased || !viewModel.canAnalyze) || viewModel.isLoading)
-        .padding(.top, ExitSpacing.md)
+        )
+        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.bottom, ExitSpacing.xl)
     }
 }
 
@@ -560,25 +531,14 @@ struct StockSearchSheet: View {
     // MARK: - Confirm Button
     
     private var confirmButton: some View {
-        Button {
-            applySelection()
-            dismiss()
-        } label: {
-            HStack(spacing: ExitSpacing.sm) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 18))
-                
-                Text("선택 완료")
-                    .font(.Exit.body)
-                    .fontWeight(.semibold)
+        ExitCTAButton(
+            title: "선택 완료",
+            icon: "checkmark.circle.fill",
+            action: {
+                applySelection()
+                dismiss()
             }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(LinearGradient.exitAccent)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-        }
-        .buttonStyle(.plain)
+        )
         .padding(.horizontal, ExitSpacing.lg)
         .padding(.bottom, ExitSpacing.lg)
     }

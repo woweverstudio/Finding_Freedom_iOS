@@ -750,62 +750,28 @@ struct SimulationEmptyView: View {
     
     private var floatingPurchaseButton: some View {
         VStack(spacing: ExitSpacing.sm) {
-            Button {
-                if isPurchased {
-                    // 이미 구입한 경우 설정 화면으로
-                    onStart()
-                } else {
-                    // 구입 진행
-                    Task {
-                        isPurchasing = true
-                        let success = await appState.storeKit.purchaseMontecarloSimulation()
-                        isPurchasing = false
-                        
-                        // 구입 성공 시 onStart가 SimulationView에서 onChange로 처리됨
-                        if success {
-                            // SimulationView의 onChange가 화면 전환 처리
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: ExitSpacing.sm) {
-                    if isPurchasing {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.9)
-                        Text("구매 중...")
-                            .font(.Exit.body)
-                            .fontWeight(.semibold)
-                    } else if isPurchased {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 16))
-                        Text("시뮬레이션 시작")
-                            .font(.Exit.body)
-                            .fontWeight(.semibold)
+            ExitCTAButton(
+                title: purchaseButtonTitle,
+                icon: isPurchased ? "play.fill" : "sparkles",
+                isLoading: isPurchasing,
+                action: {
+                    if isPurchased {
+                        onStart()
                     } else {
-                        HStack(spacing: ExitSpacing.xs) {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 16))
-                            if let product = appState.storeKit.montecarloProduct {
-                                Text("프리미엄 구매 • \(product.displayPrice)")
-                                    .font(.Exit.body)
-                                    .fontWeight(.semibold)
-                            } else {
-                                Text("제품 정보 불러오기 실패")
-                                    .font(.Exit.body)
-                                    .fontWeight(.semibold)
+                        Task {
+                            isPurchasing = true
+                            let success = await appState.storeKit.purchaseMontecarloSimulation()
+                            isPurchasing = false
+                            if success {
+                                // SimulationView의 onChange가 화면 전환 처리
                             }
                         }
                     }
                 }
-                .exitPrimaryButton()
-            }
-            .buttonStyle(.plain)
-            .disabled(isPurchasing)
+            )
             
             // 복원 버튼 또는 안내 텍스트
             if !isPurchased {
-                // 구매 복원 버튼
                 HStack(spacing: ExitSpacing.md) {
                     Text("한 번 구매로 평생 & 무한 사용")
                         .font(.Exit.caption2)
@@ -834,6 +800,18 @@ struct SimulationEmptyView: View {
                     .foregroundStyle(Color.Exit.warning)
                     .multilineTextAlignment(.center)
             }
+        }
+    }
+    
+    private var purchaseButtonTitle: String {
+        if isPurchasing {
+            return "구매 중..."
+        } else if isPurchased {
+            return "시뮬레이션 시작"
+        } else if let product = appState.storeKit.montecarloProduct {
+            return "프리미엄 구매 • \(product.displayPrice)"
+        } else {
+            return "제품 정보 불러오기 실패"
         }
     }
     
