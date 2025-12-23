@@ -279,7 +279,6 @@ struct PortfolioAnalysisView: View {
         ExitCTAButton(
             title: "포트폴리오 수정",
             icon: "pencil",
-            size: .small,
             action: { viewModel.backToEdit() }
         )
         .padding(.top, ExitSpacing.md)

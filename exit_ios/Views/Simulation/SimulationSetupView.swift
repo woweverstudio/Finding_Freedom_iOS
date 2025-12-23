@@ -127,7 +127,7 @@ struct SimulationSetupView: View {
                 .font(.system(size: 16))
                 .foregroundStyle(.clear)
         }
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
         .padding(.vertical, ExitSpacing.md)
     }
     
@@ -169,7 +169,7 @@ struct SimulationSetupView: View {
             .background(Color.Exit.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         }
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
     }
     
     // MARK: - Amount Edit Row
@@ -249,7 +249,7 @@ struct SimulationSetupView: View {
             .background(Color.Exit.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         }
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
     }
     
     // MARK: - Rate Slider with Buttons
@@ -346,7 +346,7 @@ struct SimulationSetupView: View {
                 Text("은퇴 후 희망 월수입 중 실제로 사용할 비율을 설정합니다")
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.tertiaryText)
-                    .padding(.horizontal, ExitSpacing.lg)
+                    .padding(.horizontal, ExitSpacing.sm)
             }
             
             VStack(spacing: ExitSpacing.sm) {
@@ -375,7 +375,7 @@ struct SimulationSetupView: View {
             .background(Color.Exit.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         }
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
     }
     
     private func spendingRatioOption(_ value: Double, label: String) -> some View {
@@ -417,7 +417,7 @@ struct SimulationSetupView: View {
                 Text("목표 기간의 몇 %를 초과하면 실패로 판정할지 설정합니다")
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.tertiaryText)
-                    .padding(.horizontal, ExitSpacing.lg)
+                    .padding(.horizontal, ExitSpacing.sm)
             }
             
             VStack(spacing: ExitSpacing.sm) {
@@ -451,7 +451,7 @@ struct SimulationSetupView: View {
             .background(Color.Exit.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         }
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
     }
     
     private func failureOption(_ value: Double, label: String) -> some View {
@@ -517,7 +517,7 @@ struct SimulationSetupView: View {
             .background(Color.Exit.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         }
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
     }
     
     // MARK: - Start Button
@@ -528,7 +528,7 @@ struct SimulationSetupView: View {
             icon: "play.fill",
             action: applySettingsAndStart
         )
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
         .padding(.bottom, ExitSpacing.xl)
     }
     
@@ -538,7 +538,7 @@ struct SimulationSetupView: View {
         Text(text)
             .font(.Exit.caption)
             .foregroundStyle(Color.Exit.secondaryText)
-            .padding(.horizontal, ExitSpacing.lg)
+            .padding(.horizontal, ExitSpacing.sm)
     }
     
     private func summaryRow(_ label: String, _ value: String, valueColor: Color = Color.Exit.primaryText) -> some View {
