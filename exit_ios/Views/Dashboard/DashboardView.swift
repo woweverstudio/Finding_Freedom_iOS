@@ -209,8 +209,8 @@ struct DashboardView: View {
     
     private var portfolioPromptButton: some View {
         PromptButton(
-            title: "📈 수익률을 모르겠다면?",
-            subtitle: "내 포트폴리오 분석으로 예상 수익률 확인하기",
+            title: "📈 내 수익률을 모르겠다면?",
+            subtitle: "포트폴리오 분석으로 예상 수익률 확인하기",
             destinationTab: .portfolio
         )
     }
