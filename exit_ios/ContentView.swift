@@ -68,45 +68,37 @@ struct MainTabView: View {
     }
     
     var body: some View {
-        ZStack {
-            // 탭뷰
-            TabView(selection: bindableAppState.selectedTab) {
-                    DashboardView()
-                        .tabItem {
-                            Image(systemName: MainTab.dashboard.icon)
-                            Text(MainTab.dashboard.rawValue)
-                        }
-                        .tag(MainTab.dashboard)
-                    
-                    SimulationView(viewModel: simulationViewModel)
-                        .tabItem {
-                            Image(systemName: MainTab.simulation.icon)
-                            Text(MainTab.simulation.rawValue)
-                        }
-                        .tag(MainTab.simulation)
-                    
-                    PortfolioView(viewModel: portfolioViewModel)
-                        .tabItem {
-                            Image(systemName: MainTab.portfolio.icon)
-                            Text(MainTab.portfolio.rawValue)
-                        }
-                        .tag(MainTab.portfolio)
-                    
-                    SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
-                        .tabItem {
-                            Image(systemName: MainTab.menu.icon)
-                            Text(MainTab.menu.rawValue)
-                        }
-                        .tag(MainTab.menu)
-            }
-            .tabViewStyle(.sidebarAdaptable)
-            .tint(Color.Exit.accent)
+        TabView(selection: bindableAppState.selectedTab) {
+            DashboardView()
+                .tabItem {
+                    Image(systemName: MainTab.dashboard.icon)
+                    Text(MainTab.dashboard.rawValue)
+                }
+                .tag(MainTab.dashboard)
             
-            // 입금 완료 후 자산 업데이트 확인 다이얼로그
-            if appState.showAssetUpdateConfirm {
-                assetUpdateConfirmOverlay
-            }
+            SimulationView(viewModel: simulationViewModel)
+                .tabItem {
+                    Image(systemName: MainTab.simulation.icon)
+                    Text(MainTab.simulation.rawValue)
+                }
+                .tag(MainTab.simulation)
+            
+            PortfolioView(viewModel: portfolioViewModel)
+                .tabItem {
+                    Image(systemName: MainTab.portfolio.icon)
+                    Text(MainTab.portfolio.rawValue)
+                }
+                .tag(MainTab.portfolio)
+            
+            SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
+                .tabItem {
+                    Image(systemName: MainTab.menu.icon)
+                    Text(MainTab.menu.rawValue)
+                }
+                .tag(MainTab.menu)
         }
+        .tabViewStyle(.sidebarAdaptable)
+        .tint(Color.Exit.accent)
         .onAppear {
             // 온보딩 완료 후 또는 앱 재진입 시 데이터 로드
             appState.loadData()
@@ -117,118 +109,6 @@ struct MainTabView: View {
             // 데이터 삭제 후 앱 재시작을 위해 UserProfile을 다시 체크
             // ContentView에서 hasCompletedOnboarding을 확인하므로 자동으로 WelcomeView로 이동
         }
-        .fullScreenCover(isPresented: bindableAppState.showDepositSheet) {
-            DepositSheet()
-        }
-        .sheet(isPresented: bindableAppState.showAssetUpdateSheet) {
-            AssetUpdateSheet()
-        }
-    }
-    
-    // MARK: - Asset Update Confirm Overlay
-    
-    private var assetUpdateConfirmOverlay: some View {
-        ZStack {
-            // 딤 배경
-            Color.black.opacity(0.6)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    withAnimation(.spring(response: 0.3)) {
-                        appState.showAssetUpdateConfirm = false
-                    }
-                }
-            
-            // 다이얼로그
-            VStack(spacing: ExitSpacing.lg) {
-                // 아이콘
-                ZStack {
-                    Circle()
-                        .fill(Color.Exit.accent.opacity(0.2))
-                        .frame(width: 64, height: 64)
-                    
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundStyle(Color.Exit.accent)
-                }
-                
-                // 타이틀
-                Text("입금 기록 완료!")
-                    .font(.Exit.title3)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.Exit.primaryText)
-                
-                // 메시지
-                VStack(spacing: ExitSpacing.xs) {
-                    Text("자산도 함께 업데이트할까요?")
-                        .font(.Exit.body)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                    
-                    HStack(spacing: ExitSpacing.xs) {
-                        Text("현재 기록된 자산:")
-                            .font(.Exit.caption)
-                            .foregroundStyle(Color.Exit.tertiaryText)
-                        Text(ExitNumberFormatter.formatToEokManWon(appState.currentAssetAmount))
-                            .font(.Exit.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color.Exit.accent)
-                    }
-                    
-                    if appState.currentAsset != nil {
-                        Text("(\(appState.lastAssetUpdateText) 기준)")
-                            .font(.Exit.caption2)
-                            .foregroundStyle(Color.Exit.tertiaryText)
-                    }
-                }
-                
-                // 버튼
-                HStack(spacing: ExitSpacing.sm) {
-                    // 나중에 버튼
-                    Button {
-                        withAnimation(.spring(response: 0.3)) {
-                            appState.showAssetUpdateConfirm = false
-                        }
-                    } label: {
-                        Text("나중에")
-                            .font(.Exit.body)
-                            .fontWeight(.medium)
-                            .foregroundStyle(Color.Exit.secondaryText)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(Color.Exit.secondaryCardBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-                    }
-                    .buttonStyle(.plain)
-                    
-                    // 자산 업데이트 버튼
-                    Button {
-                        withAnimation(.spring(response: 0.3)) {
-                            appState.showAssetUpdateConfirm = false
-                        }
-                        // 약간의 딜레이 후 자산 업데이트 시트 표시
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            appState.totalAssetsInput = appState.currentAssetAmount
-                            appState.showAssetUpdateSheet = true
-                        }
-                    } label: {
-                        Text("자산 업데이트")
-                            .font(.Exit.body)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(LinearGradient.exitAccent)
-                            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(ExitSpacing.lg)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.xl))
-            .padding(.horizontal, ExitSpacing.xl)
-            .transition(.scale.combined(with: .opacity))
-        }
-        .transition(.opacity)
     }
 }
 
@@ -236,9 +116,6 @@ struct MainTabView: View {
     ContentView()
         .modelContainer(for: [
             UserProfile.self,
-            MonthlyUpdate.self,
-            Asset.self,
-            AssetSnapshot.self,
             DepositReminder.self
         ], inMemory: true)
         .environment(\.appState, AppStateManager())

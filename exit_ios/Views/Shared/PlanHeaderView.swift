@@ -468,12 +468,10 @@ struct PlanHeaderView: View {
         // 변경 사항이 있는지 확인
         guard hasChanges else { return }
         
-        // 자산 업데이트
-        appState.updateCurrentAsset(editingCurrentAsset)
-        
-        // 설정 업데이트
+        // 설정 업데이트 (자산 포함)
         appState.updateSettings(
             desiredMonthlyIncome: editingMonthlyIncome,
+            currentNetAssets: editingCurrentAsset,
             monthlyInvestment: editingMonthlyInvestment,
             preRetirementReturnRate: editingPreReturnRate,
             postRetirementReturnRate: editingPostReturnRate

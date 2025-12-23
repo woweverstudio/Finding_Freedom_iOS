@@ -161,26 +161,6 @@ final class OnboardingViewModel {
         )
         context.insert(profile)
         
-        // Asset 생성 (앱 전체 단일 자산)
-        let asset = Asset(amount: currentNetAssets)
-        context.insert(asset)
-        
-        // AssetSnapshot 생성 (초기 스냅샷)
-        let snapshot = AssetSnapshot(
-            yearMonth: AssetSnapshot.currentYearMonth(),
-            amount: currentNetAssets
-        )
-        context.insert(snapshot)
-        
-        // 초기 MonthlyUpdate 생성
-        let initialUpdate = MonthlyUpdate(
-            yearMonth: MonthlyUpdate.currentYearMonth(),
-            depositAmount: 0,
-            passiveIncome: 0,
-            totalAssets: currentNetAssets
-        )
-        context.insert(initialUpdate)
-        
         try? context.save()
         
         withAnimation {

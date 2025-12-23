@@ -10,6 +10,7 @@ import SwiftUI
 /// 시뮬레이션 탭 메인 뷰
 struct SimulationView: View {
     @Environment(\.appState) private var appState
+    @Environment(\.storeService) private var storeService
     @Bindable var viewModel: SimulationViewModel
     @State private var currentScreen: SimulationScreen = .empty
     @State private var scrollOffset: CGFloat = 0
@@ -54,7 +55,7 @@ struct SimulationView: View {
                 resultsScreenView
             }
         }
-        .onChange(of: appState.storeKit.hasMontecarloSimulation) { _, hasPurchased in
+        .onChange(of: storeService.hasMontecarloSimulation) { _, hasPurchased in
             // 구입 완료 시 설정 화면으로 이동
             if hasPurchased && currentScreen == .empty {
                 withAnimation(.easeInOut(duration: 0.25)) {
@@ -83,14 +84,14 @@ struct SimulationView: View {
             currentAssetAmount: viewModel.currentAssetAmount,
             onStart: {
                 // 이미 구입한 경우 설정 화면으로
-                if appState.storeKit.hasMontecarloSimulation {
+                if storeService.hasMontecarloSimulation {
                     withAnimation(.easeInOut(duration: 0.25)) {
                         currentScreen = .setup
                     }
                 }
                 // 미구입인 경우 EmptyView에서 구입 처리
             },
-            isPurchased: appState.storeKit.hasMontecarloSimulation
+            isPurchased: storeService.hasMontecarloSimulation
         )
     }
     

@@ -568,12 +568,10 @@ struct SimulationSetupView: View {
     }
     
     private func applySettingsAndStart() {
-        // 1. 자산 업데이트
-        appState.updateCurrentAsset(editingCurrentAsset)
-        
-        // 2. 설정 업데이트 (물가 상승률 포함)
+        // 설정 업데이트 (자산 포함)
         appState.updateSettings(
             desiredMonthlyIncome: editingMonthlyIncome,
+            currentNetAssets: editingCurrentAsset,
             monthlyInvestment: editingMonthlyInvestment,
             preRetirementReturnRate: editingPreReturnRate,
             postRetirementReturnRate: editingPostReturnRate

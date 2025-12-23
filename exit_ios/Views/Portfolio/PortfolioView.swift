@@ -14,6 +14,7 @@ struct PortfolioView: View {
     @State var viewModel: PortfolioViewModel
     @Environment(\.modelContext) private var modelContext
     @Environment(\.appState) private var appState
+    @Environment(\.storeService) private var storeService
     
     var body: some View {
         ZStack {
@@ -41,7 +42,7 @@ struct PortfolioView: View {
             // configure에서 loadSavedHoldings가 호출되고, 그 안에서 loadInitialData가 호출됨
             // loadSavedHoldings가 완료되면 holdings가 있으면 자동으로 editing 상태로 변경됨
         }
-        .onChange(of: appState.storeKit.hasPortfolioAnalysis) { _, hasPurchased in
+        .onChange(of: storeService.hasPortfolioAnalysis) { _, hasPurchased in
             // 구입 완료 시 편집 화면으로 이동 (SimulationView와 동일한 로직)
             if hasPurchased && viewModel.viewState == .empty {
                 withAnimation(.easeInOut(duration: 0.25)) {
@@ -57,14 +58,14 @@ struct PortfolioView: View {
         PortfolioEmptyView(
             onStart: {
                 // 이미 구입한 경우 편집 화면으로
-                if appState.storeKit.hasPortfolioAnalysis {
+                if storeService.hasPortfolioAnalysis {
                     withAnimation(.easeInOut(duration: 0.25)) {
                         viewModel.startEditing()
                     }
                 }
                 // 미구입인 경우 EmptyView에서 구입 처리
             },
-            isPurchased: appState.storeKit.hasPortfolioAnalysis
+            isPurchased: storeService.hasPortfolioAnalysis
         )
     }
     
@@ -83,7 +84,7 @@ struct PortfolioView: View {
                     }
                 }
             },
-            isPurchased: appState.storeKit.hasPortfolioAnalysis
+            isPurchased: storeService.hasPortfolioAnalysis
         )
         .transition(.move(edge: .trailing))
     }

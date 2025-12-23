@@ -13,6 +13,7 @@ import StoreKit
 /// - 구매자도 다시 볼 수 있는 팝업으로 사용 가능
 struct SimulationEmptyView: View {
     @Environment(\.appState) private var appState
+    @Environment(\.storeService) private var storeService
     
     let userProfile: UserProfile?
     let currentAssetAmount: Double
@@ -760,7 +761,7 @@ struct SimulationEmptyView: View {
                     } else {
                         Task {
                             isPurchasing = true
-                            let success = await appState.storeKit.purchaseMontecarloSimulation()
+                            let success = await storeService.purchaseMontecarloSimulation()
                             isPurchasing = false
                             if success {
                                 // SimulationView의 onChange가 화면 전환 처리
@@ -779,7 +780,7 @@ struct SimulationEmptyView: View {
                     
                     Button {
                         Task {
-                            await appState.storeKit.restorePurchases()
+                            await storeService.restorePurchases()
                         }
                     } label: {
                         Text("이전 구매 복원")
@@ -794,7 +795,7 @@ struct SimulationEmptyView: View {
             }
             
             // 에러 메시지
-            if let error = appState.storeKit.errorMessage {
+            if let error = storeService.errorMessage {
                 Text(error)
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.warning)
@@ -808,7 +809,7 @@ struct SimulationEmptyView: View {
             return "구매 중..."
         } else if isPurchased {
             return "시뮬레이션 시작"
-        } else if let product = appState.storeKit.montecarloProduct {
+        } else if let product = storeService.montecarloProduct {
             return "프리미엄 구매 • \(product.displayPrice)"
         } else {
             return "제품 정보 불러오기 실패"

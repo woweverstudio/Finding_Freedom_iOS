@@ -17,9 +17,6 @@ final class SimulationViewModel {
     
     // MARK: - State
     
-    /// 현재 자산
-    var currentAsset: Asset?
-    
     /// 사용자 프로필
     var userProfile: UserProfile?
     
@@ -68,9 +65,9 @@ final class SimulationViewModel {
     
     // MARK: - Computed Properties
     
-    /// 현재 자산 금액
+    /// 현재 자산 금액 (UserProfile의 currentNetAssets 사용)
     var currentAssetAmount: Double {
-        currentAsset?.amount ?? 0
+        userProfile?.currentNetAssets ?? 0
     }
     
     /// 현재 표시할 결과
@@ -136,10 +133,6 @@ final class SimulationViewModel {
     
     func loadData() {
         guard let context = modelContext else { return }
-        
-        // Asset 로드
-        let assetDescriptor = FetchDescriptor<Asset>()
-        currentAsset = try? context.fetch(assetDescriptor).first
         
         // UserProfile 로드
         let profileDescriptor = FetchDescriptor<UserProfile>()

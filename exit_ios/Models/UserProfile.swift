@@ -60,11 +60,13 @@ final class UserProfile {
     /// 설정 업데이트
     func updateSettings(
         desiredMonthlyIncome: Double? = nil,
+        currentNetAssets: Double? = nil,
         monthlyInvestment: Double? = nil,
         preRetirementReturnRate: Double? = nil,
         postRetirementReturnRate: Double? = nil
     ) {
         if let value = desiredMonthlyIncome { self.desiredMonthlyIncome = value }
+        if let value = currentNetAssets { self.currentNetAssets = value }
         if let value = monthlyInvestment { self.monthlyInvestment = value }
         if let value = preRetirementReturnRate { self.preRetirementReturnRate = value }
         if let value = postRetirementReturnRate { self.postRetirementReturnRate = value }

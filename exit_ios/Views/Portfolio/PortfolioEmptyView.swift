@@ -14,6 +14,7 @@ import StoreKit
 /// - 구매자도 다시 볼 수 있는 팝업으로 사용 가능
 struct PortfolioEmptyView: View {
     @Environment(\.appState) private var appState
+    @Environment(\.storeService) private var storeService
     
     let onStart: () -> Void
     let isPurchased: Bool
@@ -482,7 +483,7 @@ struct PortfolioEmptyView: View {
                     } else {
                         Task {
                             isPurchasing = true
-                            let success = await appState.storeKit.purchasePortfolioAnalysis()
+                            let success = await storeService.purchasePortfolioAnalysis()
                             isPurchasing = false
                             if success {
                                 // PortfolioView의 onChange가 화면 전환 처리
@@ -501,7 +502,7 @@ struct PortfolioEmptyView: View {
                     
                     Button {
                         Task {
-                            await appState.storeKit.restorePurchases()
+                            await storeService.restorePurchases()
                         }
                     } label: {
                         Text("이전 구매 복원")
@@ -516,7 +517,7 @@ struct PortfolioEmptyView: View {
             }
             
             // 에러 메시지
-            if let error = appState.storeKit.errorMessage {
+            if let error = storeService.errorMessage {
                 Text(error)
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.warning)
@@ -530,7 +531,7 @@ struct PortfolioEmptyView: View {
             return "구매 중..."
         } else if isPurchased {
             return "포트폴리오 분석 시작"
-        } else if let product = appState.storeKit.portfolioAnalysisProduct {
+        } else if let product = storeService.portfolioAnalysisProduct {
             return "프리미엄 구매 • \(product.displayPrice)"
         } else {
             return "제품 정보 불러오기 실패"

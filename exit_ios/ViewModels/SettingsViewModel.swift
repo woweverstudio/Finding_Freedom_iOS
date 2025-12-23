@@ -271,9 +271,6 @@ final class SettingsViewModel {
         
         // 모든 데이터 삭제
         deleteAll(UserProfile.self, from: context)
-        deleteAll(MonthlyUpdate.self, from: context)
-        deleteAll(Asset.self, from: context)
-        deleteAll(AssetSnapshot.self, from: context)
         deleteAll(DepositReminder.self, from: context)
         
         announcementService.resetReadStatus()
