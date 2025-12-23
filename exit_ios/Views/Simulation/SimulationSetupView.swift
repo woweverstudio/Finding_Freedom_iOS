@@ -359,13 +359,13 @@ struct SimulationSetupView: View {
                 }
                 
                 // 현재 설정 예시
-                HStack(spacing: ExitSpacing.xs) {
+                HStack(spacing: ExitSpacing.sm) {
                     Image(systemName: "info.circle")
                         .font(.system(size: 11))
                         .foregroundStyle(Color.Exit.secondaryText)
                     
                     Text("월 \(ExitNumberFormatter.formatToManWon(editingMonthlyIncome)) × \(String(format: "%.0f", spendingRatio * 100))% = \(ExitNumberFormatter.formatToManWon(actualSpending)) 사용")
-                        .font(.Exit.caption2)
+                        .font(.Exit.caption)
                         .foregroundStyle(Color.Exit.secondaryText)
                     
                     Spacer()
@@ -434,13 +434,13 @@ struct SimulationSetupView: View {
                 let failureMonths = Int(Double(originalMonths) * failureThreshold)
                 
                 if originalMonths > 0 {
-                    HStack(spacing: ExitSpacing.xs) {
+                    HStack(spacing: ExitSpacing.sm) {
                         Image(systemName: "info.circle")
                             .font(.system(size: 11))
                             .foregroundStyle(Color.Exit.secondaryText)
                         
                         Text("목표 \(formatPeriod(originalMonths)) → \(formatPeriod(failureMonths)) 초과 시 실패")
-                            .font(.Exit.caption2)
+                            .font(.Exit.caption)
                             .foregroundStyle(Color.Exit.secondaryText)
                         
                         Spacer()

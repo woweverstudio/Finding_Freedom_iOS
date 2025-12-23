@@ -116,58 +116,11 @@ struct SimulationView: View {
     // MARK: - Loading View
     
     private var loadingView: some View {
-        VStack(spacing: ExitSpacing.xl) {
-            Spacer()
-            
-            // 아이콘
-            Image(systemName: "chart.line.uptrend.xyaxis")
-                .font(.system(size: 60))
-                .foregroundStyle(Color.Exit.accent)
-            
-            // 제목
-            Text("시뮬레이션 진행 중")
-                .font(.Exit.title2)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.Exit.primaryText)
-            
-            // 시뮬레이션 단계
-            Text(viewModel.simulationPhase.description)
-                .font(.Exit.body)
-                .foregroundStyle(Color.Exit.secondaryText)
-            
-            // 진행률 바
-            VStack(spacing: ExitSpacing.sm) {
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.Exit.divider)
-                            .frame(height: 16)
-                        
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.Exit.accent)
-                            .frame(
-                                width: geometry.size.width * viewModel.simulationProgress,
-                                height: 16
-                            )
-                            .animation(.easeInOut(duration: 0.2), value: viewModel.simulationProgress)
-                    }
-                }
-                .frame(height: 16)
-                
-                Text("\(Int(viewModel.simulationProgress * 100))%")
-                    .font(.Exit.title3)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.accent)
-            }
-            .padding(.horizontal, ExitSpacing.xxl)
-            
-            // 설명
-            Text("30,000가지 미래를 시뮬레이션하고 있습니다")
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.secondaryText)
-            
-            Spacer()
-        }
+        SimulationLoadingView(
+            isSimulating: viewModel.isSimulating,
+            progress: viewModel.simulationProgress,
+            phase: viewModel.simulationPhase
+        )
     }
     
     // MARK: - Results View
