@@ -127,8 +127,7 @@ struct SimulationSetupView: View {
                 .font(.system(size: 16))
                 .foregroundStyle(.clear)
         }
-        .padding(.horizontal, ExitSpacing.md)
-        .padding(.vertical, ExitSpacing.md)
+        .padding(ExitSpacing.md)        
     }
     
     // MARK: - Basic Settings Section
@@ -529,7 +528,7 @@ struct SimulationSetupView: View {
             action: applySettingsAndStart
         )
         .padding(.horizontal, ExitSpacing.md)
-        .padding(.bottom, ExitSpacing.xl)
+        .padding(.bottom, ExitSpacing.md)
     }
     
     // MARK: - Helper Views

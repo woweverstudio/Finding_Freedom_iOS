@@ -28,7 +28,7 @@ final class PolygonStockDataService: StockDataServiceProtocol {
     /// ETF + 빅테크 주식 혼합
     private let popularTickers = [
         // ETF
-        "SCHD", "QQQM", "SPLG", "JEPQ", "JEPI",
+        "SCHD", "QQQM", "SPYM", "JEPQ", "JEPI",
         // 빅테크
         "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"
     ]

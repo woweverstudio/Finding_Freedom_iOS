@@ -33,7 +33,7 @@ struct StockSearchSheet: View {
     /// 인기 종목 티커 (미리 정의)
     private let popularTickers = [
         // ETF
-        "SCHD", "QQQM", "SPLG", "JEPQ", "JEPI",
+        "SCHD", "QQQM", "SPYM", "JEPQ", "JEPI",
         // 빅테크
         "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"
     ]
@@ -45,16 +45,25 @@ struct StockSearchSheet: View {
         }
     }
     
-    /// 선택 히스토리에서 가져온 종목들
+    /// 선택 히스토리에서 가져온 종목들 (allStocks, searchResults, 캐시에서 찾기)
     private var historyStocks: [StockInfo] {
         StockSelectionHistory.shared.getHistory().compactMap { ticker in
-            viewModel.allStocks.first { $0.ticker == ticker }
+            // 1. allStocks에서 찾기
+            if let stock = viewModel.allStocks.first(where: { $0.ticker == ticker }) {
+                return stock
+            }
+            // 2. searchResults에서 찾기
+            if let stock = viewModel.searchResults.first(where: { $0.ticker == ticker }) {
+                return stock
+            }
+            // 3. 캐시에서 찾기
+            return StockDataCache.shared.getAllCachedStocks().first(where: { $0.ticker == ticker })
         }
     }
     
-    /// 히스토리가 있는지 여부
+    /// 히스토리가 있는지 여부 (실제로 표시할 종목이 있는지)
     private var hasHistory: Bool {
-        !StockSelectionHistory.shared.getHistory().isEmpty
+        !historyStocks.isEmpty
     }
     
     /// 이미 포트폴리오에 추가된 티커
@@ -82,9 +91,7 @@ struct StockSearchSheet: View {
                 }
                 
                 // 선택된 종목 수 표시
-                if !selectedTickers.isEmpty {
-                    selectedCountBadge
-                }
+                selectedCountBadge
                 
                 // 콘텐츠
                 if viewModel.isLoading || isSearchingAPI {
@@ -93,16 +100,11 @@ struct StockSearchSheet: View {
                     // 검색 중: 1열 리스트
                     searchResultsList
                 } else {
-                    // 초기 화면: 인기 종목 3열 그리드
+                    // 초기 화면: 최근 선택 / 인기 종목
                     popularStocksGrid
                 }
                 
                 Spacer(minLength: 0)
-                
-                // 하단 완료 버튼
-                if !selectedTickers.isEmpty {
-                    confirmButton
-                }
             }
             .background(Color.Exit.background)
             .navigationTitle("종목 검색")
@@ -114,8 +116,17 @@ struct StockSearchSheet: View {
                     }
                     .foregroundStyle(Color.Exit.secondaryText)
                 }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("완료") {
+                        applySelection()
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.Exit.accent)
+                }
             }
-        }
+        }        
         .interactiveDismissDisabled(!selectedTickers.isEmpty)
         .onAppear {
             // 기존에 추가된 종목들을 선택 상태로 초기화
@@ -166,7 +177,7 @@ struct StockSearchSheet: View {
         .padding(ExitSpacing.md)
         .background(Color.Exit.secondaryCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
         .padding(.top, ExitSpacing.md)
     }
     
@@ -195,7 +206,7 @@ struct StockSearchSheet: View {
         .padding(ExitSpacing.sm)
         .background(Color.Exit.warning.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
         .padding(.top, ExitSpacing.sm)
     }
     
@@ -206,21 +217,11 @@ struct StockSearchSheet: View {
             Text("\(selectedTickers.count)개 종목 선택됨")
                 .font(.Exit.caption)
                 .fontWeight(.medium)
-                .foregroundStyle(Color.Exit.accent)
+                .foregroundStyle(selectedTickers.isEmpty ? Color.Exit.tertiaryText : Color.Exit.accent)
             
             Spacer()
-            
-            Button {
-                // 새로 선택한 것만 해제 (기존 포트폴리오 종목은 유지)
-                selectedTickers = addedTickers
-            } label: {
-                Text("선택 초기화")
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.secondaryText)
-            }
-            .buttonStyle(.plain)
         }
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
         .padding(.vertical, ExitSpacing.sm)
     }
     
@@ -259,31 +260,19 @@ struct StockSearchSheet: View {
             }
             .padding(.bottom, ExitSpacing.xl)
         }
+        .scrollDismissesKeyboard(.immediately)
     }
     
     // MARK: - Recent Selection Section
     
     private var recentSelectionSection: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            HStack {
-                Text("최근 선택")
-                    .font(.Exit.body)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.primaryText)
-                
-                Spacer()
-                
-                Button {
-                    StockSelectionHistory.shared.clearHistory()
-                } label: {
-                    Text("기록 삭제")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, ExitSpacing.lg)
-            .padding(.top, ExitSpacing.md)
+            Text("최근 선택")
+                .font(.Exit.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.Exit.primaryText)
+                .padding(.horizontal, ExitSpacing.md)
+                .padding(.top, ExitSpacing.md)
             
             ForEach(historyStocks) { stock in
                 StockListCard(
@@ -293,7 +282,7 @@ struct StockSearchSheet: View {
                     toggleSelection(stock)
                 }
             }
-            .padding(.horizontal, ExitSpacing.lg)
+            .padding(.horizontal, ExitSpacing.md)
         }
     }
     
@@ -305,7 +294,7 @@ struct StockSearchSheet: View {
                 .font(.Exit.body)
                 .fontWeight(.semibold)
                 .foregroundStyle(Color.Exit.primaryText)
-                .padding(.horizontal, ExitSpacing.lg)
+                .padding(.horizontal, ExitSpacing.md)
                 .padding(.top, hasHistory ? ExitSpacing.lg : ExitSpacing.md)
             
             ForEach(stocks) { stock in
@@ -316,7 +305,7 @@ struct StockSearchSheet: View {
                     toggleSelection(stock)
                 }
             }
-            .padding(.horizontal, ExitSpacing.lg)
+            .padding(.horizontal, ExitSpacing.md)
         }
     }
     
@@ -349,25 +338,11 @@ struct StockSearchSheet: View {
                             }
                         }
                     }
-                    .padding(ExitSpacing.lg)
+                    .padding(ExitSpacing.md)
                 }
+                .scrollDismissesKeyboard(.immediately)
             }
         }
-    }
-    
-    // MARK: - Confirm Button
-    
-    private var confirmButton: some View {
-        ExitCTAButton(
-            title: "선택 완료",
-            icon: "checkmark.circle.fill",
-            action: {
-                applySelection()
-                dismiss()
-            }
-        )
-        .padding(.horizontal, ExitSpacing.lg)
-        .padding(.bottom, ExitSpacing.lg)
     }
     
     // MARK: - Debounced Search
@@ -430,18 +405,23 @@ struct StockSearchSheet: View {
         // 제거할 종목들
         let removedTickers = addedTickers.subtracting(selectedTickers)
         
+        // 실제로 추가된 종목들 (히스토리 저장용)
+        var actuallyAddedTickers: [String] = []
+        
         // 새 종목 추가 - 검색 결과와 전체 종목에서 찾기
         for ticker in newTickers {
             let stock = viewModel.allStocks.first(where: { $0.ticker == ticker }) ??
-                        viewModel.searchResults.first(where: { $0.ticker == ticker })
+                        viewModel.searchResults.first(where: { $0.ticker == ticker }) ??
+                        StockDataCache.shared.getAllCachedStocks().first(where: { $0.ticker == ticker })
             if let stock = stock {
                 viewModel.addStock(stock)
+                actuallyAddedTickers.append(ticker)
             }
         }
         
-        // 새로 추가된 종목들만 히스토리에 저장
-        if !newTickers.isEmpty {
-            StockSelectionHistory.shared.addToHistory(Array(newTickers))
+        // 실제로 추가된 종목만 히스토리에 저장
+        if !actuallyAddedTickers.isEmpty {
+            StockSelectionHistory.shared.addToHistory(actuallyAddedTickers)
         }
         
         // 종목 제거

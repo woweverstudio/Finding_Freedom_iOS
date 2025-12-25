@@ -44,7 +44,7 @@ struct PortfolioEditView: View {
                         weightToolsSection
                     }
                 }
-                .padding(ExitSpacing.lg)
+                .padding(ExitSpacing.md)
                 .padding(.bottom, !viewModel.holdings.isEmpty ? 80 : 0)
             }
             
@@ -133,8 +133,7 @@ struct PortfolioEditView: View {
                 }
             }
         }
-        .padding(.horizontal, ExitSpacing.lg)
-        .padding(.vertical, ExitSpacing.md)
+        .padding(ExitSpacing.md)
     }
     
     // MARK: - Holdings Section
@@ -278,8 +277,8 @@ struct PortfolioEditView: View {
                 }
             }
         )
-        .padding(.horizontal, ExitSpacing.lg)
-        .padding(.bottom, ExitSpacing.xl)
+        .padding(.horizontal, ExitSpacing.md)
+        .padding(.bottom, ExitSpacing.md)
     }
 }
 

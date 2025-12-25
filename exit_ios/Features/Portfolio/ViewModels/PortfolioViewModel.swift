@@ -410,33 +410,59 @@ final class PortfolioViewModel {
             
             // 저장된 holdings 복원
             if let data = savedData {
-                holdings = data.compactMap { dict -> PortfolioHoldingDisplay? in
-                    guard let ticker = dict["ticker"] as? String,
-                          let weight = dict["weight"] as? Double,
-                          let stock = allStocks.first(where: { $0.ticker == ticker }) else {
-                        return nil
-                    }
-                    
-                    return PortfolioHoldingDisplay(
-                        ticker: ticker,
-                        name: stock.displayName,
-                        subName: stock.subDisplayName,
-                        exchange: stock.exchange,
-                        sectorEmoji: stock.sectorEmoji,
-                        iconUrl: stock.iconUrl,
-                        stockType: stock.stockType,
-                        weight: weight
-                    )
-                }
+                await restoreHoldings(from: data)
             }
             
             // holdings 복원 후 최종 viewState 결정
-            // (분석 결과가 있으면 analyzed로 갈 수도 있지만, 현재는 편집 화면으로)
             if !holdings.isEmpty {
                 viewState = .editing
             }
-            // holdings가 비어있으면 viewState = .empty 유지 (초기값)
         }
+    }
+    
+    /// 저장된 holdings 복원 (캐시 → API 순서로 찾기)
+    @MainActor
+    private func restoreHoldings(from data: [[String: Any]]) async {
+        // 캐시된 모든 종목 가져오기
+        let cachedStocks = StockDataCache.shared.getAllCachedStocks()
+        
+        var restoredHoldings: [PortfolioHoldingDisplay] = []
+        
+        for dict in data {
+            guard let ticker = dict["ticker"] as? String,
+                  let weight = dict["weight"] as? Double else {
+                continue
+            }
+            
+            // 1. allStocks에서 찾기
+            // 2. 캐시에서 찾기
+            var stock = allStocks.first(where: { $0.ticker == ticker }) ??
+                        cachedStocks.first(where: { $0.ticker == ticker })
+            
+            // 3. 캐시에도 없으면 API로 가져오기
+            if stock == nil {
+                if let polygonService = dataService as? PolygonStockDataService {
+                    stock = try? await polygonService.fetchTickerDetailsPublic(ticker: ticker)
+                }
+            }
+            
+            guard let stockInfo = stock else {
+                continue
+            }
+            
+            restoredHoldings.append(PortfolioHoldingDisplay(
+                ticker: ticker,
+                name: stockInfo.displayName,
+                subName: stockInfo.subDisplayName,
+                exchange: stockInfo.exchange,
+                sectorEmoji: stockInfo.sectorEmoji,
+                iconUrl: stockInfo.iconUrl,
+                stockType: stockInfo.stockType,
+                weight: weight
+            ))
+        }
+        
+        holdings = restoredHoldings
     }
     
     private func clearSavedHoldings() {
