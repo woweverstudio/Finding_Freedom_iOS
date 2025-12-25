@@ -59,7 +59,7 @@ struct MainTabView: View {
     @Environment(\.appState) private var appState
     @State private var simulationViewModel = SimulationViewModel()
     @State private var portfolioViewModel = PortfolioViewModel()
-    @State private var settingsViewModel = SettingsViewModel()
+    @State private var menuViewModel = MenuViewModel()
     @State private var shouldNavigateToWelcome = false
     
     // @Observable 객체에서 바인딩을 사용하려면 @Bindable 필요
@@ -90,7 +90,7 @@ struct MainTabView: View {
                 }
                 .tag(MainTab.portfolio)
             
-            SettingsView(viewModel: settingsViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
+            MenuView(viewModel: menuViewModel, shouldNavigateToWelcome: $shouldNavigateToWelcome)
                 .tabItem {
                     Image(systemName: MainTab.menu.icon)
                     Text(MainTab.menu.rawValue)
@@ -103,7 +103,7 @@ struct MainTabView: View {
             // 온보딩 완료 후 또는 앱 재진입 시 데이터 로드
             appState.loadData()
             simulationViewModel.configure(with: modelContext)
-            settingsViewModel.configure(with: modelContext)
+            menuViewModel.configure(with: modelContext)
         }
         .onChange(of: shouldNavigateToWelcome) { _, newValue in
             // 데이터 삭제 후 앱 재시작을 위해 UserProfile을 다시 체크

@@ -1,0 +1,6 @@
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+// Polygon.io API Key
+POLYGON_API_KEY = OgX2xSvpij0V4pZ1iGMcj5k8YcDfX06L
+

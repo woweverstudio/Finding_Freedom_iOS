@@ -1,0 +1,8 @@
+//
+//  Release.xcconfig
+//  exit_ios
+//
+//  Created by 김민성 on 12/25/25.
+
+// Polygon.io API Key
+POLYGON_API_KEY = OgX2xSvpij0V4pZ1iGMcj5k8YcDfX06L
