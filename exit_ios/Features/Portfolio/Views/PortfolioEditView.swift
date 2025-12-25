@@ -61,77 +61,28 @@ struct PortfolioEditView: View {
     // MARK: - Header
     
     private var headerSection: some View {
-        VStack(spacing: ExitSpacing.sm) {
-            HStack {
-                Button {
-                    onBack()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(Color.Exit.secondaryText)
-                }
-                
-                Spacer()
-                
-                Text("포트폴리오 편집")
-                    .font(.Exit.body)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.primaryText)
-                
-                Spacer()
-                
-                // 균형용
+        HStack {
+            Button {
+                onBack()
+            } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.clear)
-            }
-            .padding(.bottom, ExitSpacing.md)
-            
-            HStack {
-                Text("내 포트폴리오")
-                    .font(.Exit.title2)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.Exit.primaryText)
-                
-                Spacer()
-                
-                if !viewModel.holdings.isEmpty {
-                    Button {
-                        viewModel.resetPortfolio()
-                    } label: {
-                        Text("초기화")
-                            .font(.Exit.caption)
-                            .foregroundStyle(Color.Exit.warning)
-                    }
-                    .buttonStyle(.plain)
-                }
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Color.Exit.secondaryText)
             }
             
-            // 비중 합계 표시
-            if !viewModel.holdings.isEmpty {
-                HStack {
-                    Text("총 비중:")
-                        .font(.Exit.caption)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                    
-                    Text(String(format: "%.1f%%", viewModel.totalWeight * 100))
-                        .font(.Exit.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(viewModel.isWeightValid ? Color.Exit.accent : Color.Exit.warning)
-                    
-                    if !viewModel.isWeightValid {
-                        Text("(100%가 되어야 해요)")
-                            .font(.Exit.caption2)
-                            .foregroundStyle(Color.Exit.warning)
-                    } else {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.Exit.accent)
-                    }
-                    
-                    Spacer()
-                }
-            }
+            Spacer()
+            
+            Text("포트폴리오 편집")
+                .font(.Exit.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.Exit.primaryText)
+            
+            Spacer()
+            
+            // 균형용
+            Image(systemName: "chevron.left")
+                .font(.system(size: 16))
+                .foregroundStyle(.clear)
         }
         .padding(ExitSpacing.md)
     }
@@ -264,21 +215,40 @@ struct PortfolioEditView: View {
     // MARK: - Analyze Button (Floating)
     
     private var analyzeButton: some View {
-        ExitCTAButton(
-            title: isPurchased ? "포트폴리오 분석하기" : "프리미엄 구매 후 분석 가능",
-            icon: isPurchased ? "play.fill" : "sparkles",
-            isEnabled: isPurchased && viewModel.canAnalyze,
-            isLoading: viewModel.isLoading,
-            action: {
-                if isPurchased {
-                    Task {
-                        await viewModel.analyze()
-                    }
+        Group {
+            if !viewModel.isWeightValid {
+                // 비중이 100%가 아닐 때
+                VStack(spacing: 0) {
+                    Text("비중을 100%로 맞춰주세요 (현재 \(String(format: "%.0f", viewModel.totalWeight * 100))%)")
+                        .font(.Exit.body)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color.Exit.secondaryCardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
                 }
+                .padding(.horizontal, ExitSpacing.md)
+                .padding(.bottom, ExitSpacing.md)
+            } else {
+                // 비중이 100%일 때
+                ExitCTAButton(
+                    title: isPurchased ? "포트폴리오 분석하기" : "프리미엄 구매 후 분석 가능",
+                    icon: isPurchased ? "play.fill" : "sparkles",
+                    isEnabled: isPurchased && viewModel.canAnalyze,
+                    isLoading: viewModel.isLoading,
+                    action: {
+                        if isPurchased {
+                            Task {
+                                await viewModel.analyze()
+                            }
+                        }
+                    }
+                )
+                .padding(.horizontal, ExitSpacing.md)
+                .padding(.bottom, ExitSpacing.md)
             }
-        )
-        .padding(.horizontal, ExitSpacing.md)
-        .padding(.bottom, ExitSpacing.md)
+        }
     }
 }
 

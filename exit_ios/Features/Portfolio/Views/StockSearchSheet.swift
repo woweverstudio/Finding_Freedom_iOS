@@ -372,17 +372,10 @@ struct StockSearchSheet: View {
                 isSearchingAPI = true
             }
             
-            do {
-                await viewModel.search()
-                
-                await MainActor.run {
-                    isSearchingAPI = false
-                }
-            } catch {
-                await MainActor.run {
-                    isSearchingAPI = false
-                    errorMessage = error.localizedDescription
-                }
+            await viewModel.search()
+            
+            await MainActor.run {
+                isSearchingAPI = false
             }
         }
     }

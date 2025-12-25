@@ -105,22 +105,38 @@ final class PolygonStockDataService: StockDataServiceProtocol {
         // 병렬로 상세 정보 가져오기 (최대 10개만)
         let tickersToFetch = Array(results.prefix(10))
         
+        // 캐시된 종목 미리 확인
+        var cachedStocks: [String: StockInfo] = [:]
+        var tickersNeedFetch: [PolygonTicker] = []
+        
+        for ticker in tickersToFetch {
+            if let cached = cache.getStock(ticker: ticker.ticker),
+               cached.isValid,
+               cached.stockInfo.iconUrl != nil {
+                cachedStocks[ticker.ticker] = cached.stockInfo.toStockInfo()
+            } else {
+                tickersNeedFetch.append(ticker)
+            }
+        }
+        
+        // 캐시된 종목 추가
+        stocks.append(contentsOf: cachedStocks.values)
+        
+        // 캐시에 없는 종목만 병렬로 가져오기
+        // 폴백용 StockInfo 미리 생성
+        let fallbackStocks = Dictionary(uniqueKeysWithValues: tickersNeedFetch.map { ($0.ticker, $0.toStockInfo()) })
+        
         await withTaskGroup(of: StockInfo?.self) { group in
-            for ticker in tickersToFetch {
+            for ticker in tickersNeedFetch {
+                let tickerSymbol = ticker.ticker
+                let fallback = fallbackStocks[tickerSymbol]
+                
                 group.addTask {
-                    // 캐시에 iconUrl이 있으면 사용
-                    if let cached = self.cache.getStock(ticker: ticker.ticker),
-                       cached.isValid,
-                       cached.stockInfo.iconUrl != nil {
-                        return cached.stockInfo.toStockInfo()
-                    }
-                    
-                    // 상세 정보 가져오기
                     do {
-                        return try await self.fetchTickerDetails(ticker: ticker.ticker)
+                        return try await self.fetchTickerDetails(ticker: tickerSymbol)
                     } catch {
                         // 실패 시 기본 정보만 반환
-                        return ticker.toStockInfo()
+                        return fallback
                     }
                 }
             }
