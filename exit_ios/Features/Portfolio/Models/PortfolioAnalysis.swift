@@ -92,10 +92,10 @@ struct PortfolioScore {
     /// 등급 색상
     var gradeColor: Color {
         switch grade {
-        case "S": return Color(hex: "FFD700")  // Gold
-        case "A": return Color.Exit.accent
-        case "B": return Color.Exit.positive
-        case "C": return Color.Exit.caution
+        case "S": return Color.Exit.accent
+        case "A": return Color.Exit.positive
+        case "B": return Color.Exit.caution
+        case "C": return Color.Exit.warning
         default: return Color.Exit.warning
         }
     }

@@ -22,6 +22,7 @@ struct StockBreakdownCard: View {
     let stocks: [StockMetricBreakdown]
     let benchmarks: [BenchmarkMetric]  // 비교군
     let isHigherBetter: Bool  // 높을수록 좋은지 (Sharpe: true, MDD: false, Volatility: false)
+    let showContribution: Bool  // 기여도 컬럼 표시 여부 (CAGR에서만 true)
     let onInfoTap: () -> Void
     
     @State private var isExpanded = false
@@ -40,6 +41,7 @@ struct StockBreakdownCard: View {
         portfolioValueColor: Color,
         stocks: [StockMetricBreakdown],
         isHigherBetter: Bool,
+        showContribution: Bool = false,
         onInfoTap: @escaping () -> Void
     ) {
         self.title = title
@@ -51,6 +53,7 @@ struct StockBreakdownCard: View {
         self.stocks = stocks
         self.benchmarks = []
         self.isHigherBetter = isHigherBetter
+        self.showContribution = showContribution
         self.onInfoTap = onInfoTap
     }
     
@@ -65,6 +68,7 @@ struct StockBreakdownCard: View {
         stocks: [StockMetricBreakdown],
         benchmarks: [BenchmarkMetric],
         isHigherBetter: Bool,
+        showContribution: Bool = false,
         onInfoTap: @escaping () -> Void
     ) {
         self.title = title
@@ -76,6 +80,7 @@ struct StockBreakdownCard: View {
         self.stocks = stocks
         self.benchmarks = benchmarks
         self.isHigherBetter = isHigherBetter
+        self.showContribution = showContribution
         self.onInfoTap = onInfoTap
     }
     
@@ -159,9 +164,11 @@ struct StockBreakdownCard: View {
                     Text("비중")
                         .frame(width: 50, alignment: .trailing)
                     Text("값")
-                        .frame(width: 70, alignment: .trailing)
-                    Text("기여")
-                        .frame(width: 60, alignment: .trailing)
+                        .frame(width: showContribution ? 70 : 80, alignment: .trailing)
+                    if showContribution {
+                        Text("반영")
+                            .frame(width: 60, alignment: .trailing)
+                    }
                 }
                 .font(.Exit.caption2)
                 .foregroundStyle(Color.Exit.tertiaryText)
@@ -184,9 +191,6 @@ struct StockBreakdownCard: View {
         HStack(spacing: ExitSpacing.sm) {
             // 종목 정보
             HStack(spacing: ExitSpacing.xs) {
-//                Text(stock.emoji)
-//                    .font(.system(size: 14))
-                
                 VStack(alignment: .leading, spacing: 0) {
                     Text(stock.name)
                         .font(.Exit.caption)
@@ -211,19 +215,7 @@ struct StockBreakdownCard: View {
                 .font(.Exit.caption)
                 .fontWeight(.medium)
                 .foregroundStyle(valueColor(for: stock))
-                .frame(width: 70, alignment: .trailing)
-            
-            // 기여도
-            HStack(spacing: 2) {
-                if stock.contribution != 0 {
-                    Image(systemName: contributionIcon(for: stock))
-                        .font(.system(size: 8))
-                }
-                Text(String(format: "%.1f%%", abs(stock.contribution) * 100))
-                    .font(.Exit.caption2)
-            }
-            .foregroundStyle(contributionColor(for: stock))
-            .frame(width: 60, alignment: .trailing)
+                .frame(width: showContribution ? 70 : 80, alignment: .trailing)
         }
         .padding(.horizontal, ExitSpacing.md)
         .padding(.vertical, ExitSpacing.xs)
@@ -348,34 +340,25 @@ struct StockBreakdownCard: View {
     }
     
     private func valueColor(for stock: StockMetricBreakdown) -> Color {
+        // rank는 이미 "좋은 순서"로 정렬됨 (rank 1 = 가장 좋은 종목)
         if stock.rank == 1 {
-            return isHigherBetter ? Color.Exit.positive : Color.Exit.warning
+            return Color.Exit.positive  // 가장 좋은 종목 → 초록색
         } else if stock.rank == stocks.count {
-            return isHigherBetter ? Color.Exit.warning : Color.Exit.positive
+            return Color.Exit.warning   // 가장 나쁜 종목 → 빨간색
         }
         return Color.Exit.primaryText
     }
     
-    private func contributionColor(for stock: StockMetricBreakdown) -> Color {
-        if isHigherBetter {
-            return stock.isPositive ? Color.Exit.positive : Color.Exit.warning
-        } else {
-            return stock.isPositive ? Color.Exit.warning : Color.Exit.positive
-        }
-    }
-    
-    private func contributionIcon(for stock: StockMetricBreakdown) -> String {
-        stock.isPositive ? "arrow.up" : "arrow.down"
-    }
-    
     private func highlightBackground(for stock: StockMetricBreakdown) -> Color {
+        // rank는 이미 "좋은 순서"로 정렬됨 (rank 1 = 가장 좋은 종목)
         if stock.rank == 1 {
-            return (isHigherBetter ? Color.Exit.positive : Color.Exit.warning).opacity(0.08)
+            return Color.Exit.positive.opacity(0.08)  // 가장 좋은 종목 → 초록 배경
         } else if stock.rank == stocks.count {
-            return (isHigherBetter ? Color.Exit.warning : Color.Exit.positive).opacity(0.08)
+            return Color.Exit.warning.opacity(0.08)   // 가장 나쁜 종목 → 빨간 배경
         }
         return Color.clear
     }
+    
 }
 
 /// 배당 종목별 분해 카드
@@ -614,10 +597,10 @@ struct BenchmarkComparisonBar: View {
         }
     }
     
-    /// 차트 최대값 (여백 포함)
+    /// 차트 최대값 (annotation 공간 포함)
     private var chartMaxValue: Double {
         let maxVal = chartData.map { $0.value }.max() ?? 1
-        return maxVal * 1.15
+        return maxVal * 1.5  // annotation 표시 공간 확보
     }
     
     var body: some View {
@@ -654,6 +637,7 @@ struct BenchmarkComparisonBar: View {
             }
         }
         .frame(height: CGFloat(chartData.count * 32 + 8))
+        .padding(.trailing, ExitSpacing.sm)  // 우측 여백 추가
     }
 }
 

@@ -8,82 +8,76 @@
 
 import SwiftUI
 
-/// 종합 점수 카드
+/// 컴팩트 종합 점수 카드
 struct PortfolioScoreCard: View {
     let score: PortfolioScore
     
     var body: some View {
-        VStack(spacing: ExitSpacing.lg) {
-            // 등급 배지
-            ZStack {
-                // 배경 링
-                Circle()
-                    .stroke(
-                        LinearGradient(
-                            colors: [score.gradeColor.opacity(0.3), score.gradeColor.opacity(0.1)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 8
-                    )
-                    .frame(width: 120, height: 120)
-                
-                // 진행률 링
-                Circle()
-                    .trim(from: 0, to: CGFloat(score.total) / 100)
-                    .stroke(
-                        LinearGradient(
-                            colors: [score.gradeColor, score.gradeColor.opacity(0.7)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                    )
-                    .frame(width: 120, height: 120)
-                    .rotationEffect(.degrees(-90))
-                
-                // 등급 텍스트
-                VStack(spacing: 2) {
-                    Text(score.grade)
-                        .font(.system(size: 48, weight: .heavy, design: .rounded))
-                        .foregroundStyle(score.gradeColor)
+        VStack(spacing: ExitSpacing.md) {
+            // 상단: 등급 + 점수 + 설명
+            HStack(spacing: ExitSpacing.md) {
+                // 등급 배지
+                ZStack {
+                    Circle()
+                        .fill(score.gradeColor.opacity(0.15))
+                        .frame(width: 56, height: 56)
                     
-                    Text("\(score.total)점")
+                    Circle()
+                        .trim(from: 0, to: CGFloat(score.total) / 100)
+                        .stroke(
+                            score.gradeColor,
+                            style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                        )
+                        .frame(width: 56, height: 56)
+                        .rotationEffect(.degrees(-90))
+                    
+                    Text(score.grade)
+                        .font(.system(size: 24, weight: .heavy, design: .rounded))
+                        .foregroundStyle(score.gradeColor)
+                }
+                
+                // 점수 및 설명
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("\(score.total)")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundStyle(score.gradeColor)
+                        
+                        Text("점")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                    }
+                    
+                    Text(score.gradeDescription)
                         .font(.Exit.caption)
                         .foregroundStyle(Color.Exit.secondaryText)
                 }
+                
+                Spacer()
             }
             
-            // 등급 설명
-            Text(score.gradeDescription)
-                .font(.Exit.body)
-                .fontWeight(.medium)
-                .foregroundStyle(Color.Exit.primaryText)
-            
-            // 세부 점수
-            HStack(spacing: ExitSpacing.lg) {
-                Spacer()
-                ScoreDetailItem(
+            // 하단: 세부 점수 프로그레스 바
+            HStack(spacing: ExitSpacing.md) {
+                CompactScoreBar(
                     title: "수익성",
                     score: score.profitability,
                     maxScore: 40,
                     color: .Exit.accent
                 )
-                Spacer()
-                ScoreDetailItem(
+                
+                CompactScoreBar(
                     title: "안정성",
                     score: score.stability,
                     maxScore: 30,
                     color: .Exit.positive
                 )
-                Spacer()
-                ScoreDetailItem(
+                
+                CompactScoreBar(
                     title: "효율성",
                     score: score.efficiency,
                     maxScore: 30,
                     color: Color(hex: "5856D6")
                 )
-                Spacer()
             }
         }
         .padding(ExitSpacing.lg)
@@ -92,7 +86,51 @@ struct PortfolioScoreCard: View {
     }
 }
 
-/// 세부 점수 아이템
+/// 컴팩트 점수 프로그레스 바
+struct CompactScoreBar: View {
+    let title: String
+    let score: Int
+    let maxScore: Int
+    let color: Color
+    
+    var progress: Double {
+        Double(score) / Double(maxScore)
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // 타이틀 + 점수
+            HStack {
+                Text(title)
+                    .font(.Exit.caption2)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                
+                Spacer()
+                
+                Text("\(score)/\(maxScore)")
+                    .font(.Exit.caption2)
+                    .fontWeight(.medium)
+                    .foregroundStyle(color)
+            }
+            
+            // 프로그레스 바
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(color.opacity(0.2))
+                        .frame(height: 6)
+                    
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(color)
+                        .frame(width: geometry.size.width * progress, height: 6)
+                }
+            }
+            .frame(height: 6)
+        }
+    }
+}
+
+/// 세부 점수 아이템 (기존 - 레거시 호환용)
 struct ScoreDetailItem: View {
     let title: String
     let score: Int
@@ -139,7 +177,7 @@ struct ScoreDetailItem: View {
 // MARK: - Preview
 
 #Preview {
-    VStack {
+    VStack(spacing: 16) {
         PortfolioScoreCard(
             score: PortfolioScore(
                 total: 82,
@@ -148,8 +186,16 @@ struct ScoreDetailItem: View {
                 efficiency: 26
             )
         )
+        
+        PortfolioScoreCard(
+            score: PortfolioScore(
+                total: 47,
+                profitability: 16,
+                stability: 11,
+                efficiency: 20
+            )
+        )
     }
     .padding()
     .background(Color.Exit.background)
 }
-

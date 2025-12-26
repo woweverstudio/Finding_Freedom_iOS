@@ -60,9 +60,9 @@ enum PortfolioAnalyzer {
         // 7. 배당 지표 계산
         let dividendMetrics = PortfolioCalculator.calculateDividendMetrics(holdings: holdings, stocksData: stocksData)
         
-        // 8. 점수 계산
+        // 8. 점수 계산 (배당 포함 CAGR 사용)
         let score = PortfolioCalculator.calculateScore(
-            cagr: cagr,
+            cagr: cagrWithDividends,
             volatility: volatility,
             sharpeRatio: sharpeRatio,
             mdd: mdd

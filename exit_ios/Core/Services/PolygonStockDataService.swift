@@ -30,7 +30,7 @@ final class PolygonStockDataService: StockDataServiceProtocol, StockAnalysisData
         // ETF
         "SCHD", "QQQM", "SPYM", "JEPQ", "JEPI",
         // 빅테크
-        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"
+        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "O"
     ]
     
     // MARK: - Initialization

@@ -35,7 +35,7 @@ struct StockSearchSheet: View {
         // ETF
         "SCHD", "QQQM", "SPYM", "JEPQ", "JEPI",
         // 빅테크
-        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"
+        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "O"
     ]
     
     /// 인기 종목 필터링

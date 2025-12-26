@@ -356,6 +356,7 @@ enum PortfolioCalculator {
     // MARK: - Score Calculation
     
     /// 종합 점수 계산
+    /// 기준: S&P 500 수준 포트폴리오가 약 75-80점(B등급)이 되도록 조정
     static func calculateScore(
         cagr: Double,
         volatility: Double,
@@ -363,50 +364,53 @@ enum PortfolioCalculator {
         mdd: Double
     ) -> PortfolioScore {
         // 수익성 점수 (40점 만점)
+        // 기준 완화: S&P 500 장기 CAGR ~10%가 32점 정도 되도록
         let profitability: Int = {
             switch cagr {
-            case 0.15...: return 40
-            case 0.10..<0.15: return 32
-            case 0.07..<0.10: return 24
-            case 0.05..<0.07: return 16
-            case 0..<0.05: return 8
-            default: return 0
+            case 0.12...: return 40      // 12%+ (매우 우수)
+            case 0.08..<0.12: return 32  // 8-12% (우수 - S&P 500 수준)
+            case 0.05..<0.08: return 24  // 5-8% (양호)
+            case 0.03..<0.05: return 16  // 3-5% (보통)
+            case 0..<0.03: return 8      // 0-3% (저조)
+            default: return 0            // 마이너스
             }
         }()
         
         // 안정성 점수 (30점 만점) = 변동성(15) + MDD(15)
+        // 기준 완화: 주식 포트폴리오 현실 반영
         let volatilityScore: Int = {
             switch volatility {
-            case 0..<0.12: return 15
-            case 0.12..<0.18: return 12
-            case 0.18..<0.25: return 9
-            case 0.25..<0.35: return 5
-            default: return 2
+            case 0..<0.18: return 15     // 18% 미만 (안정적)
+            case 0.18..<0.25: return 12  // 18-25% (S&P 500 수준)
+            case 0.25..<0.32: return 9   // 25-32% (다소 높음)
+            case 0.32..<0.40: return 5   // 32-40% (높음)
+            default: return 2            // 40%+ (매우 높음)
             }
         }()
         
         let mddScore: Int = {
             switch abs(mdd) {
-            case 0..<0.15: return 15
-            case 0.15..<0.25: return 12
-            case 0.25..<0.35: return 8
-            case 0.35..<0.50: return 4
-            default: return 1
+            case 0..<0.20: return 15     // 20% 미만 (안정적)
+            case 0.20..<0.30: return 12  // 20-30% (S&P 500 수준)
+            case 0.30..<0.40: return 8   // 30-40% (다소 높음)
+            case 0.40..<0.55: return 4   // 40-55% (높음)
+            default: return 1            // 55%+ (매우 높음)
             }
         }()
         
         let stability = volatilityScore + mddScore
         
         // 효율성 점수 (30점 만점)
+        // 기준 완화: Sharpe 0.8-1.0이 20점 정도 되도록
         let efficiency: Int = {
             switch sharpeRatio {
-            case 1.5...: return 30
-            case 1.2..<1.5: return 25
-            case 1.0..<1.2: return 20
-            case 0.7..<1.0: return 15
-            case 0.5..<0.7: return 10
-            case 0..<0.5: return 5
-            default: return 0
+            case 1.2...: return 30       // 1.2+ (매우 우수)
+            case 0.9..<1.2: return 25    // 0.9-1.2 (우수)
+            case 0.7..<0.9: return 20    // 0.7-0.9 (양호 - S&P 500 수준)
+            case 0.5..<0.7: return 15    // 0.5-0.7 (보통)
+            case 0.3..<0.5: return 10    // 0.3-0.5 (저조)
+            case 0..<0.3: return 5       // 0-0.3 (매우 저조)
+            default: return 0            // 마이너스
             }
         }()
         

@@ -64,11 +64,29 @@ final class PortfolioViewModel {
     /// 에러 메시지
     private(set) var errorMessage: String?
     
+    /// 분석 단계 (UI 표시용)
+    private(set) var analysisPhase: PortfolioAnalysisPhase = .fetchingData
+    
+    /// 분석 진행률 (UI 표시용)
+    private(set) var analysisProgress: Double = 0
+    
+    /// 실제 분석 완료 여부 (내부 플래그)
+    private var isAnalysisCompleted = false
+    
+    /// 진행률 Task
+    private var progressTask: Task<Void, Never>?
+    
     /// 종목 데이터 캐시
     private(set) var stocksDataCache: [StockWithData] = []
     
     /// 분석용 데이터 캐시 (일별 가격 포함)
     private(set) var analysisDataCache: [StockAnalysisData] = []
+    
+    /// 벤치마크 데이터 캐시 (VOO, SGOV)
+    private(set) var benchmarkDataCache: [String: StockAnalysisData] = [:]
+    
+    /// 동적 벤치마크 지표
+    private(set) var dynamicBenchmarks: [DynamicBenchmark] = []
     
     // MARK: - 종목별 상세 분석 데이터
     
@@ -272,16 +290,37 @@ final class PortfolioViewModel {
         viewState = .analyzing
         isLoading = true
         errorMessage = nil
+        isAnalysisCompleted = false
+        analysisPhase = .fetchingData
+        analysisProgress = 0
+        
+        // 가짜 진행률 타이머 시작 (자연스러운 UX)
+        startProgressTimer()
         
         do {
             let tickers = holdings.map { $0.ticker }
             let holdingsData = holdings.map { (ticker: $0.ticker, weight: $0.weight) }
             
             // 분석용 데이터 가져오기 (일별 가격 포함)
-            analysisDataCache = try await analysisService.fetchStocksWithAnalysisData(tickers: tickers)
+            // 벤치마크(VOO, SGOV)도 함께 가져오기
+            let benchmarkTickers = ["VOO", "SGOV"]
+            let allTickers = tickers + benchmarkTickers.filter { !tickers.contains($0) }
             
-            // StockWithData 캐시도 업데이트
+            let allData = try await analysisService.fetchStocksWithAnalysisData(tickers: allTickers)
+            
+            // 포트폴리오 데이터와 벤치마크 데이터 분리
+            analysisDataCache = allData.filter { tickers.contains($0.info.ticker) }
             stocksDataCache = analysisDataCache.map { $0.asStockWithData }
+            
+            // 벤치마크 데이터 캐시
+            for benchmarkTicker in benchmarkTickers {
+                if let data = allData.first(where: { $0.info.ticker == benchmarkTicker }) {
+                    benchmarkDataCache[benchmarkTicker] = data
+                }
+            }
+            
+            // 동적 벤치마크 계산
+            calculateDynamicBenchmarks()
             
             // 분석 실행 (상관계수 반영)
             analysisResult = PortfolioAnalyzer.analyzeWithDailyData(
@@ -320,16 +359,92 @@ final class PortfolioViewModel {
                 calculateChartData(result: result)
             }
             
+            // 실제 분석 완료 - 진행률 애니메이션이 끝날 때까지 대기
+            isAnalysisCompleted = true
+            await waitForProgressCompletion()
+            
             viewState = .analyzed
             HapticService.shared.success()
             
         } catch {
+            stopProgressTimer()
             errorMessage = error.localizedDescription
             viewState = .error(error.localizedDescription)
             HapticService.shared.error()
         }
         
         isLoading = false
+    }
+    
+    /// 가짜 진행률 Task 시작
+    @MainActor
+    private func startProgressTimer() {
+        progressTask?.cancel()
+        
+        progressTask = Task { @MainActor in
+            // 총 예상 시간: 2.5초 (데이터 로딩이 길면 더 오래 걸림)
+            // 0.05초마다 업데이트
+            let updateInterval: UInt64 = 50_000_000  // 0.05초
+            var elapsedTime = 0.0
+            
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: updateInterval)
+                elapsedTime += 0.05
+                
+                if self.isAnalysisCompleted {
+                    // 분석 완료됨 - 빠르게 100%로 마무리
+                    self.analysisProgress = min(1.0, self.analysisProgress + 0.08)
+                    self.updatePhaseFromProgress()
+                    
+                    if self.analysisProgress >= 1.0 {
+                        break
+                    }
+                } else {
+                    // 분석 진행 중 - 천천히 증가 (최대 85%까지)
+                    // 이징 함수로 자연스럽게 느려지는 효과
+                    let targetProgress = min(0.85, elapsedTime / 3.0)  // 3초에 85%
+                    let easedProgress = self.easeOutCubic(targetProgress / 0.85) * 0.85
+                    self.analysisProgress = easedProgress
+                    self.updatePhaseFromProgress()
+                }
+            }
+        }
+    }
+    
+    /// 진행률에 따라 단계 업데이트
+    @MainActor
+    private func updatePhaseFromProgress() {
+        switch analysisProgress {
+        case 0..<0.45:
+            analysisPhase = .fetchingData
+        case 0.45..<1.0:
+            analysisPhase = .analyzing
+        default:
+            analysisPhase = .completed
+        }
+    }
+    
+    /// 이징 함수 (점점 느려지는 효과)
+    private func easeOutCubic(_ x: Double) -> Double {
+        return 1 - pow(1 - x, 3)
+    }
+    
+    /// Task 정지
+    @MainActor
+    private func stopProgressTimer() {
+        progressTask?.cancel()
+        progressTask = nil
+    }
+    
+    /// 진행률 애니메이션 완료 대기
+    @MainActor
+    private func waitForProgressCompletion() async {
+        // 진행률이 100%가 될 때까지 대기
+        while analysisProgress < 1.0 {
+            try? await Task.sleep(nanoseconds: 50_000_000)  // 0.05초
+        }
+        // 완료 상태를 잠깐 보여주기
+        try? await Task.sleep(nanoseconds: 200_000_000)  // 0.2초
     }
     
     /// 편집 모드로 돌아가기
@@ -632,6 +747,96 @@ final class PortfolioViewModel {
     func getStockData(for ticker: String) -> StockWithData? {
         stocksDataCache.first { $0.info.ticker == ticker }
     }
+    
+    // MARK: - Dynamic Benchmark
+    
+    /// 동적 벤치마크 계산 (VOO, SGOV)
+    private func calculateDynamicBenchmarks() {
+        let riskFreeRate = 0.035
+        dynamicBenchmarks = []
+        
+        // VOO (S&P 500)
+        if let vooData = benchmarkDataCache["VOO"] {
+            let holdings = [(ticker: "VOO", weight: 1.0)]
+            let cagr = PortfolioCalculator.calculatePortfolioCAGRWithDividends(
+                holdings: holdings,
+                stocksData: [vooData]
+            )
+            let volatility = vooData.annualVolatility
+            let mdd = vooData.priceHistory.maxDrawdown
+            let sharpe = volatility > 0 ? (cagr - riskFreeRate) / volatility : 0
+            
+            dynamicBenchmarks.append(DynamicBenchmark(
+                ticker: "VOO",
+                name: "S&P 500",
+                emoji: "🇺🇸",
+                cagr: cagr,
+                volatility: volatility,
+                mdd: mdd,
+                sharpeRatio: sharpe,
+                dividendYield: vooData.dividendHistory.dividendYield
+            ))
+        }
+        
+        // SGOV (미국 단기채권)
+        if let sgovData = benchmarkDataCache["SGOV"] {
+            let holdings = [(ticker: "SGOV", weight: 1.0)]
+            let cagr = PortfolioCalculator.calculatePortfolioCAGRWithDividends(
+                holdings: holdings,
+                stocksData: [sgovData]
+            )
+            let volatility = sgovData.annualVolatility
+            let mdd = sgovData.priceHistory.maxDrawdown
+            let sharpe = volatility > 0 ? (cagr - riskFreeRate) / volatility : 0
+            
+            dynamicBenchmarks.append(DynamicBenchmark(
+                ticker: "SGOV",
+                name: "미국 단기채권",
+                emoji: "🏦",
+                cagr: cagr,
+                volatility: volatility,
+                mdd: mdd,
+                sharpeRatio: sharpe,
+                dividendYield: sgovData.dividendHistory.dividendYield
+            ))
+        }
+    }
+    
+    /// 지표 타입별 벤치마크 BenchmarkMetric 배열 반환
+    func benchmarks(for type: BenchmarkMetric.MetricType) -> [BenchmarkMetric] {
+        // 동적 벤치마크 데이터가 있으면 사용, 없으면 기본값 사용
+        guard !dynamicBenchmarks.isEmpty else {
+            return BenchmarkMetric.benchmarks(for: type)
+        }
+        
+        return dynamicBenchmarks.map { benchmark in
+            let value: Double
+            let formattedValue: String
+            
+            switch type {
+            case .cagr:
+                value = benchmark.cagr
+                formattedValue = String(format: "%.1f%%", benchmark.cagr * 100)
+            case .sharpeRatio:
+                value = benchmark.sharpeRatio
+                formattedValue = String(format: "%.2f", benchmark.sharpeRatio)
+            case .volatility:
+                value = benchmark.volatility
+                formattedValue = String(format: "%.1f%%", benchmark.volatility * 100)
+            case .mdd:
+                value = benchmark.mdd
+                formattedValue = String(format: "%.1f%%", benchmark.mdd * 100)
+            }
+            
+            return BenchmarkMetric(
+                name: benchmark.name,
+                ticker: benchmark.ticker,
+                emoji: benchmark.emoji,
+                value: value,
+                formattedValue: formattedValue
+            )
+        }
+    }
 }
 
 // MARK: - Display Models
@@ -651,5 +856,18 @@ struct PortfolioHoldingDisplay: Identifiable {
     var weightPercent: String {
         String(format: "%.1f%%", weight * 100)
     }
+}
+
+/// 동적 벤치마크 데이터 (VOO, SGOV 실제 데이터 기반)
+struct DynamicBenchmark: Identifiable {
+    let id = UUID()
+    let ticker: String
+    let name: String
+    let emoji: String
+    let cagr: Double
+    let volatility: Double
+    let mdd: Double
+    let sharpeRatio: Double
+    let dividendYield: Double
 }
 

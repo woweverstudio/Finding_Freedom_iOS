@@ -92,44 +92,10 @@ struct PortfolioView: View {
     // MARK: - Analyzing View
     
     private var analyzingView: some View {
-        VStack(spacing: ExitSpacing.lg) {
-            Spacer()
-            
-            // 로딩 애니메이션
-            ZStack {
-                Circle()
-                    .stroke(Color.Exit.divider, lineWidth: 4)
-                    .frame(width: 80, height: 80)
-                
-                Circle()
-                    .trim(from: 0, to: 0.3)
-                    .stroke(Color.Exit.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .frame(width: 80, height: 80)
-                    .rotationEffect(.degrees(-90))
-                    .animation(
-                        .linear(duration: 1).repeatForever(autoreverses: false),
-                        value: viewModel.isLoading
-                    )
-                
-                Text("📊")
-                    .font(.system(size: 32))
-            }
-            
-            VStack(spacing: ExitSpacing.sm) {
-                Text("포트폴리오 분석 중...")
-                    .font(.Exit.title3)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.primaryText)
-                
-                Text("종목 데이터를 불러오고 지표를 계산하고 있어요")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                    .multilineTextAlignment(.center)
-            }
-            
-            Spacer()
-        }
-        .padding(ExitSpacing.lg)
+        PortfolioLoadingView(
+            progress: viewModel.analysisProgress,
+            phase: viewModel.analysisPhase
+        )
     }
     
     // MARK: - Error View
