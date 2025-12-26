@@ -725,10 +725,10 @@ final class PortfolioViewModel {
     private func calculateChartData(result: PortfolioAnalysisResult) {
         let holdingsData = holdings.map { (ticker: $0.ticker, weight: $0.weight) }
         
-        // 과거 5년 성과 계산
+        // 과거 5년 성과 계산 (월별 데이터, 일별 가격 기반)
         historicalData = MonteCarloSimulator.calculateHistoricalPerformance(
             holdings: holdingsData,
-            stocksData: stocksDataCache
+            stocksData: analysisDataCache
         )
         
         // 미래 10년 예측 시뮬레이션

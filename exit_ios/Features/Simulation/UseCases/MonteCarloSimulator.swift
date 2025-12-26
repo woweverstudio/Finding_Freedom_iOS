@@ -370,13 +370,48 @@ struct PortfolioProjectionResult {
     }
 }
 
-/// 포트폴리오 과거 성과 데이터
-struct PortfolioHistoricalData {
-    /// 연도 레이블
-    let years: [String]
+/// 종목별 과거 성과 데이터 (월별)
+struct StockHistoricalPerformance: Identifiable {
+    var id: String { ticker }
+    let ticker: String
+    let name: String
+    let dates: [Date]           // 월별 날짜
+    let values: [Double]        // 월별 가치 (시작 = 1.0)
     
-    /// 연도별 포트폴리오 가치 (시작 = 1.0)
+    var totalReturn: Double {
+        (values.last ?? 1.0) - 1.0
+    }
+    
+    /// 연도 레이블 (X축용)
+    var yearLabels: [String] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy"
+        var labels: [String] = []
+        var lastYear = ""
+        for date in dates {
+            let year = formatter.string(from: date)
+            if year != lastYear {
+                labels.append(year)
+                lastYear = year
+            }
+        }
+        return labels
+    }
+}
+
+/// 포트폴리오 과거 성과 데이터 (월별)
+struct PortfolioHistoricalData {
+    /// 월별 날짜
+    let dates: [Date]
+    
+    /// 연도 레이블 (X축용)
+    let yearLabels: [String]
+    
+    /// 월별 포트폴리오 가치 (시작 = 1.0)
     let values: [Double]
+    
+    /// 종목별 과거 성과 데이터
+    let stockPerformances: [StockHistoricalPerformance]
     
     /// 총 수익률
     var totalReturn: Double {
@@ -385,9 +420,17 @@ struct PortfolioHistoricalData {
     
     /// CAGR
     var cagr: Double {
-        let years = Double(values.count - 1)
+        guard dates.count > 1 else { return 0 }
+        let years = Double(dates.count - 1) / 12.0
         guard years > 0 else { return 0 }
         return pow(values.last ?? 1.0, 1.0 / years) - 1
+    }
+    
+    init(dates: [Date] = [], yearLabels: [String] = [], values: [Double] = [], stockPerformances: [StockHistoricalPerformance] = []) {
+        self.dates = dates
+        self.yearLabels = yearLabels
+        self.values = values
+        self.stockPerformances = stockPerformances
     }
 }
 
@@ -462,24 +505,197 @@ extension MonteCarloSimulator {
         )
     }
     
-    /// 포트폴리오 과거 성과 계산
+    /// 포트폴리오 과거 성과 계산 (월별 데이터, 종목별 성과 포함)
     /// - Parameters:
     ///   - holdings: 보유 종목 비중
-    ///   - stocksData: 종목별 데이터
-    /// - Returns: 과거 성과 데이터
+    ///   - stocksData: 종목별 분석 데이터 (일별 가격 포함)
+    /// - Returns: 과거 성과 데이터 (포트폴리오 + 종목별, 월별)
+    static func calculateHistoricalPerformance(
+        holdings: [(ticker: String, weight: Double)],
+        stocksData: [StockAnalysisData]
+    ) -> PortfolioHistoricalData {
+        
+        guard !holdings.isEmpty else {
+            return PortfolioHistoricalData()
+        }
+        
+        // 모든 종목에서 공통 날짜 범위 찾기
+        let allDates = stocksData.flatMap { $0.dailyPrices.map { $0.date } }
+        guard let minDate = allDates.min(), let maxDate = allDates.max() else {
+            return PortfolioHistoricalData()
+        }
+        
+        // 월별 날짜 생성 (매월 말일 기준)
+        var monthlyDates: [Date] = []
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .current
+        
+        var currentDate = minDate
+        while currentDate <= maxDate {
+            // 해당 월의 마지막 날 찾기
+            if let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: calendar.startOfDay(for: currentDate)) {
+                let targetDate = min(endOfMonth, maxDate)
+                if monthlyDates.isEmpty || !calendar.isDate(targetDate, inSameDayAs: monthlyDates.last!) {
+                    monthlyDates.append(targetDate)
+                }
+            }
+            
+            // 다음 달로 이동
+            if let nextMonth = calendar.date(byAdding: .month, value: 1, to: currentDate) {
+                currentDate = calendar.date(from: calendar.dateComponents([.year, .month], from: nextMonth)) ?? nextMonth
+            } else {
+                break
+            }
+        }
+        
+        // 연도 레이블 생성
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy"
+        var yearLabels: [String] = []
+        var lastYear = ""
+        for date in monthlyDates {
+            let year = formatter.string(from: date)
+            if year != lastYear {
+                yearLabels.append(year)
+                lastYear = year
+            }
+        }
+        
+        // 종목별 월별 성과 계산 (배당 포함)
+        var stockPerformances: [StockHistoricalPerformance] = []
+        
+        for holding in holdings {
+            guard let stock = stocksData.first(where: { $0.info.ticker == holding.ticker }),
+                  !stock.dailyPrices.isEmpty else {
+                continue
+            }
+            
+            // 종목의 일별 데이터를 날짜별 딕셔너리로 변환
+            var priceByDate: [Date: Double] = [:]
+            for price in stock.dailyPrices {
+                let dayStart = calendar.startOfDay(for: price.date)
+                priceByDate[dayStart] = price.close
+            }
+            
+            // 해당 종목의 시작일 찾기
+            guard let stockMinDate = stock.dailyPrices.map({ $0.date }).min(),
+                  let firstPrice = stock.dailyPrices.first?.close, firstPrice > 0 else {
+                continue
+            }
+            
+            // 배당 수익률 (월별로 변환)
+            let annualDividendYield = stock.dividendHistory.dividendYield
+            let monthlyDividendYield = annualDividendYield / 12.0
+            
+            // 종목의 월별 데이터 계산
+            var stockMonthlyDates: [Date] = []
+            var stockMonthlyValues: [Double] = []
+            var monthCount = 0  // 배당 누적용 월 카운터
+            
+            for monthDate in monthlyDates {
+                // 해당 월의 가장 가까운 가격 찾기 (해당 날짜 또는 이전 가장 가까운 날짜)
+                var closestPrice: Double?
+                var checkDate = monthDate
+                
+                for _ in 0..<10 {  // 최대 10일 전까지 탐색
+                    let dayStart = calendar.startOfDay(for: checkDate)
+                    if let price = priceByDate[dayStart] {
+                        closestPrice = price
+                        break
+                    }
+                    if let prevDay = calendar.date(byAdding: .day, value: -1, to: checkDate) {
+                        checkDate = prevDay
+                    } else {
+                        break
+                    }
+                }
+                
+                if let price = closestPrice, monthDate >= stockMinDate {
+                    stockMonthlyDates.append(monthDate)
+                    
+                    // 가격 수익률 (시작가 대비)
+                    let priceReturn = price / firstPrice
+                    
+                    // 배당 수익률 복리 계산 (매월 배당 재투자 가정)
+                    // 누적 배당 = (1 + 월배당률)^개월수 - 1
+                    let cumulativeDividendMultiplier = pow(1 + monthlyDividendYield, Double(monthCount))
+                    
+                    // 총 수익률 = 가격 수익률 × 배당 복리 효과
+                    let totalReturn = priceReturn * cumulativeDividendMultiplier
+                    stockMonthlyValues.append(totalReturn)
+                    
+                    monthCount += 1
+                }
+            }
+            
+            if !stockMonthlyDates.isEmpty {
+                stockPerformances.append(StockHistoricalPerformance(
+                    ticker: stock.info.ticker,
+                    name: stock.info.displayName,
+                    dates: stockMonthlyDates,
+                    values: stockMonthlyValues
+                ))
+            }
+        }
+        
+        // 포트폴리오 전체 월별 가중 성과 계산
+        var portfolioValues: [Double] = []
+        
+        for (index, monthDate) in monthlyDates.enumerated() {
+            var weightedValue = 0.0
+            var totalWeight = 0.0
+            
+            for holding in holdings {
+                // 해당 종목의 해당 월 값 찾기
+                if let stockPerf = stockPerformances.first(where: { $0.ticker == holding.ticker }),
+                   let dateIndex = stockPerf.dates.firstIndex(where: { calendar.isDate($0, inSameDayAs: monthDate) }) {
+                    weightedValue += stockPerf.values[dateIndex] * holding.weight
+                    totalWeight += holding.weight
+                }
+            }
+            
+            if totalWeight > 0 {
+                portfolioValues.append(weightedValue / totalWeight)
+            } else if !portfolioValues.isEmpty {
+                // 이전 값 유지
+                portfolioValues.append(portfolioValues.last ?? 1.0)
+            }
+        }
+        
+        // 포트폴리오 값 정규화 (시작 = 1.0)
+        if let firstValue = portfolioValues.first, firstValue > 0 {
+            portfolioValues = portfolioValues.map { $0 / firstValue }
+        }
+        
+        return PortfolioHistoricalData(
+            dates: monthlyDates,
+            yearLabels: yearLabels,
+            values: portfolioValues,
+            stockPerformances: stockPerformances
+        )
+    }
+    
+    /// 포트폴리오 과거 성과 계산 (연별 데이터, 호환성 유지)
     static func calculateHistoricalPerformance(
         holdings: [(ticker: String, weight: Double)],
         stocksData: [StockWithData]
     ) -> PortfolioHistoricalData {
         
         guard !holdings.isEmpty else {
-            return PortfolioHistoricalData(years: [], values: [])
+            return PortfolioHistoricalData()
         }
         
         // 가장 긴 연도 수 찾기 (보통 5년)
         let maxYears = stocksData.map { $0.priceHistory.annualReturns.count }.max() ?? 5
         
-        // 연도별 포트폴리오 가중 수익률 계산
+        // 연도 레이블 생성 (현재 기준 과거)
+        let currentYear = Calendar.current.component(.year, from: Date())
+        var yearLabels: [String] = []
+        for i in 0...maxYears {
+            yearLabels.append("\(currentYear - maxYears + i)")
+        }
+        
+        // 포트폴리오 전체 가중 수익률 계산
         var portfolioValues: [Double] = [1.0]  // 시작 = 1.0
         var currentValue = 1.0
         
@@ -494,7 +710,6 @@ extension MonteCarloSimulator {
                 }
                 
                 let yearlyReturn = stock.priceHistory.annualReturns[yearIndex]
-                // 배당 수익률도 연간 수익에 추가
                 let dividendContribution = stock.dividendHistory.dividendYield
                 
                 weightedReturn += (yearlyReturn + dividendContribution) * holding.weight
@@ -509,15 +724,8 @@ extension MonteCarloSimulator {
             portfolioValues.append(currentValue)
         }
         
-        // 연도 레이블 생성 (현재 기준 과거)
-        let currentYear = Calendar.current.component(.year, from: Date())
-        var years: [String] = []
-        for i in 0...maxYears {
-            years.append("\(currentYear - maxYears + i)")
-        }
-        
         return PortfolioHistoricalData(
-            years: years,
+            yearLabels: yearLabels,
             values: portfolioValues
         )
     }

@@ -11,24 +11,40 @@ import Charts
 
 // MARK: - 과거 5년 성과 차트
 
-/// 포트폴리오 과거 5년 성과 차트
+/// 포트폴리오 과거 5년 성과 차트 (종목별 라인 포함)
 struct PortfolioHistoricalChart: View {
     let data: PortfolioHistoricalData
+    
+    /// 무지개 색상 팔레트 (10개)
+    private let rainbowColors: [Color] = [
+        Color(red: 0.95, green: 0.35, blue: 0.35),  // 빨강
+        Color(red: 0.95, green: 0.55, blue: 0.30),  // 주황
+        Color(red: 0.95, green: 0.75, blue: 0.25),  // 노랑
+        Color(red: 0.45, green: 0.80, blue: 0.45),  // 연두
+        Color(red: 0.30, green: 0.70, blue: 0.55),  // 청록
+        Color(red: 0.35, green: 0.60, blue: 0.85),  // 하늘
+        Color(red: 0.40, green: 0.45, blue: 0.85),  // 파랑
+        Color(red: 0.60, green: 0.40, blue: 0.85),  // 보라
+        Color(red: 0.80, green: 0.45, blue: 0.75),  // 자주
+        Color(red: 0.90, green: 0.50, blue: 0.55),  // 분홍
+    ]
+    
+    /// 종목 인덱스별 색상
+    private func stockColor(at index: Int) -> Color {
+        rainbowColors[index % rainbowColors.count]
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
             // 헤더
             HStack(spacing: ExitSpacing.sm) {
-                Text("📅")
-                    .font(.system(size: 24))
-                
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("과거 5년 성과")
+                    Text("과거 5년 성과(배당 포함)")
                         .font(.Exit.body)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Exit.primaryText)
                     
-                    Text("포트폴리오 기준 백테스트 결과")
+                    Text("종목별 백테스트 결과")
                         .font(.Exit.caption)
                         .foregroundStyle(Color.Exit.secondaryText)
                 }
@@ -42,7 +58,7 @@ struct PortfolioHistoricalChart: View {
                         .fontWeight(.bold)
                         .foregroundStyle(data.totalReturn >= 0 ? Color.Exit.accent : Color.Exit.warning)
                     
-                    Text("총 수익률")
+                    Text("포트폴리오")
                         .font(.Exit.caption2)
                         .foregroundStyle(Color.Exit.tertiaryText)
                 }
@@ -51,13 +67,16 @@ struct PortfolioHistoricalChart: View {
             // 차트
             historicalChart
             
+            // 범례 (포트폴리오 + 종목별)
+            legendView
+            
             // 도움말
             HStack(alignment: .top, spacing: ExitSpacing.sm) {
                 Image(systemName: "info.circle.fill")
                     .font(.system(size: 12))
                     .foregroundStyle(Color.Exit.accent)
                 
-                Text("현재 포트폴리오 구성으로 5년 전부터 투자했다면 어땠을지 보여줘요.")
+                Text("현재 포트폴리오 구성으로 5년 전부터 투자했다면 어땠을지 보여줘요. 데이터가 없는 종목은 있는 기간부터 표시돼요.")
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.tertiaryText)
             }
@@ -71,63 +90,90 @@ struct PortfolioHistoricalChart: View {
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
     }
     
-    // 차트 Y축 최소값 계산
+    // 차트 Y축 최소값 계산 (종목별 데이터도 포함)
     private var chartYMin: Double {
-        min(data.values.min() ?? 0.5, 0.8)
+        var allValues = data.values
+        for stock in data.stockPerformances {
+            allValues.append(contentsOf: stock.values)
+        }
+        return min(allValues.min() ?? 0.5, 0.8)
+    }
+    
+    // 차트 Y축 최대값 계산
+    private var chartYMax: Double {
+        var allValues = data.values
+        for stock in data.stockPerformances {
+            allValues.append(contentsOf: stock.values)
+        }
+        return max(allValues.max() ?? 2.0, 1.5)
     }
     
     private var historicalChart: some View {
         Chart {
-            // 영역 채우기 (그라데이션) - yStart를 차트 최소값으로 설정하여 x축 아래로 안 넘어가게
+            // 1. 종목별 라인 (얇게, 각 색상) - 월별 데이터
+            ForEach(Array(data.stockPerformances.enumerated()), id: \.element.id) { stockIndex, stock in
+                ForEach(Array(stock.values.enumerated()), id: \.offset) { valueIndex, value in
+                    if valueIndex < stock.dates.count {
+                        LineMark(
+                            x: .value("날짜", stock.dates[valueIndex]),
+                            y: .value("가치", value),
+                            series: .value("종목", stock.ticker)
+                        )
+                        .foregroundStyle(stockColor(at: stockIndex).opacity(0.7))
+                        .lineStyle(StrokeStyle(lineWidth: 1.5))
+                        .interpolationMethod(.catmullRom)
+                    }
+                }
+            }
+            
+            // 2. 포트폴리오 영역 채우기 (그라데이션) - 월별 데이터
+//            ForEach(Array(data.values.enumerated()), id: \.offset) { index, value in
+//                if index < data.dates.count {
+//                    AreaMark(
+//                        x: .value("날짜", data.dates[index]),
+//                        yStart: .value("최소", chartYMin),
+//                        yEnd: .value("가치", value)
+//                    )
+//                    .foregroundStyle(
+//                        LinearGradient(
+//                            colors: [Color.Exit.accent.opacity(0.25), Color.Exit.accent.opacity(0.05)],
+//                            startPoint: .top,
+//                            endPoint: .bottom
+//                        )
+//                    )
+//                    .interpolationMethod(.catmullRom)
+//                }
+//            }
+            
+            // 3. 포트폴리오 메인 라인 (진하게) - 월별 데이터
             ForEach(Array(data.values.enumerated()), id: \.offset) { index, value in
-                AreaMark(
-                    x: .value("연도", data.years[index]),
-                    yStart: .value("최소", chartYMin),
-                    yEnd: .value("가치", value)
-                )
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color.Exit.accent.opacity(0.3), Color.Exit.accent.opacity(0.05)],
-                        startPoint: .top,
-                        endPoint: .bottom
+                if index < data.dates.count {
+                    LineMark(
+                        x: .value("날짜", data.dates[index]),
+                        y: .value("가치", value),
+                        series: .value("종목", "포트폴리오")
                     )
-                )
-                .interpolationMethod(.catmullRom)
+                    .foregroundStyle(Color.Exit.accent)
+                    .lineStyle(StrokeStyle(lineWidth: 3.5))
+                    .interpolationMethod(.catmullRom)
+                }
             }
             
-            // 라인
-            ForEach(Array(data.values.enumerated()), id: \.offset) { index, value in
-                LineMark(
-                    x: .value("연도", data.years[index]),
-                    y: .value("가치", value)
-                )
-                .foregroundStyle(Color.Exit.accent)
-                .lineStyle(StrokeStyle(lineWidth: 3))
-                .interpolationMethod(.catmullRom)
-            }
-            
-            // 포인트 마커
-            ForEach(Array(data.values.enumerated()), id: \.offset) { index, value in
-                PointMark(
-                    x: .value("연도", data.years[index]),
-                    y: .value("가치", value)
-                )
-                .foregroundStyle(Color.Exit.accent)
-                .symbolSize(index == data.values.count - 1 ? 100 : 50)
-            }
-            
-            // 기준선 (1.0 = 시작점)
+            // 4. 기준선 (1.0 = 시작점)
             RuleMark(y: .value("기준", 1.0))
                 .foregroundStyle(Color.Exit.divider)
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
         }
-        .frame(height: 200)
-        .chartYScale(domain: chartYMin...max(data.values.max() ?? 2.0, 1.5))
+        .frame(height: 260)
+        .chartYScale(domain: chartYMin...chartYMax)
         .chartXAxis {
-            AxisMarks(values: .automatic) { value in
+            // X축: 연단위로 표시
+            AxisMarks(values: .stride(by: .year)) { value in
+                AxisGridLine()
+                    .foregroundStyle(Color.Exit.divider.opacity(0.3))
                 AxisValueLabel {
-                    if let year = value.as(String.self) {
-                        Text(String(year.suffix(2)))
+                    if let date = value.as(Date.self) {
+                        Text(yearFormatter.string(from: date))
                             .font(.Exit.caption2)
                             .foregroundStyle(Color.Exit.tertiaryText)
                     }
@@ -135,7 +181,7 @@ struct PortfolioHistoricalChart: View {
             }
         }
         .chartYAxis {
-            AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
                 AxisGridLine()
                     .foregroundStyle(Color.Exit.divider.opacity(0.5))
                 AxisValueLabel {
@@ -146,6 +192,75 @@ struct PortfolioHistoricalChart: View {
                     }
                 }
             }
+        }
+        .chartLegend(.hidden)
+    }
+    
+    /// 연도 포맷터
+    private var yearFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yy"  // 21, 22 형식
+        return formatter
+    }
+    
+    /// 범례 뷰
+    private var legendView: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            // 포트폴리오 범례 (맨 위, 강조)
+            HStack(spacing: ExitSpacing.sm) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.Exit.accent)
+                    .frame(width: 24, height: 4)
+                
+                Text("포트폴리오")
+                    .font(.Exit.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.Exit.primaryText)
+                
+                Spacer()
+                
+                Text(String(format: "%+.1f%%", data.totalReturn * 100))
+                    .font(.Exit.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(data.totalReturn >= 0 ? Color.Exit.accent : Color.Exit.warning)
+            }
+            
+            Divider()
+                .background(Color.Exit.divider)
+            
+            // 종목별 범례 (2열 그리드)
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: ExitSpacing.sm),
+                GridItem(.flexible(), spacing: ExitSpacing.sm)
+            ], spacing: ExitSpacing.xs) {
+                ForEach(Array(data.stockPerformances.enumerated()), id: \.element.id) { index, stock in
+                    stockLegendItem(stock: stock, colorIndex: index)
+                }
+            }
+        }
+        .padding(ExitSpacing.sm)
+        .background(Color.Exit.secondaryCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+    }
+    
+    /// 종목별 범례 아이템
+    private func stockLegendItem(stock: StockHistoricalPerformance, colorIndex: Int) -> some View {
+        HStack(spacing: ExitSpacing.xs) {
+            RoundedRectangle(cornerRadius: 1)
+                .fill(stockColor(at: colorIndex))
+                .frame(width: 16, height: 2)
+            
+            Text(stock.ticker)
+                .font(.Exit.caption2)
+                .foregroundStyle(Color.Exit.secondaryText)
+                .lineLimit(1)
+            
+            Spacer()
+            
+            Text(String(format: "%+.0f%%", stock.totalReturn * 100))
+                .font(.Exit.caption2)
+                .fontWeight(.medium)
+                .foregroundStyle(stock.totalReturn >= 0 ? stockColor(at: colorIndex) : Color.Exit.warning)
         }
     }
 }
@@ -531,13 +646,73 @@ struct PortfolioProjectionChart: View {
 // MARK: - Preview
 
 #Preview("과거 성과") {
-    ZStack {
+    // 월별 샘플 데이터 생성 (5년 = 60개월)
+    let calendar = Calendar.current
+    let now = Date()
+    
+    // 월별 날짜 배열 생성 (5년 전부터 현재까지)
+    func generateMonthlyDates(months: Int) -> [Date] {
+        var dates: [Date] = []
+        for i in (0..<months).reversed() {
+            if let date = calendar.date(byAdding: .month, value: -i, to: now) {
+                dates.append(date)
+            }
+        }
+        return dates
+    }
+    
+    // 월별 가치 생성 (랜덤 변동 포함)
+    func generateMonthlyValues(months: Int, cagr: Double, volatility: Double) -> [Double] {
+        var values: [Double] = [1.0]
+        var currentValue = 1.0
+        let monthlyReturn = pow(1 + cagr, 1.0/12.0) - 1
+        
+        for i in 1..<months {
+            let randomVariation = Double.random(in: -volatility...volatility)
+            currentValue *= (1 + monthlyReturn + randomVariation)
+            values.append(currentValue)
+        }
+        return values
+    }
+    
+    let months = 60
+    let portfolioDates = generateMonthlyDates(months: months)
+    let portfolioValues = generateMonthlyValues(months: months, cagr: 0.12, volatility: 0.03)
+    
+    return ZStack {
         Color.Exit.background.ignoresSafeArea()
         
         PortfolioHistoricalChart(
             data: PortfolioHistoricalData(
-                years: ["2020", "2021", "2022", "2023", "2024", "2025"],
-                values: [1.0, 1.32, 1.78, 1.42, 1.95, 2.35]
+                dates: portfolioDates,
+                yearLabels: ["2020", "2021", "2022", "2023", "2024", "2025"],
+                values: portfolioValues,
+                stockPerformances: [
+                    StockHistoricalPerformance(
+                        ticker: "AAPL",
+                        name: "애플",
+                        dates: portfolioDates,
+                        values: generateMonthlyValues(months: months, cagr: 0.25, volatility: 0.05)
+                    ),
+                    StockHistoricalPerformance(
+                        ticker: "MSFT",
+                        name: "마이크로소프트",
+                        dates: portfolioDates,
+                        values: generateMonthlyValues(months: months, cagr: 0.18, volatility: 0.04)
+                    ),
+                    StockHistoricalPerformance(
+                        ticker: "VOO",
+                        name: "S&P 500 ETF",
+                        dates: portfolioDates,
+                        values: generateMonthlyValues(months: months, cagr: 0.10, volatility: 0.03)
+                    ),
+                    StockHistoricalPerformance(
+                        ticker: "SCHD",
+                        name: "Schwab Dividend ETF",
+                        dates: generateMonthlyDates(months: 36),  // 3년 데이터만
+                        values: generateMonthlyValues(months: 36, cagr: 0.08, volatility: 0.02)
+                    )
+                ]
             )
         )
         .padding()

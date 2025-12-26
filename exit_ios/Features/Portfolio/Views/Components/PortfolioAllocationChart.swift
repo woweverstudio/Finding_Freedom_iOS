@@ -53,16 +53,10 @@ struct PortfolioAllocationChart: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            // 헤더
-            HStack(spacing: ExitSpacing.sm) {
-                Text("📊")
-                    .font(.system(size: 20))
-                
-                Text("포트폴리오 구성")
-                    .font(.Exit.body)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.primaryText)
-            }
+            Text("포트폴리오 구성")
+                .font(.Exit.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.Exit.primaryText)
             
             // 막대 차트
             VStack(spacing: ExitSpacing.sm) {
