@@ -110,7 +110,7 @@ final class PortfolioViewModel {
     /// 과거 5년 성과 데이터
     private(set) var historicalData: PortfolioHistoricalData?
     
-    /// 미래 10년 예측 데이터
+    /// 미래 5년 예측 데이터
     private(set) var projectionData: PortfolioProjectionResult?
     
     // MARK: - Computed Properties
@@ -726,17 +726,17 @@ final class PortfolioViewModel {
         let holdingsData = holdings.map { (ticker: $0.ticker, weight: $0.weight) }
         
         // 과거 5년 성과 계산 (월별 데이터, 일별 가격 기반)
-        historicalData = MonteCarloSimulator.calculateHistoricalPerformance(
+        historicalData = PortfolioMonteCarlo.calculateHistoricalPerformance(
             holdings: holdingsData,
             stocksData: analysisDataCache
         )
         
-        // 미래 10년 예측 시뮬레이션
+        // 미래 5년 예측 시뮬레이션
         // CAGR과 Volatility를 사용하여 몬테카를로 시뮬레이션
-        projectionData = MonteCarloSimulator.projectPortfolio(
+        projectionData = PortfolioMonteCarlo.projectPortfolio(
             cagr: result.cagrWithDividends,
             volatility: result.volatility,
-            years: 10,
+            years: 5,
             simulationCount: 5000
         )
     }

@@ -179,9 +179,6 @@ struct StockBreakdownCard: View {
                 ForEach(stocks) { stock in
                     stockRow(stock)
                 }
-                
-                // 요약
-//                summaryRow
             }
             .padding(.bottom, ExitSpacing.md)
         }
@@ -220,57 +217,6 @@ struct StockBreakdownCard: View {
         .padding(.horizontal, ExitSpacing.md)
         .padding(.vertical, ExitSpacing.xs)
         .background(highlightBackground(for: stock))
-    }
-    
-    private var summaryRow: some View {
-        VStack(spacing: ExitSpacing.xs) {
-            Divider()
-                .background(Color.Exit.divider)
-                .padding(.horizontal, ExitSpacing.md)
-            
-            HStack {
-                // 최고/최저 종목 하이라이트
-                if let best = bestStock, let worst = worstStock {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 4) {
-                            Image(systemName: isHigherBetter ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
-                                .foregroundStyle(Color.Exit.positive)
-                            Text(isHigherBetter ? "최고:" : "최저:")
-                                .foregroundStyle(Color.Exit.secondaryText)
-                            Text(best.name)
-                                .foregroundStyle(Color.Exit.positive)
-                                .fontWeight(.medium)
-                        }
-                        
-                        HStack(spacing: 4) {
-                            Image(systemName: isHigherBetter ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
-                                .foregroundStyle(Color.Exit.warning)
-                            Text(isHigherBetter ? "최저:" : "최고:")
-                                .foregroundStyle(Color.Exit.secondaryText)
-                            Text(worst.name)
-                                .foregroundStyle(Color.Exit.warning)
-                                .fontWeight(.medium)
-                        }
-                    }
-                    .font(.Exit.caption2)
-                }
-                
-                Spacer()
-                
-                // 포트폴리오 합계
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("포트폴리오")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                    Text(portfolioValue)
-                        .font(.Exit.body)
-                        .fontWeight(.bold)
-                        .foregroundStyle(portfolioValueColor)
-                }
-            }
-            .padding(.horizontal, ExitSpacing.md)
-            .padding(.top, ExitSpacing.xs)
-        }
     }
     
     // MARK: - Benchmark Section
@@ -490,16 +436,11 @@ struct DividendBreakdownCard: View {
     private func dividendStockRow(_ stock: DividendStockBreakdown) -> some View {
         HStack(spacing: ExitSpacing.sm) {
             // 종목 정보
-            HStack(spacing: ExitSpacing.xs) {
-                Text(stock.emoji)
-                    .font(.system(size: 14))
-                
-                Text(stock.name)
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.primaryText)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            Text(stock.name)
+                .font(.Exit.caption)
+                .foregroundStyle(Color.Exit.primaryText)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
             
             // 배당률
             Text(stock.yield > 0 ? String(format: "%.2f%%", stock.yield * 100) : "-")
@@ -605,7 +546,7 @@ struct BenchmarkComparisonBar: View {
                 x: .value("Value", item.value),
                 y: .value("Name", item.name)
             )
-            .foregroundStyle(item.isPortfolio ? item.color : Color.Exit.divider)
+            .foregroundStyle(item.isPortfolio ? item.color.opacity(0.6) : Color.Exit.divider)
             .cornerRadius(4)
             .annotation(position: .trailing, spacing: 6) {
                 Text(item.displayValue)

@@ -42,7 +42,7 @@ struct PortfolioAnalysisView: View {
                             PortfolioHistoricalChart(data: historicalData)
                         }
                         
-                        // 6️⃣ 미래 10년 시뮬레이션 차트
+                        // 6️⃣ 미래 5년 시뮬레이션 차트
                         if let projectionData = viewModel.projectionData {
                             PortfolioProjectionChart(
                                 projection: projectionData,

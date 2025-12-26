@@ -15,6 +15,13 @@ import Charts
 struct PortfolioHistoricalChart: View {
     let data: PortfolioHistoricalData
     
+    /// 종목별 표시/숨김 상태 (기본적으로 모든 종목 표시)
+    @State private var visibleStocks: Set<String> = []
+    /// 포트폴리오 라인 표시 여부
+    @State private var showPortfolio: Bool = true
+    /// 초기화 여부
+    @State private var isInitialized: Bool = false
+    
     /// 무지개 색상 팔레트 (10개)
     private let rainbowColors: [Color] = [
         Color(red: 0.95, green: 0.35, blue: 0.35),  // 빨강
@@ -67,18 +74,18 @@ struct PortfolioHistoricalChart: View {
             // 차트
             historicalChart
             
-            // 범례 (포트폴리오 + 종목별)
-            legendView
+            // 종목 필터 토글 버튼들
+            stockFilterView
             
             // 도움말
             HStack(alignment: .top, spacing: ExitSpacing.sm) {
                 Image(systemName: "info.circle.fill")
-                    .font(.system(size: 12))
+                    .font(.system(size: 16))
                     .foregroundStyle(Color.Exit.accent)
                 
-                Text("현재 포트폴리오 구성으로 5년 전부터 투자했다면 어땠을지 보여줘요. 데이터가 없는 종목은 있는 기간부터 표시돼요.")
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
+                Text("종목을 탭해서 차트에서 보이거나 숨길 수 있어요. 데이터가 없는 종목은 있는 기간부터 표시돼요.")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
             }
             .padding(ExitSpacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -88,55 +95,48 @@ struct PortfolioHistoricalChart: View {
         .padding(ExitSpacing.lg)
         .background(Color.Exit.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
-    }
-    
-    // 차트 Y축 최소값 계산 (종목별 데이터도 포함)
-    private var chartYMin: Double {
-        var allValues = data.values
-        for stock in data.stockPerformances {
-            allValues.append(contentsOf: stock.values)
+        .onAppear {
+            // 처음 표시될 때 모든 종목 활성화
+            if !isInitialized {
+                visibleStocks = Set(data.stockPerformances.map { $0.ticker })
+                isInitialized = true
+            }
         }
-        return min(allValues.min() ?? 0.5, 0.8)
-    }
-    
-    // 차트 Y축 최대값 계산
-    private var chartYMax: Double {
-        var allValues = data.values
-        for stock in data.stockPerformances {
-            allValues.append(contentsOf: stock.values)
-        }
-        return max(allValues.max() ?? 2.0, 1.5)
     }
     
     private var historicalChart: some View {
         Chart {
-            // 1. 종목별 라인 (얇게, 각 색상) - 월별 데이터
-            ForEach(Array(data.stockPerformances.enumerated()), id: \.element.id) { stockIndex, stock in
-                ForEach(Array(stock.values.enumerated()), id: \.offset) { valueIndex, value in
-                    if valueIndex < stock.dates.count {
+            // 1. 포트폴리오 메인 라인 (진하게) - 토글 상태에 따라 표시
+            if showPortfolio {
+                ForEach(Array(data.values.enumerated()), id: \.offset) { index, value in
+                    if index < data.dates.count {
                         LineMark(
-                            x: .value("날짜", stock.dates[valueIndex]),
+                            x: .value("날짜", data.dates[index]),
                             y: .value("가치", value),
-                            series: .value("종목", stock.ticker)
+                            series: .value("종목", "포트폴리오")
                         )
-                        .foregroundStyle(stockColor(at: stockIndex).opacity(0.7))
-                        .lineStyle(StrokeStyle(lineWidth: 1.5))
+                        .foregroundStyle(Color.Exit.accent)
+                        .lineStyle(StrokeStyle(lineWidth: 2))
                         .interpolationMethod(.catmullRom)
                     }
                 }
             }
             
-            // 2. 포트폴리오 메인 라인 (진하게) - 월별 데이터
-            ForEach(Array(data.values.enumerated()), id: \.offset) { index, value in
-                if index < data.dates.count {
-                    LineMark(
-                        x: .value("날짜", data.dates[index]),
-                        y: .value("가치", value),
-                        series: .value("종목", "포트폴리오")
-                    )
-                    .foregroundStyle(Color.Exit.accent)
-                    .lineStyle(StrokeStyle(lineWidth: 3.5))
-                    .interpolationMethod(.catmullRom)
+            // 2. 종목별 라인 (얇게, 각 색상) - 보이는 종목만 표시
+            ForEach(Array(data.stockPerformances.enumerated()), id: \.element.id) { stockIndex, stock in
+                if visibleStocks.contains(stock.ticker) {
+                    ForEach(Array(stock.values.enumerated()), id: \.offset) { valueIndex, value in
+                        if valueIndex < stock.dates.count {
+                            LineMark(
+                                x: .value("날짜", stock.dates[valueIndex]),
+                                y: .value("가치", value),
+                                series: .value("종목", stock.ticker)
+                            )
+                            .foregroundStyle(stockColor(at: stockIndex).opacity(0.85))
+                            .lineStyle(StrokeStyle(lineWidth: 1))
+                            .interpolationMethod(.catmullRom)
+                        }
+                    }
                 }
             }
             
@@ -146,7 +146,7 @@ struct PortfolioHistoricalChart: View {
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
         }
         .frame(height: 260)
-        .chartYScale(domain: chartYMin...chartYMax)
+        .chartYScale(domain: dynamicChartYMin...dynamicChartYMax)
         .chartXAxis {
             // X축: 연단위로 표시
             AxisMarks(values: .stride(by: .year)) { value in
@@ -175,6 +175,50 @@ struct PortfolioHistoricalChart: View {
             }
         }
         .chartLegend(.hidden)
+        .animation(.easeInOut(duration: 0.3), value: visibleStocks)
+        .animation(.easeInOut(duration: 0.3), value: showPortfolio)
+    }
+    
+    // 동적 Y축 최소값 (보이는 종목만 고려)
+    private var dynamicChartYMin: Double {
+        var allValues: [Double] = []
+        
+        if showPortfolio {
+            allValues.append(contentsOf: data.values)
+        }
+        
+        for stock in data.stockPerformances {
+            if visibleStocks.contains(stock.ticker) {
+                allValues.append(contentsOf: stock.values)
+            }
+        }
+        
+        if allValues.isEmpty {
+            return 0.5
+        }
+        
+        return min(allValues.min() ?? 0.5, 0.8)
+    }
+    
+    // 동적 Y축 최대값 (보이는 종목만 고려)
+    private var dynamicChartYMax: Double {
+        var allValues: [Double] = []
+        
+        if showPortfolio {
+            allValues.append(contentsOf: data.values)
+        }
+        
+        for stock in data.stockPerformances {
+            if visibleStocks.contains(stock.ticker) {
+                allValues.append(contentsOf: stock.values)
+            }
+        }
+        
+        if allValues.isEmpty {
+            return 2.0
+        }
+        
+        return max(allValues.max() ?? 2.0, 1.5)
     }
     
     /// 연도 포맷터
@@ -184,75 +228,110 @@ struct PortfolioHistoricalChart: View {
         return formatter
     }
     
-    /// 범례 뷰
-    private var legendView: some View {
+    /// 종목 필터 토글 뷰
+    private var stockFilterView: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            // 포트폴리오 범례 (맨 위, 강조)
+            // 포트폴리오 토글 행
+            portfolioToggleRow
+            
+            Divider()
+                .background(Color.Exit.divider)
+            
+            // 종목별 토글 (2열 그리드)
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: ExitSpacing.md),
+                GridItem(.flexible(), spacing: ExitSpacing.md)
+            ], spacing: ExitSpacing.md) {
+                ForEach(Array(data.stockPerformances.enumerated()), id: \.element.id) { index, stock in
+                    stockToggleRow(stock: stock, colorIndex: index)
+                }
+            }
+        }
+    }
+    
+    /// 포트폴리오 토글 행
+    private var portfolioToggleRow: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showPortfolio.toggle()
+            }
+        } label: {
             HStack(spacing: ExitSpacing.sm) {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.Exit.accent)
-                    .frame(width: 24, height: 4)
+                // 체크박스 아이콘
+                Image(systemName: showPortfolio ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 18))
+                    .foregroundStyle(showPortfolio ? Color.Exit.accent : Color.Exit.tertiaryText)
                 
                 Text("포트폴리오")
                     .font(.Exit.caption)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.primaryText)
+                    .foregroundStyle(showPortfolio ? Color.Exit.primaryText : Color.Exit.tertiaryText)
                 
                 Spacer()
                 
                 Text(String(format: "%+.1f%%", data.totalReturn * 100))
                     .font(.Exit.caption)
                     .fontWeight(.semibold)
-                    .foregroundStyle(data.totalReturn >= 0 ? Color.Exit.accent : Color.Exit.warning)
-            }
-            
-            Divider()
-                .background(Color.Exit.divider)
-            
-            // 종목별 범례 (2열 그리드)
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: ExitSpacing.sm),
-                GridItem(.flexible(), spacing: ExitSpacing.sm)
-            ], spacing: ExitSpacing.xs) {
-                ForEach(Array(data.stockPerformances.enumerated()), id: \.element.id) { index, stock in
-                    stockLegendItem(stock: stock, colorIndex: index)
-                }
+                    .foregroundStyle(showPortfolio ? (data.totalReturn >= 0 ? Color.Exit.accent : Color.Exit.warning) : Color.Exit.tertiaryText)
             }
         }
-        .padding(ExitSpacing.sm)
-        .background(Color.Exit.secondaryCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+        .buttonStyle(.plain)
     }
     
-    /// 종목별 범례 아이템
-    private func stockLegendItem(stock: StockHistoricalPerformance, colorIndex: Int) -> some View {
-        HStack(spacing: ExitSpacing.xs) {
-            RoundedRectangle(cornerRadius: 1)
-                .fill(stockColor(at: colorIndex))
-                .frame(width: 16, height: 2)
-            
-            Text(stock.ticker)
-                .font(.Exit.caption2)
-                .foregroundStyle(Color.Exit.secondaryText)
-                .lineLimit(1)
-            
-            Spacer()
-            
-            Text(String(format: "%+.0f%%", stock.totalReturn * 100))
-                .font(.Exit.caption2)
-                .fontWeight(.medium)
-                .foregroundStyle(stock.totalReturn >= 0 ? stockColor(at: colorIndex) : Color.Exit.warning)
+    /// 종목별 토글 행
+    private func stockToggleRow(stock: StockHistoricalPerformance, colorIndex: Int) -> some View {
+        let isVisible = visibleStocks.contains(stock.ticker)
+        let color = stockColor(at: colorIndex)
+        
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                if isVisible {
+                    visibleStocks.remove(stock.ticker)
+                } else {
+                    visibleStocks.insert(stock.ticker)
+                }
+            }
+        } label: {
+            HStack(spacing: ExitSpacing.xs) {
+                // 체크박스 아이콘
+                Image(systemName: isVisible ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 18))
+                    .foregroundStyle(isVisible ? color : Color.Exit.tertiaryText)
+                
+                Text(stock.ticker)
+                    .font(.Exit.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(isVisible ? Color.Exit.primaryText : Color.Exit.tertiaryText)
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                Text(String(format: "%+.0f%%", stock.totalReturn * 100))
+                    .font(.Exit.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(isVisible ? (stock.totalReturn >= 0 ? color : Color.Exit.warning) : Color.Exit.tertiaryText)
+            }
         }
+        .buttonStyle(.plain)
     }
 }
 
-// MARK: - 미래 10년 시뮬레이션 차트
+// MARK: - 미래 5년 시뮬레이션 차트
 
-/// 포트폴리오 미래 10년 시뮬레이션 차트
+/// 포트폴리오 미래 5년 시뮬레이션 차트 (1억 기준, 월별 변동성 표현)
 struct PortfolioProjectionChart: View {
     let projection: PortfolioProjectionResult
     let cagr: Double
     let volatility: Double
+    
+    /// 월별 차트 데이터 (억 단위 변환)
+    private var monthlyChartData: (months: [Int], best: [Double], median: [Double], worst: [Double]) {
+        let months = Array(0...projection.totalMonths)
+        let best = projection.monthlyBestCase.map { $0 / 100_000_000 }
+        let median = projection.monthlyMedian.map { $0 / 100_000_000 }
+        let worst = projection.monthlyWorstCase.map { $0 / 100_000_000 }
+        return (months, best, median, worst)
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.md) {
@@ -262,12 +341,12 @@ struct PortfolioProjectionChart: View {
                     .font(.system(size: 24))
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("10년 후 예측")
+                    Text("5년 후 예측")
                         .font(.Exit.body)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Exit.primaryText)
                     
-                    Text("몬테카를로 시뮬레이션 (\(projection.totalSimulations.formatted())회)")
+                    Text("1억 투자 기준 · 몬테카를로 시뮬레이션")
                         .font(.Exit.caption)
                         .foregroundStyle(Color.Exit.secondaryText)
                 }
@@ -275,14 +354,14 @@ struct PortfolioProjectionChart: View {
                 Spacer()
             }
             
-            // 차트
+            // 차트 (월별 변동성 표현)
             projectionChart
             
             // 범례
             legendView
             
-            // 결과 요약
-            resultSummary
+            // 연도별 예상 금액 테이블
+            yearlyAmountTable
             
             // 시뮬레이션 조건
             simulationConditions
@@ -296,81 +375,79 @@ struct PortfolioProjectionChart: View {
     }
     
     private var projectionChart: some View {
-        Chart {
-            // 범위 영역 (최고-최악 사이를 회색으로 채움)
-            ForEach(0..<projection.bestCase.count, id: \.self) { index in
+        let data = monthlyChartData
+        
+        return Chart {
+            // 범위 영역 (최고-최악 사이를 채움) - 월별
+            ForEach(data.months, id: \.self) { month in
                 AreaMark(
-                    x: .value("월", index),
-                    yStart: .value("최악", projection.worstCase[index]),
-                    yEnd: .value("최고", projection.bestCase[index])
+                    x: .value("월", month),
+                    yStart: .value("최악", data.worst[month]),
+                    yEnd: .value("최고", data.best[month])
                 )
-                .foregroundStyle(Color.Exit.tertiaryText.opacity(0.2))
+                .foregroundStyle(Color.Exit.accent.opacity(0.12))
             }
             
-            // 최고 시나리오 (회색 점선)
-            ForEach(0..<projection.bestCase.count, id: \.self) { index in
+            // 최고 시나리오 (점선) - 월별
+            ForEach(data.months, id: \.self) { month in
                 LineMark(
-                    x: .value("월", index),
-                    y: .value("최고", projection.bestCase[index]),
+                    x: .value("월", month),
+                    y: .value("최고", data.best[month]),
                     series: .value("시나리오", "최고")
                 )
-                .foregroundStyle(Color.Exit.tertiaryText.opacity(0.6))
-                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                .foregroundStyle(Color.Exit.positive.opacity(0.5))
+                .lineStyle(StrokeStyle(lineWidth: 1))
             }
             
-            // 최악 시나리오 (회색 점선)
-            ForEach(0..<projection.worstCase.count, id: \.self) { index in
+            // 최악 시나리오 (점선) - 월별
+            ForEach(data.months, id: \.self) { month in
                 LineMark(
-                    x: .value("월", index),
-                    y: .value("최악", projection.worstCase[index]),
+                    x: .value("월", month),
+                    y: .value("최악", data.worst[month]),
                     series: .value("시나리오", "최악")
                 )
-                .foregroundStyle(Color.Exit.tertiaryText.opacity(0.6))
-                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                .foregroundStyle(Color.Exit.caution.opacity(0.5))
+                .lineStyle(StrokeStyle(lineWidth: 1))
             }
             
-            // 중앙값 (accent 실선 - 마지막에 그려서 위로)
-            ForEach(0..<projection.median.count, id: \.self) { index in
+            // 중앙값 (실선) - 월별
+            ForEach(data.months, id: \.self) { month in
                 LineMark(
-                    x: .value("월", index),
-                    y: .value("중앙값", projection.median[index]),
+                    x: .value("월", month),
+                    y: .value("중앙값", data.median[month]),
                     series: .value("시나리오", "중앙값")
                 )
                 .foregroundStyle(Color.Exit.accent)
-                .lineStyle(StrokeStyle(lineWidth: 2.5))
+                .lineStyle(StrokeStyle(lineWidth: 2))
             }
             
-            // 시작점 마커
-            PointMark(
-                x: .value("월", 0),
-                y: .value("시작", 1.0)
-            )
-            .foregroundStyle(Color.Exit.primaryText)
-            .symbolSize(60)
+            // 연도별 포인트 마커 (12개월마다)
+            ForEach(0...projection.totalYears, id: \.self) { year in
+                let monthIndex = year * 12
+                PointMark(
+                    x: .value("월", monthIndex),
+                    y: .value("중앙값", data.median[monthIndex])
+                )
+                .foregroundStyle(Color.Exit.accent)
+                .symbolSize(year == 0 ? 60 : 40)
+            }
             
-            // 중앙값 종료점 마커
-            PointMark(
-                x: .value("월", projection.median.count - 1),
-                y: .value("종료", projection.median.last ?? 1.0)
-            )
-            .foregroundStyle(Color.Exit.accent)
-            .symbolSize(80)
-            
-            // 기준선 (1.0 = 시작점)
+            // 기준선 (1억)
             RuleMark(y: .value("기준", 1.0))
                 .foregroundStyle(Color.Exit.divider)
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
         }
-        .frame(height: 220)
-        .chartYScale(domain: max(0, (projection.worstCase.min() ?? 0.5) * 0.9)...(projection.bestCase.max() ?? 3.0) * 1.1)
+        .frame(height: 240)
+        .chartYScale(domain: max(0.5, data.worst.min()! * 0.9)...data.best.max()! * 1.1)
         .chartXAxis {
-            // 2년마다 표시 (24개월 간격)
-            AxisMarks(values: .stride(by: 24)) { value in
+            // 연도 단위로 레이블 표시 (12개월 간격)
+            AxisMarks(values: Array(stride(from: 0, through: projection.totalMonths, by: 12))) { value in
                 AxisGridLine()
                     .foregroundStyle(Color.Exit.divider.opacity(0.3))
                 AxisValueLabel {
                     if let month = value.as(Int.self) {
-                        Text("\(month / 12)년")
+                        let year = month / 12
+                        Text(year == 0 ? "현재" : "\(year)년")
                             .font(.Exit.caption2)
                             .foregroundStyle(Color.Exit.tertiaryText)
                     }
@@ -383,7 +460,7 @@ struct PortfolioProjectionChart: View {
                     .foregroundStyle(Color.Exit.divider.opacity(0.3))
                 AxisValueLabel {
                     if let val = value.as(Double.self) {
-                        Text(formatMultiplier(val))
+                        Text(formatBillions(val))
                             .font(.Exit.caption2)
                             .foregroundStyle(Color.Exit.tertiaryText)
                     }
@@ -392,11 +469,22 @@ struct PortfolioProjectionChart: View {
         }
     }
     
+    /// 억 단위 포맷 (차트 Y축용)
+    private func formatBillions(_ value: Double) -> String {
+        if value >= 1.0 {
+            return String(format: "%.1f억", value)
+        } else {
+            return String(format: "%.0f만", value * 10000)
+        }
+    }
+    
     private var legendView: some View {
         HStack(spacing: ExitSpacing.lg) {
             legendItem(color: Color.Exit.accent, style: .solid, label: "예상 중앙값")
-            legendItem(color: Color.Exit.tertiaryText.opacity(0.6), style: .dashed, label: "60% 범위")
+            legendItem(color: Color.Exit.positive.opacity(0.6), style: .dashed, label: "낙관적 (상위 20%)")
+            legendItem(color: Color.Exit.caution.opacity(0.6), style: .dashed, label: "보수적 (하위 20%)")
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     private func legendItem(color: Color, style: LegendLineStyle, label: String) -> some View {
@@ -404,13 +492,13 @@ struct PortfolioProjectionChart: View {
             if style == .solid {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(color)
-                    .frame(width: 20, height: 3)
+                    .frame(width: 16, height: 3)
             } else {
                 HStack(spacing: 2) {
                     ForEach(0..<3, id: \.self) { _ in
                         RoundedRectangle(cornerRadius: 1)
                             .fill(color)
-                            .frame(width: 4, height: 2)
+                            .frame(width: 3, height: 2)
                     }
                 }
             }
@@ -426,122 +514,83 @@ struct PortfolioProjectionChart: View {
         case dashed
     }
     
-    private var resultSummary: some View {
-        VStack(spacing: ExitSpacing.sm) {
-            // 퍼센트 카드
-            HStack(spacing: ExitSpacing.md) {
-                resultCard(
-                    label: "낙관적",
-                    value: projection.finalReturnRange.best,
-                    subtitle: "상위 20%",
-                    color: .Exit.positive
-                )
+    /// 연도별 예상 금액 테이블
+    private var yearlyAmountTable: some View {
+        VStack(spacing: ExitSpacing.xs) {
+            // 헤더
+            HStack {
+                Text("")
+                    .frame(width: 40, alignment: .leading)
                 
-                resultCard(
-                    label: "예상",
-                    value: projection.finalReturnRange.median,
-                    subtitle: "중앙값",
-                    color: .Exit.accent,
-                    isHighlighted: true
-                )
-                
-                resultCard(
-                    label: "보수적",
-                    value: projection.finalReturnRange.worst,
-                    subtitle: "하위 20%",
-                    color: .Exit.caution
-                )
+                ForEach(1...projection.totalYears, id: \.self) { year in
+                    Text("\(year)년 후")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                        .frame(maxWidth: .infinity)
+                }
             }
             
-            // 1억 기준 예상 금액
-            exampleAmountView
-        }
-    }
-    
-    /// 1억 기준 예상 금액 뷰
-    private var exampleAmountView: some View {
-        HStack(spacing: ExitSpacing.sm) {
-            Text("💰")
-                .font(.system(size: 14))
+            Divider()
+                .background(Color.Exit.divider)
             
-            Text("1억 투자 시")
-                .font(.Exit.caption2)
-                .foregroundStyle(Color.Exit.tertiaryText)
+            // 낙관적
+            HStack {
+                Text("😊")
+                    .frame(width: 40, alignment: .leading)
+                
+                ForEach(1...projection.totalYears, id: \.self) { year in
+                    Text(formatAmountShort(projection.bestCase[year]))
+                        .font(.Exit.caption2)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color.Exit.positive)
+                        .frame(maxWidth: .infinity)
+                }
+            }
             
-            Spacer()
+            // 중앙값
+            HStack {
+                Text("📊")
+                    .frame(width: 40, alignment: .leading)
+                
+                ForEach(1...projection.totalYears, id: \.self) { year in
+                    Text(formatAmountShort(projection.median[year]))
+                        .font(.Exit.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.Exit.accent)
+                        .frame(maxWidth: .infinity)
+                }
+            }
             
-            HStack(spacing: ExitSpacing.xs) {
-                // 보수적
-                Text(formatAmount(1.0 + projection.finalReturnRange.worst))
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.caution)
+            // 보수적
+            HStack {
+                Text("😰")
+                    .frame(width: 40, alignment: .leading)
                 
-                Text("~")
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
-                
-                // 예상 (중앙값)
-                Text(formatAmount(1.0 + projection.finalReturnRange.median))
-                    .font(.Exit.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.accent)
-                
-                Text("~")
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
-                
-                // 낙관적
-                Text(formatAmount(1.0 + projection.finalReturnRange.best))
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.positive)
+                ForEach(1...projection.totalYears, id: \.self) { year in
+                    Text(formatAmountShort(projection.worstCase[year]))
+                        .font(.Exit.caption2)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color.Exit.caution)
+                        .frame(maxWidth: .infinity)
+                }
             }
         }
-        .padding(.horizontal, ExitSpacing.md)
-        .padding(.vertical, ExitSpacing.sm)
+        .padding(ExitSpacing.sm)
         .background(Color.Exit.secondaryCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
     }
     
-    /// 1억 기준 금액 포맷 (예: 2.8억)
-    private func formatAmount(_ multiplier: Double) -> String {
-        let amount = multiplier  // 1억 기준이므로 배수 = 억 단위
-        if amount >= 10 {
-            return String(format: "%.0f억", amount)
+    /// 금액 짧은 포맷 (예: 1.2억)
+    private func formatAmountShort(_ amount: Double) -> String {
+        let billions = amount / 100_000_000
+        if billions >= 10 {
+            return String(format: "%.0f억", billions)
+        } else if billions >= 1 {
+            return String(format: "%.1f억", billions)
         } else {
-            return String(format: "%.1f억", amount)
+            let thousands = amount / 10000
+            return String(format: "%.0f만", thousands)
         }
-    }
-    
-    private func resultCard(label: String, value: Double, subtitle: String, color: Color, isHighlighted: Bool = false) -> some View {
-        VStack(spacing: ExitSpacing.xs) {
-            Text(label)
-                .font(.Exit.caption2)
-                .foregroundStyle(Color.Exit.tertiaryText)
-            
-            Text(formatPercentWithComma(value))
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(color)
-            
-            Text(subtitle)
-                .font(.system(size: 10))
-                .foregroundStyle(Color.Exit.tertiaryText)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, ExitSpacing.sm)
-        .background(isHighlighted ? color.opacity(0.1) : Color.Exit.secondaryCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
-    }
-    
-    /// 천단위 콤마가 포함된 퍼센트 포맷
-    private func formatPercentWithComma(_ value: Double) -> String {
-        let percent = value * 100
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        formatter.minimumFractionDigits = 0
-        
-        let formatted = formatter.string(from: NSNumber(value: percent)) ?? "\(Int(percent))"
-        return percent >= 0 ? "+\(formatted)%" : "\(formatted)%"
     }
     
     private var simulationConditions: some View {
@@ -601,7 +650,7 @@ struct PortfolioProjectionChart: View {
                     .fontWeight(.medium)
                     .foregroundStyle(Color.Exit.secondaryText)
                 
-                Text("과거 수익률과 변동성을 기반으로 미래를 예측해요. 회색 범위는 60%의 시나리오가 포함되는 구간이에요. 실제 결과는 다를 수 있어요.")
+                Text("과거 수익률과 변동성을 기반으로 미래를 예측해요. 색칠된 범위는 60%의 시나리오가 포함되는 구간이에요.")
                     .font(.Exit.caption2)
                     .foregroundStyle(Color.Exit.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
@@ -611,16 +660,6 @@ struct PortfolioProjectionChart: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.Exit.secondaryCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
-    }
-    
-    private func formatMultiplier(_ value: Double) -> String {
-        if value == 1.0 {
-            return "시작"
-        } else if value < 1.0 {
-            return String(format: "%.1fx", value)
-        } else {
-            return String(format: "%.1fx", value)
-        }
     }
 }
 
@@ -701,34 +740,68 @@ struct PortfolioProjectionChart: View {
 }
 
 #Preview("미래 예측") {
-    // 간단한 월별 데이터 생성 (120개월 = 10년)
-    let months = 120
-    var best: [Double] = [1.0]
-    var med: [Double] = [1.0]
-    var worst: [Double] = [1.0]
+    // 월별 + 연도별 금액 데이터 생성 (5년, 1억 기준)
+    let initialAmount = 100_000_000.0  // 1억
+    let years = 5
+    let totalMonths = years * 12
     
-    for i in 1...months {
-        let t = Double(i) / 12.0
-        best.append(1.0 * exp(0.18 * t))  // 상위 10%
-        med.append(1.0 * exp(0.10 * t))   // 중앙값
-        worst.append(1.0 * exp(0.02 * t)) // 하위 10%
+    // 월별 데이터 (변동성 포함)
+    var monthlyBest: [Double] = [initialAmount]
+    var monthlyMed: [Double] = [initialAmount]
+    var monthlyWorst: [Double] = [initialAmount]
+    
+    var bestValue = initialAmount
+    var medValue = initialAmount
+    var worstValue = initialAmount
+    
+    for month in 1...totalMonths {
+        // 월별 성장률에 변동성 추가
+        let monthlyBestGrowth = pow(1.15, 1.0/12.0) + Double.random(in: -0.02...0.03)
+        let monthlyMedGrowth = pow(1.10, 1.0/12.0) + Double.random(in: -0.025...0.025)
+        let monthlyWorstGrowth = pow(1.03, 1.0/12.0) + Double.random(in: -0.015...0.02)
+        
+        bestValue *= monthlyBestGrowth
+        medValue *= monthlyMedGrowth
+        worstValue *= monthlyWorstGrowth
+        
+        monthlyBest.append(bestValue)
+        monthlyMed.append(medValue)
+        monthlyWorst.append(worstValue)
+    }
+    
+    // 연도별 데이터 (12개월마다 추출)
+    var yearlyBest: [Double] = [initialAmount]
+    var yearlyMed: [Double] = [initialAmount]
+    var yearlyWorst: [Double] = [initialAmount]
+    
+    for year in 1...years {
+        let monthIndex = year * 12
+        yearlyBest.append(monthlyBest[monthIndex])
+        yearlyMed.append(monthlyMed[monthIndex])
+        yearlyWorst.append(monthlyWorst[monthIndex])
     }
     
     return ZStack {
         Color.Exit.background.ignoresSafeArea()
         
-        PortfolioProjectionChart(
-            projection: PortfolioProjectionResult(
-                initialValue: 1.0,
-                bestCase: best,
-                median: med,
-                worstCase: worst,
-                totalSimulations: 5000
-            ),
-            cagr: 0.10,
-            volatility: 0.18
-        )
-        .padding()
+        ScrollView {
+            PortfolioProjectionChart(
+                projection: PortfolioProjectionResult(
+                    initialAmount: initialAmount,
+                    monthlyBestCase: monthlyBest,
+                    monthlyMedian: monthlyMed,
+                    monthlyWorstCase: monthlyWorst,
+                    bestCase: yearlyBest,
+                    median: yearlyMed,
+                    worstCase: yearlyWorst,
+                    totalSimulations: 5000
+                ),
+                cagr: 0.10,
+                volatility: 0.18
+            )
+            .padding()
+        }
     }
 }
+
 
