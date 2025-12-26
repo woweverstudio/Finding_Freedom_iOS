@@ -29,18 +29,16 @@ struct PortfolioStockCard: View {
                     size: 30
                 )
                 
-                VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                VStack(alignment: .leading) {
                     Text(holding.stockType == .commonStock ? holding.ticker : holding.name)
                         .font(.Exit.body)
                         .foregroundStyle(Color.Exit.primaryText)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.7)
                     
                     Text(holding.stockType == .commonStock ? holding.name : holding.subName)
                         .font(.Exit.caption2)
                         .foregroundStyle(Color.Exit.secondaryText)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.7)
                 }
                 
                 
@@ -64,7 +62,7 @@ struct PortfolioStockCard: View {
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
-            .padding(ExitSpacing.sm)
+            .padding(ExitSpacing.xs)
         }
     }
     
@@ -82,9 +80,9 @@ struct PortfolioStockCard: View {
                     Image(systemName: "minus")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(weightPercent > 0 ? Color.Exit.secondaryText : Color.Exit.tertiaryText)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 36, height: 32)
                         .background(Color.Exit.secondaryCardBackground)
-                        .clipShape(Circle())
+                        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
                 }
                 .buttonStyle(.plain)
                 .disabled(weightPercent <= 0)
@@ -110,9 +108,9 @@ struct PortfolioStockCard: View {
                     Image(systemName: "plus")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(weightPercent < 100 ? Color.Exit.secondaryText : Color.Exit.tertiaryText)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 36, height: 32)
                         .background(Color.Exit.secondaryCardBackground)
-                        .clipShape(Circle())
+                        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
                 }
                 .buttonStyle(.plain)
                 .disabled(weightPercent >= 100)
