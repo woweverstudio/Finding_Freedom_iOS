@@ -80,7 +80,7 @@ struct PortfolioStockCard: View {
                     Image(systemName: "minus")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(weightPercent > 0 ? Color.Exit.secondaryText : Color.Exit.tertiaryText)
-                        .frame(width: 36, height: 32)
+                        .frame(width: 32, height: 32)
                         .background(Color.Exit.secondaryCardBackground)
                         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
                 }
@@ -95,7 +95,7 @@ struct PortfolioStockCard: View {
                     .fontWeight(.bold)
                     .foregroundStyle(Color.Exit.accent)
                     .monospacedDigit()
-                    .frame(minWidth: 40)
+                    .frame(minWidth: 50)
                 
                 Spacer()
                 
@@ -108,7 +108,7 @@ struct PortfolioStockCard: View {
                     Image(systemName: "plus")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(weightPercent < 100 ? Color.Exit.secondaryText : Color.Exit.tertiaryText)
-                        .frame(width: 36, height: 32)
+                        .frame(width: 32, height: 32)
                         .background(Color.Exit.secondaryCardBackground)
                         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
                 }

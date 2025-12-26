@@ -1,5 +1,5 @@
 //
-//  Stock.swift
+//  StockModels.swift
 //  exit_ios
 //
 //  Created by Exit on 2025.
@@ -233,9 +233,23 @@ struct DividendHistorySummary: Codable {
     }
 }
 
-// MARK: - Stock with Full Data
+// MARK: - Daily Price Data
 
-/// 종목 + 가격/배당 데이터 통합
+/// 일별 가격 데이터 (분석용)
+struct DailyPrice: Codable {
+    let date: Date
+    let close: Double
+    
+    /// 일별 수익률 계산용
+    func dailyReturn(from previousClose: Double) -> Double {
+        guard previousClose > 0 else { return 0 }
+        return (close - previousClose) / previousClose
+    }
+}
+
+// MARK: - Stock with Full Data (Legacy Support)
+
+/// 종목 + 가격/배당 데이터 통합 (기존 호환성 유지)
 struct StockWithData: Identifiable {
     var id: String { info.ticker }
     
@@ -258,6 +272,65 @@ struct StockWithData: Identifiable {
         let years = Double(priceHistory.annualReturns.count)
         guard years > 0 else { return 0 }
         return pow(1 + totalReturnWithDividends, 1.0 / years) - 1
+    }
+}
+
+// MARK: - Stock Analysis Data
+
+/// 종목 분석용 전체 데이터 (일별 가격 포함)
+struct StockAnalysisData: Identifiable {
+    var id: String { info.ticker }
+    
+    let info: StockInfo
+    let dailyPrices: [DailyPrice]       // 일별 가격 (상관계수, MDD용)
+    let priceHistory: PriceHistorySummary
+    let dividendHistory: DividendHistorySummary
+    
+    /// 일별 수익률 배열 계산
+    var dailyReturns: [Double] {
+        guard dailyPrices.count > 1 else { return [] }
+        var returns: [Double] = []
+        for i in 1..<dailyPrices.count {
+            let prevClose = dailyPrices[i - 1].close
+            let currClose = dailyPrices[i].close
+            if prevClose > 0 {
+                returns.append((currClose - prevClose) / prevClose)
+            }
+        }
+        return returns
+    }
+    
+    /// 연간 변동성 (일별 수익률 기반)
+    var annualVolatility: Double {
+        let returns = dailyReturns
+        guard !returns.isEmpty else { return 0 }
+        let mean = returns.reduce(0, +) / Double(returns.count)
+        let variance = returns.reduce(0) { $0 + pow($1 - mean, 2) } / Double(returns.count)
+        return sqrt(variance) * sqrt(252)
+    }
+    
+    /// 배당 포함 총 수익률
+    var totalReturnWithDividends: Double {
+        let years = Double(priceHistory.annualReturns.count)
+        guard years > 0 else { return priceHistory.totalPriceReturn }
+        let cumulativeDividendReturn = dividendHistory.dividendYield * years
+        return priceHistory.totalPriceReturn + cumulativeDividendReturn
+    }
+    
+    /// 배당 포함 CAGR
+    var cagrWithDividends: Double {
+        let years = Double(priceHistory.annualReturns.count)
+        guard years > 0 else { return 0 }
+        return pow(1 + totalReturnWithDividends, 1.0 / years) - 1
+    }
+    
+    /// StockWithData로 변환 (호환성)
+    var asStockWithData: StockWithData {
+        StockWithData(
+            info: info,
+            priceHistory: priceHistory,
+            dividendHistory: dividendHistory
+        )
     }
 }
 
@@ -288,35 +361,4 @@ final class PortfolioHolding {
         self.updatedAt = Date()
     }
 }
-
-// MARK: - JSON Decoding Helpers
-
-/// Mock JSON 디코딩용 구조체
-struct MockStockData: Codable {
-    let stocks: [StockInfoDTO]
-    let priceHistory: [String: PriceHistorySummary]
-    let dividendHistory: [String: DividendHistorySummary]
-    let lastUpdated: String
-}
-
-struct StockInfoDTO: Codable {
-    let ticker: String
-    let name: String
-    let nameKorean: String?
-    let exchange: String
-    let sector: String?
-    let currency: String
-    
-    func toStockInfo() -> StockInfo {
-        StockInfo(
-            ticker: ticker,
-            name: name,
-            nameKorean: nameKorean,
-            exchange: StockExchange(rawValue: exchange) ?? .NASDAQ,
-            sector: sector,
-            currency: StockCurrency(rawValue: currency) ?? .USD
-        )
-    }
-}
-
 

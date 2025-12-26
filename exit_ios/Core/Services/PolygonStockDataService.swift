@@ -9,7 +9,7 @@
 import Foundation
 
 /// Polygon.io API를 사용하는 종목 데이터 서비스
-final class PolygonStockDataService: StockDataServiceProtocol {
+final class PolygonStockDataService: StockDataServiceProtocol, StockAnalysisDataServiceProtocol {
     
     // MARK: - Singleton
     
@@ -191,7 +191,6 @@ final class PolygonStockDataService: StockDataServiceProtocol {
     }
     
     func fetchDividendHistory(ticker: String) async throws -> DividendHistorySummary? {
-        // 캐시 확인
         if let cached = cache.getStock(ticker: ticker),
            cached.isValid,
            let dividendHistory = cached.dividendHistory {
@@ -270,6 +269,98 @@ final class PolygonStockDataService: StockDataServiceProtocol {
         }
         
         return result
+    }
+    
+    /// 분석용 전체 데이터 가져오기 (일별 가격 포함)
+    func fetchStocksWithAnalysisData(tickers: [String]) async throws -> [StockAnalysisData] {
+        var result: [StockAnalysisData] = []
+        
+        for ticker in tickers {
+            do {
+                // 종목 정보
+                let stockInfo: StockInfo
+                if let cached = cache.getStock(ticker: ticker), cached.isValid {
+                    stockInfo = cached.stockInfo.toStockInfo()
+                } else if let fetched = try await fetchTickerDetails(ticker: ticker) {
+                    stockInfo = fetched
+                } else {
+                    continue
+                }
+                
+                // 일별 가격 데이터 + 가격 히스토리
+                let (dailyPrices, priceHistory) = try await fetchDailyPricesAndHistory(ticker: ticker)
+                
+                guard !dailyPrices.isEmpty else {
+                    continue
+                }
+                
+                // 배당 히스토리
+                let dividendHistory = try await fetchDividendHistory(ticker: ticker) ?? DividendHistorySummary(
+                    annualDividend: 0,
+                    dividendYield: 0,
+                    dividendGrowthRate: 0,
+                    exDividendDates: []
+                )
+                
+                let stockAnalysisData = StockAnalysisData(
+                    info: stockInfo,
+                    dailyPrices: dailyPrices,
+                    priceHistory: priceHistory,
+                    dividendHistory: dividendHistory
+                )
+                result.append(stockAnalysisData)
+                
+            } catch {
+                print("⚠️ Failed to fetch analysis data for \(ticker): \(error.localizedDescription)")
+            }
+        }
+        
+        return result
+    }
+    
+    /// 일별 가격 데이터 + 히스토리 요약 함께 가져오기
+    private func fetchDailyPricesAndHistory(ticker: String) async throws -> ([DailyPrice], PriceHistorySummary) {
+        // 5년치 일별 데이터 요청
+        let calendar = Calendar.current
+        let endDate = Date()
+        let startDate = calendar.date(byAdding: .year, value: -5, to: endDate)!
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        let endpoint = "/v2/aggs/ticker/\(ticker)/range/1/day/\(dateFormatter.string(from: startDate))/\(dateFormatter.string(from: endDate))"
+        var components = URLComponents(string: baseURL + endpoint)!
+        components.queryItems = [
+            URLQueryItem(name: "adjusted", value: "true"),
+            URLQueryItem(name: "sort", value: "asc"),
+            URLQueryItem(name: "apiKey", value: apiKey)
+        ]
+        
+        let response: PolygonAggregatesResponse = try await performRequest(url: components.url!)
+        
+        guard let results = response.results, !results.isEmpty else {
+            return ([], PriceHistorySummary(
+                startDate: "",
+                startPrice: 0,
+                currentPrice: 0,
+                annualReturns: [],
+                dailyVolatility: 0,
+                maxDrawdown: 0
+            ))
+        }
+        
+        // 일별 가격 데이터 변환
+        let dailyPrices = results.map { agg in
+            DailyPrice(date: agg.date, close: agg.close)
+        }
+        
+        // 가격 히스토리 계산
+        let priceHistory = calculatePriceHistory(from: results)
+        
+        // 캐시 업데이트
+        updateCacheWithPriceHistory(ticker: ticker, priceHistory: priceHistory)
+        
+        return (dailyPrices, priceHistory)
     }
     
     // MARK: - Public Helper Methods
@@ -432,7 +523,7 @@ final class PolygonStockDataService: StockDataServiceProtocol {
         )
     }
     
-    /// 배당 히스토리 계산
+    /// 배당 히스토리 계산 (안정적인 성장률 계산)
     private func calculateDividendHistory(from dividends: [PolygonDividend], ticker: String) -> DividendHistorySummary {
         guard !dividends.isEmpty else {
             return DividendHistorySummary(
@@ -443,12 +534,12 @@ final class PolygonStockDataService: StockDataServiceProtocol {
             )
         }
         
-        // 최근 1년 배당금 합계
         let calendar = Calendar.current
-        let oneYearAgo = calendar.date(byAdding: .year, value: -1, to: Date())!
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
+        let oneYearAgo = calendar.date(byAdding: .year, value: -1, to: Date())!
         
+        // 최근 1년 배당금 합계
         let recentDividends = dividends.filter { dividend in
             if let date = dateFormatter.date(from: dividend.exDividendDate) {
                 return date > oneYearAgo
@@ -466,19 +557,13 @@ final class PolygonStockDataService: StockDataServiceProtocol {
             dividendYield = annualDividend / priceHistory.currentPrice
         }
         
-        // 배당 성장률 (5년)
-        var dividendGrowthRate = 0.0
-        if dividends.count >= 2 {
-            let sortedByDate = dividends.sorted { $0.exDividendDate > $1.exDividendDate }
-            if let recent = sortedByDate.first,
-               let oldest = sortedByDate.last,
-               oldest.cashAmount > 0 {
-                let years = Double(sortedByDate.count) / 4.0 // 분기배당 가정
-                if years > 0 {
-                    dividendGrowthRate = pow(recent.cashAmount / oldest.cashAmount, 1.0 / years) - 1
-                }
-            }
-        }
+        // 배당 성장률 계산
+        let dividendGrowthRate = calculateDividendGrowthRate(
+            dividends: dividends,
+            ticker: ticker,
+            calendar: calendar,
+            dateFormatter: dateFormatter
+        )
         
         // 배당락일 목록
         let exDividendDates = recentDividends.map { $0.exDividendDate }
@@ -486,9 +571,86 @@ final class PolygonStockDataService: StockDataServiceProtocol {
         return DividendHistorySummary(
             annualDividend: annualDividend,
             dividendYield: dividendYield,
-            dividendGrowthRate: max(0, dividendGrowthRate), // 음수 방지
+            dividendGrowthRate: dividendGrowthRate,
             exDividendDates: exDividendDates
         )
+    }
+    
+    /// 배당 성장률 계산 (별도 함수로 분리)
+    private func calculateDividendGrowthRate(
+        dividends: [PolygonDividend],
+        ticker: String,
+        calendar: Calendar,
+        dateFormatter: DateFormatter
+    ) -> Double {
+        // 1. 금리 연동 ETF (단기채, 머니마켓)는 성장률 0 처리
+        // 이런 종목은 금리 변동에 따라 배당이 바뀌는 것이지 "성장"이 아님
+        let interestRateLinkedETFs = [
+            "SGOV", "SHV", "BIL", "SPTS", "VGSH", "GBIL", "TFLO", "USFR",  // 단기채
+            "SHY", "IGSB", "SCHO", "FLOT", "FLRN", "SRLN",  // 단기/변동금리
+            "MINT", "JPST", "GSY", "ICSH", "NEAR", "PULS"   // 초단기/머니마켓
+        ]
+        if interestRateLinkedETFs.contains(ticker.uppercased()) {
+            return 0.0
+        }
+        
+        // 2. 연도별 배당금 합계 및 횟수 계산
+        var yearlyDividends: [Int: Double] = [:]
+        var yearlyDividendCounts: [Int: Int] = [:]
+        
+        for dividend in dividends {
+            if let date = dateFormatter.date(from: dividend.exDividendDate) {
+                let year = calendar.component(.year, from: date)
+                yearlyDividends[year, default: 0] += dividend.cashAmount
+                yearlyDividendCounts[year, default: 0] += 1
+            }
+        }
+        
+        let currentYear = calendar.component(.year, from: Date())
+        let sortedYears = yearlyDividends.keys.sorted()
+        
+        guard sortedYears.count >= 2 else { return 0.0 }
+        
+        // 3. 평균 배당 횟수 계산 (완전 연도 기준)
+        let completeYearCounts = sortedYears.filter { $0 < currentYear }
+            .compactMap { yearlyDividendCounts[$0] }
+        let avgDividendCount = completeYearCounts.isEmpty ? 4.0 :
+            Double(completeYearCounts.reduce(0, +)) / Double(completeYearCounts.count)
+        
+        // 4. 완전한 연도 판별 (평균의 70% 이상 배당이 있어야 완전한 연도)
+        let minDividendsRequired = max(2, Int(avgDividendCount * 0.7))
+        
+        let completeYears = sortedYears.filter { year in
+            // 현재 연도 제외 (아직 진행 중)
+            guard year < currentYear else { return false }
+            // 배당 횟수가 충분한 연도만 포함
+            let count = yearlyDividendCounts[year] ?? 0
+            return count >= minDividendsRequired
+        }
+        
+        // 5. 최소 2개 완전 연도 필요
+        guard completeYears.count >= 2,
+              let firstYear = completeYears.first,
+              let lastYear = completeYears.last,
+              let firstYearDiv = yearlyDividends[firstYear],
+              let lastYearDiv = yearlyDividends[lastYear],
+              firstYearDiv > 0 else {
+            return 0.0
+        }
+        
+        let yearSpan = Double(lastYear - firstYear)
+        guard yearSpan > 0 else { return 0.0 }
+        
+        // 6. CAGR 계산
+        let rawGrowthRate = pow(lastYearDiv / firstYearDiv, 1.0 / yearSpan) - 1
+        
+        // 7. 합리적 범위로 제한 (-20% ~ +25%)
+        // 대부분의 배당 성장주는 연 5~15% 성장
+        // 25% 이상은 비정상적 (신규 배당 시작, 특별 배당 등)
+        let clampedGrowthRate = min(max(rawGrowthRate, -0.20), 0.25)
+        
+        // 8. 음수는 0으로 표시 (UI에서 혼란 방지)
+        return max(0, clampedGrowthRate)
     }
     
     /// 표준편차 계산

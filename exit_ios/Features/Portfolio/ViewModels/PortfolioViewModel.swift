@@ -26,7 +26,7 @@ final class PortfolioViewModel {
     
     // MARK: - Dependencies
     
-    private let dataService: StockDataServiceProtocol
+    private let analysisService: StockAnalysisDataServiceProtocol
     private var modelContext: ModelContext?
     
     // MARK: - State
@@ -66,6 +66,9 @@ final class PortfolioViewModel {
     
     /// 종목 데이터 캐시
     private(set) var stocksDataCache: [StockWithData] = []
+    
+    /// 분석용 데이터 캐시 (일별 가격 포함)
+    private(set) var analysisDataCache: [StockAnalysisData] = []
     
     // MARK: - 종목별 상세 분석 데이터
     
@@ -117,8 +120,8 @@ final class PortfolioViewModel {
     
     // MARK: - Initialization
     
-    init(dataService: StockDataServiceProtocol = StockDataServiceFactory.createService()) {
-        self.dataService = dataService
+    init(analysisService: StockAnalysisDataServiceProtocol = StockDataServiceFactory.createAnalysisService()) {
+        self.analysisService = analysisService
     }
     
     // MARK: - Configuration
@@ -136,7 +139,7 @@ final class PortfolioViewModel {
         isLoading = true
         
         do {
-            allStocks = try await dataService.fetchAllStocks()
+            allStocks = try await analysisService.fetchAllStocks()
             searchResults = allStocks
             // viewState는 여기서 변경하지 않음 - loadSavedHoldings()에서 처리
         } catch {
@@ -156,7 +159,7 @@ final class PortfolioViewModel {
         }
         
         do {
-            searchResults = try await dataService.searchStocks(query: searchQuery)
+            searchResults = try await analysisService.searchStocks(query: searchQuery)
         } catch {
             // 검색 실패 시 로컬 필터링
             let query = searchQuery.lowercased()
@@ -271,27 +274,30 @@ final class PortfolioViewModel {
         errorMessage = nil
         
         do {
-            // 종목 데이터 가져오기
             let tickers = holdings.map { $0.ticker }
-            stocksDataCache = try await dataService.fetchStocksWithData(tickers: tickers)
-            
-            // 분석 실행 (백그라운드)
             let holdingsData = holdings.map { (ticker: $0.ticker, weight: $0.weight) }
             
-            analysisResult = PortfolioAnalyzer.analyze(
+            // 분석용 데이터 가져오기 (일별 가격 포함)
+            analysisDataCache = try await analysisService.fetchStocksWithAnalysisData(tickers: tickers)
+            
+            // StockWithData 캐시도 업데이트
+            stocksDataCache = analysisDataCache.map { $0.asStockWithData }
+            
+            // 분석 실행 (상관계수 반영)
+            analysisResult = PortfolioAnalyzer.analyzeWithDailyData(
                 holdings: holdingsData,
-                stocksData: stocksDataCache
+                stocksData: analysisDataCache
             )
             
             // 배분 계산
             sectorAllocation = PortfolioAnalyzer.calculateSectorAllocation(
                 holdings: holdingsData,
-                stocksData: stocksDataCache
+                stocksData: analysisDataCache
             )
             
             regionAllocation = PortfolioAnalyzer.calculateRegionAllocation(
                 holdings: holdingsData,
-                stocksData: stocksDataCache
+                stocksData: analysisDataCache
             )
             
             // 종목별 상세 분석 데이터 계산
@@ -359,6 +365,7 @@ final class PortfolioViewModel {
         regionAllocation = []
         insights = []
         stocksDataCache = []
+        analysisDataCache = []
         sharpeBreakdown = []
         volatilityBreakdown = []
         mddBreakdown = []
@@ -426,7 +433,7 @@ final class PortfolioViewModel {
             
             // 3. 캐시에도 없으면 API로 가져오기
             if stock == nil {
-                if let polygonService = dataService as? PolygonStockDataService {
+                if let polygonService = analysisService as? PolygonStockDataService {
                     stock = try? await polygonService.fetchTickerDetailsPublic(ticker: ticker)
                 }
             }
