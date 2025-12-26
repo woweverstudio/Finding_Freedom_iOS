@@ -190,12 +190,13 @@ struct PortfolioEditView: View {
                 .padding(.vertical, ExitSpacing.xl)
             } else {
                 // 2열 그리드 레이아웃
+                let gridSpacing = ExitSpacing.sm
                 let columns = [
-                    GridItem(.flexible(), spacing: ExitSpacing.sm),
-                    GridItem(.flexible(), spacing: ExitSpacing.sm)
+                    GridItem(.flexible(minimum: gridSpacing), spacing: gridSpacing),
+                    GridItem(.flexible(minimum: gridSpacing), spacing: gridSpacing)
                 ]
                 
-                LazyVGrid(columns: columns, spacing: ExitSpacing.sm) {
+                LazyVGrid(columns: columns, spacing: gridSpacing) {
                     ForEach(viewModel.holdings) { holding in
                         PortfolioStockCard(
                             holding: holding,

@@ -131,7 +131,6 @@ struct PortfolioStockCard: View {
             )
             .tint(Color.Exit.accent)
         }
-        .padding(.horizontal, ExitSpacing.xs)
     }
 }
 

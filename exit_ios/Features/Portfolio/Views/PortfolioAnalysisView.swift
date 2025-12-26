@@ -60,7 +60,7 @@ struct PortfolioAnalysisView: View {
                     // 포트폴리오 수정 버튼
                     actionButtons
                 }
-                .padding(ExitSpacing.lg)
+                .padding(ExitSpacing.md)
             }
         }
         .sheet(item: $selectedMetric) { metric in
@@ -104,7 +104,7 @@ struct PortfolioAnalysisView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, ExitSpacing.lg)
+        .padding(.horizontal, ExitSpacing.md)
         .padding(.vertical, ExitSpacing.md)
     }
     
