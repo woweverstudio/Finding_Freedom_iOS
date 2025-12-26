@@ -31,18 +31,13 @@ struct PortfolioEditView: View {
             // 헤더
             headerSection
             
+            // 상단 도구 모음 (스크롤뷰 위에 고정)
+            toolbarSection
+            
             ScrollView(showsIndicators: false) {
                 VStack(spacing: ExitSpacing.lg) {
                     // 종목 목록
                     holdingsSection
-                    
-                    // 종목 추가 버튼
-                    addStockButton
-                    
-                    // 비중 조절 도구
-                    if !viewModel.holdings.isEmpty {
-                        weightToolsSection
-                    }
                 }
                 .padding(ExitSpacing.md)
                 .padding(.bottom, !viewModel.holdings.isEmpty ? 80 : 0)
@@ -87,52 +82,40 @@ struct PortfolioEditView: View {
         .padding(ExitSpacing.md)
     }
     
-    // MARK: - Holdings Section
+    // MARK: - Toolbar Section (상단 고정)
     
-    private var holdingsSection: some View {
-        VStack(spacing: ExitSpacing.md) {
-            if viewModel.holdings.isEmpty {
-                // 빈 상태 안내
-                VStack(spacing: ExitSpacing.md) {
-                    Image(systemName: "chart.pie")
-                        .font(.system(size: 48))
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                    
-                    VStack(spacing: ExitSpacing.xs) {
-                        Text("포트폴리오가 비어있어요")
-                            .font(.Exit.body)
-                            .fontWeight(.medium)
-                            .foregroundStyle(Color.Exit.secondaryText)
-                        
-                        Text("아래 버튼을 눌러 종목을 추가해주세요")
-                            .font(.Exit.caption)
-                            .foregroundStyle(Color.Exit.tertiaryText)
-                    }
+    private var toolbarSection: some View {
+        HStack(spacing: ExitSpacing.sm) {
+            // 균등 배분
+            toolButton(
+                icon: "equal.circle.fill",
+                title: "균등"
+            ) {
+                withAnimation(.spring(response: 0.3)) {
+                    viewModel.equalizeWeights()
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, ExitSpacing.xl)
-            } else {
-                ForEach(viewModel.holdings) { holding in
-                    PortfolioStockCard(
-                        holding: holding,
-                        onWeightChange: { newWeight in
-                            viewModel.updateWeight(for: holding.ticker, weight: newWeight)
-                        },
-                        onRemove: {
-                            withAnimation(.spring(response: 0.3)) {
-                                if let index = viewModel.holdings.firstIndex(where: { $0.id == holding.id }) {
-                                    viewModel.removeStock(at: index)
-                                }
-                            }
-                        }
-                    )
-                    .transition(.asymmetric(
-                        insertion: .push(from: .trailing),
-                        removal: .push(from: .leading)
-                    ))
-                }
+                HapticService.shared.light()
             }
+            .disabled(viewModel.holdings.isEmpty)
+            
+            // 0%로 초기화
+            toolButton(
+                icon: "arrow.counterclockwise",
+                title: "초기화"
+            ) {
+                withAnimation(.spring(response: 0.3)) {
+                    viewModel.resetAllWeights()
+                }
+                HapticService.shared.light()
+            }
+            .disabled(viewModel.totalWeight == 0)
+            
+            // 종목 추가 버튼
+            addStockButton
         }
+        .padding(.horizontal, ExitSpacing.md)
+        .padding(.vertical, ExitSpacing.sm)
+        .background(Color.Exit.background)
     }
     
     // MARK: - Add Stock Button
@@ -141,74 +124,99 @@ struct PortfolioEditView: View {
         Button {
             showSearchSheet = true
         } label: {
-            HStack(spacing: ExitSpacing.sm) {
+            HStack(spacing: ExitSpacing.xs) {
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 20))
+                    .font(.system(size: 14, weight: .medium))
                 
                 Text("종목 추가")
-                    .font(.Exit.body)
-                    .fontWeight(.medium)
+                    .font(.Exit.caption)
+                    .fontWeight(.semibold)
             }
             .foregroundStyle(Color.Exit.accent)
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(Color.Exit.accent.opacity(0.1))
+            .padding(.vertical, ExitSpacing.sm)
+            .background(Color.Exit.accent.opacity(0.15))
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
-            .overlay(
-                RoundedRectangle(cornerRadius: ExitRadius.md)
-                    .stroke(Color.Exit.accent.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [8]))
-            )
         }
         .buttonStyle(.plain)
     }
     
-    // MARK: - Weight Tools
+    /// 도구 버튼 컴포넌트
+    private func toolButton(
+        icon: String,
+        title: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: ExitSpacing.xs) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .medium))
+                Text(title)
+                    .font(.Exit.caption)
+                    .fontWeight(.medium)
+            }
+            .foregroundStyle(Color.Exit.secondaryText)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, ExitSpacing.sm)
+            .background(Color.Exit.secondaryCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+        }
+        .buttonStyle(.plain)
+    }
     
-    private var weightToolsSection: some View {
-        HStack(spacing: ExitSpacing.md) {
-            Button {
-                withAnimation(.spring(response: 0.3)) {
-                    viewModel.equalizeWeights()
-                }
-                HapticService.shared.light()
-            } label: {
-                HStack(spacing: ExitSpacing.xs) {
-                    Image(systemName: "equal.circle.fill")
-                        .font(.system(size: 16))
-                    Text("균등 배분")
-                        .font(.Exit.caption)
-                }
-                .foregroundStyle(Color.Exit.secondaryText)
-                .padding(.horizontal, ExitSpacing.md)
-                .padding(.vertical, ExitSpacing.sm)
-                .background(Color.Exit.secondaryCardBackground)
-                .clipShape(Capsule())
-            }
-            .buttonStyle(.plain)
-            
-            if !viewModel.isWeightValid && viewModel.totalWeight > 0 {
-                Button {
-                    withAnimation(.spring(response: 0.3)) {
-                        viewModel.normalizeWeights()
-                    }
-                    HapticService.shared.light()
-                } label: {
-                    HStack(spacing: ExitSpacing.xs) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.system(size: 16))
-                        Text("100%로 조정")
+    // MARK: - Holdings Section
+    
+    private var holdingsSection: some View {
+        Group {
+            if viewModel.holdings.isEmpty {
+                // 빈 상태 안내
+                VStack(spacing: ExitSpacing.lg) {
+                    Image(systemName: "tray")
+                        .font(.system(size: 48))
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    
+                    VStack(spacing: ExitSpacing.md) {
+                        Text("포트폴리오가 비어있어요")
+                            .font(.Exit.body)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                        
+                        Text("우측 상단 '종목추가' 버튼을 눌러 종목을 추가해주세요")
                             .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.tertiaryText)
                     }
-                    .foregroundStyle(Color.Exit.accent)
-                    .padding(.horizontal, ExitSpacing.md)
-                    .padding(.vertical, ExitSpacing.sm)
-                    .background(Color.Exit.accent.opacity(0.15))
-                    .clipShape(Capsule())
                 }
-                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, ExitSpacing.xl)
+            } else {
+                // 2열 그리드 레이아웃
+                let columns = [
+                    GridItem(.flexible(), spacing: ExitSpacing.sm),
+                    GridItem(.flexible(), spacing: ExitSpacing.sm)
+                ]
+                
+                LazyVGrid(columns: columns, spacing: ExitSpacing.sm) {
+                    ForEach(viewModel.holdings) { holding in
+                        PortfolioStockCard(
+                            holding: holding,
+                            onWeightChange: { newWeight in
+                                viewModel.updateWeight(for: holding.ticker, weight: newWeight)
+                            },
+                            onRemove: {
+                                withAnimation(.spring(response: 0.3)) {
+                                    if let index = viewModel.holdings.firstIndex(where: { $0.id == holding.id }) {
+                                        viewModel.removeStock(at: index)
+                                    }
+                                }
+                            }
+                        )
+                        .transition(.asymmetric(
+                            insertion: .push(from: .trailing),
+                            removal: .push(from: .leading)
+                        ))
+                    }
+                }
             }
-            
-            Spacer()
         }
     }
     

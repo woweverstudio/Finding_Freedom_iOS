@@ -245,27 +245,12 @@ final class PortfolioViewModel {
         saveHoldings()
     }
     
-    /// 비중 정규화 (합계 100%로, 정수 퍼센트로 반올림)
+    /// 모든 비중 0%로 초기화
     @MainActor
-    func normalizeWeights() {
-        guard totalWeight > 0 else { return }
-        
-        let factor = 1.0 / totalWeight
-        var totalAssigned = 0
-        
-        // 먼저 모든 비중을 정수 퍼센트로 변환
+    func resetAllWeights() {
         for i in holdings.indices {
-            let newWeight = Int((holdings[i].weight * factor * 100).rounded())
-            holdings[i].weight = Double(newWeight) / 100.0
-            totalAssigned += newWeight
+            holdings[i].weight = 0
         }
-        
-        // 반올림 오차로 100%가 안 되면 첫 번째 종목에 보정
-        if totalAssigned != 100 && !holdings.isEmpty {
-            let diff = 100 - totalAssigned
-            holdings[0].weight += Double(diff) / 100.0
-        }
-        
         saveHoldings()
     }
     

@@ -177,6 +177,10 @@ struct StockSearchSheet: View {
         .padding(ExitSpacing.md)
         .background(Color.Exit.secondaryCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            isSearchFocused = true
+        }
         .padding(.horizontal, ExitSpacing.md)
         .padding(.top, ExitSpacing.md)
     }
@@ -316,14 +320,17 @@ struct StockSearchSheet: View {
             if viewModel.searchResults.isEmpty {
                 VStack(spacing: ExitSpacing.sm) {
                     Spacer()
-                    Text("😢")
-                        .font(.system(size: 40))
                     Text("검색 결과가 없어요")
                         .font(.Exit.body)
                         .foregroundStyle(Color.Exit.secondaryText)
-                    Text("다른 티커나 종목명으로 검색해보세요")
+                    Text("한글 검색 기능은 준비중입니다.")
                         .font(.Exit.caption)
                         .foregroundStyle(Color.Exit.tertiaryText)
+                    
+                    Text("영문 티커나 종목명으로 검색해보세요.")
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    
                     Spacer()
                 }
             } else {
