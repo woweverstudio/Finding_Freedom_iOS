@@ -24,6 +24,22 @@ final class PolygonStockDataService: StockDataServiceProtocol, StockAnalysisData
     
     private(set) var lastUpdated: Date?
     
+    /// 티커 매핑 (데이터가 이상한 종목을 다른 종목 데이터로 대체)
+    /// UI에서는 원래 티커로 표시되지만, 실제 데이터는 매핑된 티커 사용
+    private let tickerDataMapping: [String: String] = [
+        "SPYM": "VOO"  // SPYM 데이터 이상 → VOO 데이터 사용
+    ]
+    
+    /// API 호출용 티커 반환 (매핑된 티커가 있으면 반환)
+    private func apiTicker(for ticker: String) -> String {
+        return tickerDataMapping[ticker.uppercased()] ?? ticker
+    }
+    
+    /// 매핑된 티커인지 확인 (캐시 무시 판단용)
+    private func isMappedTicker(_ ticker: String) -> Bool {
+        return tickerDataMapping[ticker.uppercased()] != nil
+    }
+    
     /// 인기 종목 티커 목록 (프리로드용)
     /// ETF + 빅테크 주식 혼합
     private let popularTickers = [
@@ -152,12 +168,17 @@ final class PolygonStockDataService: StockDataServiceProtocol, StockAnalysisData
     }
     
     func fetchPriceHistory(ticker: String) async throws -> PriceHistorySummary? {
-        // 캐시 확인
-        if let cached = cache.getStock(ticker: ticker),
+        // 매핑된 티커가 아닌 경우에만 캐시 확인
+        // (매핑된 티커는 이전에 잘못된 데이터가 캐시되어 있을 수 있음)
+        if !isMappedTicker(ticker),
+           let cached = cache.getStock(ticker: ticker),
            cached.isValid,
            let priceHistory = cached.priceHistory {
             return priceHistory.toPriceHistorySummary()
         }
+        
+        // API 호출용 티커 (매핑된 티커 사용)
+        let queryTicker = apiTicker(for: ticker)
         
         // 5년치 일별 데이터 요청
         let calendar = Calendar.current
@@ -167,7 +188,7 @@ final class PolygonStockDataService: StockDataServiceProtocol, StockAnalysisData
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         
-        let endpoint = "/v2/aggs/ticker/\(ticker)/range/1/day/\(dateFormatter.string(from: startDate))/\(dateFormatter.string(from: endDate))"
+        let endpoint = "/v2/aggs/ticker/\(queryTicker)/range/1/day/\(dateFormatter.string(from: startDate))/\(dateFormatter.string(from: endDate))"
         var components = URLComponents(string: baseURL + endpoint)!
         components.queryItems = [
             URLQueryItem(name: "adjusted", value: "true"),
@@ -191,11 +212,16 @@ final class PolygonStockDataService: StockDataServiceProtocol, StockAnalysisData
     }
     
     func fetchDividendHistory(ticker: String) async throws -> DividendHistorySummary? {
-        if let cached = cache.getStock(ticker: ticker),
+        // 매핑된 티커가 아닌 경우에만 캐시 확인
+        if !isMappedTicker(ticker),
+           let cached = cache.getStock(ticker: ticker),
            cached.isValid,
            let dividendHistory = cached.dividendHistory {
             return dividendHistory.toDividendHistorySummary()
         }
+        
+        // API 호출용 티커 (매핑된 티커 사용)
+        let queryTicker = apiTicker(for: ticker)
         
         // 최근 5년 배당 데이터 요청
         let calendar = Calendar.current
@@ -208,7 +234,7 @@ final class PolygonStockDataService: StockDataServiceProtocol, StockAnalysisData
         let endpoint = "/v3/reference/dividends"
         var components = URLComponents(string: baseURL + endpoint)!
         components.queryItems = [
-            URLQueryItem(name: "ticker", value: ticker),
+            URLQueryItem(name: "ticker", value: queryTicker),
             URLQueryItem(name: "ex_dividend_date.gte", value: dateFormatter.string(from: startDate)),
             URLQueryItem(name: "order", value: "desc"),
             URLQueryItem(name: "limit", value: "100"),
@@ -320,6 +346,9 @@ final class PolygonStockDataService: StockDataServiceProtocol, StockAnalysisData
     
     /// 일별 가격 데이터 + 히스토리 요약 함께 가져오기
     private func fetchDailyPricesAndHistory(ticker: String) async throws -> ([DailyPrice], PriceHistorySummary) {
+        // API 호출용 티커 (매핑된 티커 사용)
+        let queryTicker = apiTicker(for: ticker)
+        
         // 5년치 일별 데이터 요청
         let calendar = Calendar.current
         let endDate = Date()
@@ -328,7 +357,7 @@ final class PolygonStockDataService: StockDataServiceProtocol, StockAnalysisData
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         
-        let endpoint = "/v2/aggs/ticker/\(ticker)/range/1/day/\(dateFormatter.string(from: startDate))/\(dateFormatter.string(from: endDate))"
+        let endpoint = "/v2/aggs/ticker/\(queryTicker)/range/1/day/\(dateFormatter.string(from: startDate))/\(dateFormatter.string(from: endDate))"
         var components = URLComponents(string: baseURL + endpoint)!
         components.queryItems = [
             URLQueryItem(name: "adjusted", value: "true"),

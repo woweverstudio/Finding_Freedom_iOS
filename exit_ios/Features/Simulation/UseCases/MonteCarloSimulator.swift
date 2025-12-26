@@ -578,8 +578,7 @@ extension MonteCarloSimulator {
             }
             
             // 해당 종목의 시작일 찾기
-            guard let stockMinDate = stock.dailyPrices.map({ $0.date }).min(),
-                  let firstPrice = stock.dailyPrices.first?.close, firstPrice > 0 else {
+            guard let stockMinDate = stock.dailyPrices.map({ $0.date }).min() else {
                 continue
             }
             
@@ -587,10 +586,9 @@ extension MonteCarloSimulator {
             let annualDividendYield = stock.dividendHistory.dividendYield
             let monthlyDividendYield = annualDividendYield / 12.0
             
-            // 종목의 월별 데이터 계산
+            // 종목의 월별 데이터 계산 (먼저 가격만 수집)
             var stockMonthlyDates: [Date] = []
-            var stockMonthlyValues: [Double] = []
-            var monthCount = 0  // 배당 누적용 월 카운터
+            var stockMonthlyPrices: [Double] = []
             
             for monthDate in monthlyDates {
                 // 해당 월의 가장 가까운 가격 찾기 (해당 날짜 또는 이전 가장 가까운 날짜)
@@ -612,20 +610,27 @@ extension MonteCarloSimulator {
                 
                 if let price = closestPrice, monthDate >= stockMinDate {
                     stockMonthlyDates.append(monthDate)
-                    
-                    // 가격 수익률 (시작가 대비)
-                    let priceReturn = price / firstPrice
-                    
-                    // 배당 수익률 복리 계산 (매월 배당 재투자 가정)
-                    // 누적 배당 = (1 + 월배당률)^개월수 - 1
-                    let cumulativeDividendMultiplier = pow(1 + monthlyDividendYield, Double(monthCount))
-                    
-                    // 총 수익률 = 가격 수익률 × 배당 복리 효과
-                    let totalReturn = priceReturn * cumulativeDividendMultiplier
-                    stockMonthlyValues.append(totalReturn)
-                    
-                    monthCount += 1
+                    stockMonthlyPrices.append(price)
                 }
+            }
+            
+            // 첫 번째 월별 가격을 기준으로 정규화 (시작 = 1.0)
+            guard let firstMonthlyPrice = stockMonthlyPrices.first, firstMonthlyPrice > 0 else {
+                continue
+            }
+            
+            var stockMonthlyValues: [Double] = []
+            for (monthIndex, price) in stockMonthlyPrices.enumerated() {
+                // 가격 수익률 (첫 월별 가격 대비)
+                let priceReturn = price / firstMonthlyPrice
+                
+                // 배당 수익률 복리 계산 (매월 배당 재투자 가정)
+                // 누적 배당 = (1 + 월배당률)^개월수
+                let cumulativeDividendMultiplier = pow(1 + monthlyDividendYield, Double(monthIndex))
+                
+                // 총 수익률 = 가격 수익률 × 배당 복리 효과
+                let totalReturn = priceReturn * cumulativeDividendMultiplier
+                stockMonthlyValues.append(totalReturn)
             }
             
             if !stockMonthlyDates.isEmpty {

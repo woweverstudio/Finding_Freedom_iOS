@@ -408,23 +408,18 @@ struct DividendBreakdownCard: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.Exit.primaryText)
                 
-                Text("종목별 배당률 및 성장률")
+                Text("배당 & 배당성장")
                     .font(.Exit.caption)
                     .foregroundStyle(Color.Exit.tertiaryText)
             }
             
             Spacer()
             
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(String(format: "%.2f%%", portfolioYield * 100))
-                    .font(.Exit.title3)
-                    .fontWeight(.bold)
-                    .foregroundStyle(portfolioYield >= 0.03 ? Color.Exit.accent : Color.Exit.primaryText)
-                
-                Text("포트폴리오")
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
-            }
+            Text(String(format: "%.2f%%", portfolioYield * 100))
+                .font(.Exit.title3)
+                .fontWeight(.bold)
+                .foregroundStyle(portfolioYield >= 0.03 ? Color.Exit.accent : Color.Exit.primaryText)
+            
             
             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                 .font(.system(size: 12, weight: .semibold))

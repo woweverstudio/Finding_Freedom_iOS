@@ -39,12 +39,12 @@ struct PortfolioHistoricalChart: View {
             // 헤더
             HStack(spacing: ExitSpacing.sm) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("과거 5년 성과(배당 포함)")
+                    Text("과거 5년 성과")
                         .font(.Exit.body)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Exit.primaryText)
                     
-                    Text("종목별 백테스트 결과")
+                    Text("종목별 백테스트 결과 (배당 포함)")
                         .font(.Exit.caption)
                         .foregroundStyle(Color.Exit.secondaryText)
                 }
@@ -126,26 +126,7 @@ struct PortfolioHistoricalChart: View {
                 }
             }
             
-            // 2. 포트폴리오 영역 채우기 (그라데이션) - 월별 데이터
-//            ForEach(Array(data.values.enumerated()), id: \.offset) { index, value in
-//                if index < data.dates.count {
-//                    AreaMark(
-//                        x: .value("날짜", data.dates[index]),
-//                        yStart: .value("최소", chartYMin),
-//                        yEnd: .value("가치", value)
-//                    )
-//                    .foregroundStyle(
-//                        LinearGradient(
-//                            colors: [Color.Exit.accent.opacity(0.25), Color.Exit.accent.opacity(0.05)],
-//                            startPoint: .top,
-//                            endPoint: .bottom
-//                        )
-//                    )
-//                    .interpolationMethod(.catmullRom)
-//                }
-//            }
-            
-            // 3. 포트폴리오 메인 라인 (진하게) - 월별 데이터
+            // 2. 포트폴리오 메인 라인 (진하게) - 월별 데이터
             ForEach(Array(data.values.enumerated()), id: \.offset) { index, value in
                 if index < data.dates.count {
                     LineMark(
@@ -159,7 +140,7 @@ struct PortfolioHistoricalChart: View {
                 }
             }
             
-            // 4. 기준선 (1.0 = 시작점)
+            // 3. 기준선 (1.0 = 시작점)
             RuleMark(y: .value("기준", 1.0))
                 .foregroundStyle(Color.Exit.divider)
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
