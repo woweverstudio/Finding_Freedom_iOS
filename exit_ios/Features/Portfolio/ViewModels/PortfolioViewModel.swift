@@ -110,9 +110,6 @@ final class PortfolioViewModel {
     /// 과거 5년 성과 데이터
     private(set) var historicalData: PortfolioHistoricalData?
     
-    /// 미래 5년 예측 데이터
-    private(set) var projectionData: PortfolioProjectionResult?
-    
     // MARK: - Computed Properties
     
     /// 총 비중 합계
@@ -487,7 +484,6 @@ final class PortfolioViewModel {
         cagrBreakdown = []
         dividendBreakdown = []
         historicalData = nil
-        projectionData = nil
         viewState = .empty
         
         clearSavedHoldings()
@@ -729,15 +725,6 @@ final class PortfolioViewModel {
         historicalData = PortfolioMonteCarlo.calculateHistoricalPerformance(
             holdings: holdingsData,
             stocksData: analysisDataCache
-        )
-        
-        // 미래 5년 예측 시뮬레이션
-        // CAGR과 Volatility를 사용하여 몬테카를로 시뮬레이션
-        projectionData = PortfolioMonteCarlo.projectPortfolio(
-            cagr: result.cagrWithDividends,
-            volatility: result.volatility,
-            years: 5,
-            simulationCount: 5000
         )
     }
     

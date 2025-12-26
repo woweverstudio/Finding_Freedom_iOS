@@ -188,8 +188,31 @@ struct PortfolioEditView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, ExitSpacing.xl)
+            } else if viewModel.holdings.count <= 3 {
+                // 3개 이하: 1열 레이아웃 (넓은 카드)
+                VStack(spacing: ExitSpacing.sm) {
+                    ForEach(viewModel.holdings) { holding in
+                        PortfolioStockCardWide(
+                            holding: holding,
+                            onWeightChange: { newWeight in
+                                viewModel.updateWeight(for: holding.ticker, weight: newWeight)
+                            },
+                            onRemove: {
+                                withAnimation(.spring(response: 0.3)) {
+                                    if let index = viewModel.holdings.firstIndex(where: { $0.id == holding.id }) {
+                                        viewModel.removeStock(at: index)
+                                    }
+                                }
+                            }
+                        )
+                        .transition(.asymmetric(
+                            insertion: .push(from: .trailing),
+                            removal: .push(from: .leading)
+                        ))
+                    }
+                }
             } else {
-                // 2열 그리드 레이아웃
+                // 4개 이상: 2열 그리드 레이아웃
                 let gridSpacing = ExitSpacing.sm
                 let columns = [
                     GridItem(.flexible(minimum: gridSpacing), spacing: gridSpacing),

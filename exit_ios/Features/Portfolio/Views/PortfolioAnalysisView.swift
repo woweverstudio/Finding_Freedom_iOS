@@ -42,16 +42,7 @@ struct PortfolioAnalysisView: View {
                             PortfolioHistoricalChart(data: historicalData)
                         }
                         
-                        // 6️⃣ 미래 5년 시뮬레이션 차트
-                        if let projectionData = viewModel.projectionData {
-                            PortfolioProjectionChart(
-                                projection: projectionData,
-                                cagr: result.cagrWithDividends,
-                                volatility: result.volatility
-                            )
-                        }
-                        
-                        // 7️⃣ 투자 인사이트
+                        // 6️⃣ 투자 인사이트
                         if !viewModel.insights.isEmpty {
                             insightsSection
                         }
