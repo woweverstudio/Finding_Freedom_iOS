@@ -77,13 +77,7 @@ struct PortfolioEmptyView: View {
                     .overlay(
                         Image(systemName: "chart.pie.fill")
                             .font(.system(size: 44))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(hex: "00D4AA"), Color(hex: "00F5C4")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .foregroundStyle(Color.Exit.accent)
                     )
                     .shadow(color: Color.Exit.accent.opacity(0.3), radius: 20, x: 0, y: 10)
             }
@@ -92,16 +86,16 @@ struct PortfolioEmptyView: View {
                 HStack(spacing: ExitSpacing.xs) {
                     Image(systemName: "sparkles")
                         .font(.system(size: 14))
-                        .foregroundStyle(Color(hex: "FFD700"))
+                        .foregroundStyle(Color.Exit.chart7)
                     
                     Text("프리미엄 기능")
                         .font(.Exit.caption)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color(hex: "FFD700"))
+                        .foregroundStyle(Color.Exit.chart7)
                     
                     Image(systemName: "sparkles")
                         .font(.system(size: 14))
-                        .foregroundStyle(Color(hex: "FFD700"))
+                        .foregroundStyle(Color.Exit.chart7)
                 }
                 
                 Text("포트폴리오 분석")
@@ -374,7 +368,7 @@ struct PortfolioEmptyView: View {
                 
                 featureCard(
                     icon: "star.fill",
-                    iconColor: Color(hex: "FFD700"),
+                    iconColor: Color.Exit.chart7,
                     title: "종합 점수",
                     description: "수익성(40점) + 안정성(30점) + 효율성(30점) = 총 100점 만점으로 평가해요."
                 )
@@ -388,14 +382,14 @@ struct PortfolioEmptyView: View {
                 
                 featureCard(
                     icon: "lightbulb.fill",
-                    iconColor: Color(hex: "FF6B6B"),
+                    iconColor: Color.Exit.warning,
                     title: "AI 인사이트",
                     description: "포트폴리오의 강점과 약점, 구체적인 개선 제안을 제공해요."
                 )
                 
                 featureCard(
                     icon: "dollarsign.circle.fill",
-                    iconColor: Color(hex: "34C759"),
+                    iconColor: Color.Exit.positive,
                     title: "배당 분석",
                     description: "배당률, 배당 성장률, 종목별 배당 기여도를 분석해요."
                 )

@@ -93,18 +93,17 @@ struct AssetGrowthChart: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.lg) {
-            headerSection
-            chartSection
-            
-            // 2년 이상일 때만 연도별 마일스톤 표시
-            if yearsToRetirement >= 2 {
-                yearlyMilestonesSection
+        ExitCard(style: .filled, radius: ExitRadius.lg) {
+            VStack(alignment: .leading, spacing: ExitSpacing.lg) {
+                headerSection
+                chartSection
+                
+                // 2년 이상일 때만 연도별 마일스톤 표시
+                if yearsToRetirement >= 2 {
+                    yearlyMilestonesSection
+                }
             }
         }
-        .padding(ExitSpacing.lg)
-        .background(Color.Exit.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         .padding(.horizontal, ExitSpacing.md)
     }
     
@@ -125,7 +124,10 @@ struct AssetGrowthChart: View {
                 Spacer()
                 
                 // 인터랙션 토글 버튼
-                Button {
+                ExitChip(
+                    text: isInteracting ? "탐색 중" : "탐색",
+                    isSelected: isInteracting
+                ) {
                     HapticService.shared.light()
                     withAnimation(.easeInOut(duration: 0.2)) {
                         isInteracting.toggle()
@@ -133,18 +135,6 @@ struct AssetGrowthChart: View {
                             selectedProgress = nil
                         }
                     }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: isInteracting ? "hand.tap.fill" : "hand.tap")
-                            .font(.system(size: 12))
-                        Text(isInteracting ? "탐색 중" : "탐색")
-                            .font(.Exit.caption2)
-                    }
-                    .foregroundStyle(isInteracting ? Color.Exit.background : Color.Exit.accent)
-                    .padding(.horizontal, ExitSpacing.sm)
-                    .padding(.vertical, ExitSpacing.xs)
-                    .background(isInteracting ? Color.Exit.accent : Color.Exit.accent.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
                 }
             }
             
@@ -281,7 +271,7 @@ struct AssetGrowthChart: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: ExitSpacing.sm) {
                 ForEach(yearlyMilestones, id: \.year) { milestone in
-                    VStack(spacing: 4) {
+                    VStack(spacing: ExitSpacing.xs) {
                         Text("\(milestone.year)년")
                             .font(.Exit.caption2)
                             .foregroundStyle(Color.Exit.tertiaryText)
@@ -369,7 +359,7 @@ private struct YearlyMilestone {
 
 #Preview {
     ScrollView {
-        VStack(spacing: 20) {
+        VStack(spacing: ExitSpacing.lg) {
             AssetGrowthChart(
                 currentAsset: 100_000_000,
                 targetAsset: 720_000_000,
@@ -388,7 +378,7 @@ private struct YearlyMilestone {
                 animationID: UUID()
             )
         }
-        .padding(.vertical)
+        .padding(.vertical, ExitSpacing.lg)
     }
     .background(Color.Exit.background)
     .preferredColorScheme(.dark)

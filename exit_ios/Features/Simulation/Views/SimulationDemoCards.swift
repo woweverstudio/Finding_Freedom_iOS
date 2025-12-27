@@ -557,10 +557,10 @@ struct SimulationDemoCards: View {
         Text("예시")
             .font(.Exit.caption2)
             .fontWeight(.semibold)
-            .foregroundStyle(Color(hex: "FFD700"))
+            .foregroundStyle(Color.Exit.chart7)
             .padding(.horizontal, ExitSpacing.sm)
             .padding(.vertical, ExitSpacing.xs)
-            .background(Color(hex: "FFD700").opacity(0.2))
+            .background(Color.Exit.chart7.opacity(0.2))
             .clipShape(Capsule())
     }
     

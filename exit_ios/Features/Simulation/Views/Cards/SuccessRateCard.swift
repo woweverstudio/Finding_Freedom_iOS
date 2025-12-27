@@ -77,7 +77,7 @@ struct SuccessRateCard: View {
                     HStack(alignment: .lastTextBaseline, spacing: 4) {
                         Text("\(Int(result.successRate * 100))")
                             .font(.system(size: 72, weight: .heavy, design: .rounded))
-                            .foregroundStyle(Color(hex: result.confidenceLevel.color))
+                            .foregroundStyle(result.confidenceLevel.color)
                         
                         Text("%")
                             .font(.Exit.title)
@@ -86,12 +86,12 @@ struct SuccessRateCard: View {
                     
                     Text(result.confidenceLevel.rawValue)
                         .font(.Exit.body)
-                        .foregroundStyle(Color(hex: result.confidenceLevel.color))
+                        .foregroundStyle(result.confidenceLevel.color)
                         .padding(.horizontal, ExitSpacing.md)
                         .padding(.vertical, ExitSpacing.xs)
                         .background(
                             Capsule()
-                                .fill(Color(hex: result.confidenceLevel.color).opacity(0.15))
+                                .fill(result.confidenceLevel.color.opacity(0.15))
                         )
                 }
                 

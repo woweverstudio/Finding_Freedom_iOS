@@ -10,6 +10,28 @@ import SwiftData
 import Observation
 import SwiftUI
 
+// MARK: - App Theme
+
+/// 앱 테마 설정
+enum AppTheme: String, CaseIterable {
+    case light = "라이트"
+    case dark = "다크"
+    
+    var colorScheme: ColorScheme {
+        switch self {
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .light: return "sun.max.fill"
+        case .dark: return "moon.fill"
+        }
+    }
+}
+
 /// 앱 전역 상태 관리자
 /// Environment로 주입되어 모든 View에서 접근 가능
 @Observable
@@ -25,6 +47,29 @@ final class AppStateManager {
     
     /// 은퇴 계산 결과 (자동 계산)
     var retirementResult: RetirementCalculationResult?
+    
+    // MARK: - Theme State
+    
+    /// 현재 앱 테마 (저장 프로퍼티로 @Observable 추적 가능)
+    var appTheme: AppTheme
+    
+    /// 테마 변경 메서드 (UserDefaults 동기화 포함)
+    func setTheme(_ theme: AppTheme) {
+        appTheme = theme
+        UserDefaults.standard.set(theme.rawValue, forKey: "appTheme")
+    }
+    
+    // MARK: - Initialization
+    
+    init() {
+        // UserDefaults에서 테마 로드
+        if let rawValue = UserDefaults.standard.string(forKey: "appTheme"),
+           let theme = AppTheme(rawValue: rawValue) {
+            self.appTheme = theme
+        } else {
+            self.appTheme = .dark // 기본값
+        }
+    }
     
     // MARK: - UI State
     

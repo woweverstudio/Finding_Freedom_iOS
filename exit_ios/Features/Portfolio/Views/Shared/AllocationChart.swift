@@ -112,12 +112,12 @@ struct SectorAllocationCard: View {
     
     private var items: [AllocationCard.AllocationItem] {
         let colors: [Color] = [
-            Color.Exit.accent,
-            Color(hex: "5856D6"),
-            Color.Exit.positive,
-            Color.Exit.caution,
-            Color(hex: "FF2D55"),
-            Color(hex: "AF52DE")
+            Color.Exit.chart1,
+            Color.Exit.chart5,
+            Color.Exit.chart2,
+            Color.Exit.chart3,
+            Color.Exit.chart8,
+            Color.Exit.chart6
         ]
         
         return allocations.enumerated().map { index, allocation in
@@ -149,7 +149,7 @@ struct RegionAllocationCard: View {
                 name: allocation.region,
                 icon: allocation.flag,
                 weight: allocation.weight,
-                color: allocation.region == "미국" ? Color(hex: "3C3B6E") : Color(hex: "CD2E3A")
+                color: allocation.region == "미국" ? Color.Exit.chart1 : Color.Exit.chart4
             )
         }
     }

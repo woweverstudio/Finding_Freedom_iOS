@@ -312,13 +312,7 @@ struct SimulationView: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(
-                LinearGradient(
-                    colors: [Color(hex: "00D4AA"), Color(hex: "00B894")],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
+            .background(Color.Exit.accent)
             .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         }
         .buttonStyle(.plain)

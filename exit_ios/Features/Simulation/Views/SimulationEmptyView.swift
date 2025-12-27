@@ -86,13 +86,7 @@ struct SimulationEmptyView: View {
                     .overlay(
                         Image(systemName: "chart.line.uptrend.xyaxis")
                             .font(.system(size: 44))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(hex: "00D4AA"), Color(hex: "00F5C4")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .foregroundStyle(Color.Exit.accent)
                     )
                     .shadow(color: Color.Exit.accent.opacity(0.3), radius: 20, x: 0, y: 10)
             }
@@ -101,16 +95,16 @@ struct SimulationEmptyView: View {
                 HStack(spacing: ExitSpacing.xs) {
                     Image(systemName: "sparkles")
                         .font(.system(size: 14))
-                        .foregroundStyle(Color(hex: "FFD700"))
+                        .foregroundStyle(Color.Exit.chart7)
                     
                     Text("프리미엄 기능")
                         .font(.Exit.caption)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color(hex: "FFD700"))
+                        .foregroundStyle(Color.Exit.chart7)
                     
                     Image(systemName: "sparkles")
                         .font(.system(size: 14))
-                        .foregroundStyle(Color(hex: "FFD700"))
+                        .foregroundStyle(Color.Exit.chart7)
                 }
                 
                 Text("몬테카를로 시뮬레이션")
@@ -607,21 +601,21 @@ struct SimulationEmptyView: View {
                 
                 featureCard(
                     icon: "target",
-                    iconColor: Color(hex: "FF9500"),
+                    iconColor: Color.Exit.caution,
                     title: "목표 달성 시점 분포",
                     description: "가장 가능성 높은 달성 시점을 알려드려요."
                 )
                 
                 featureCard(
                     icon: "calendar.badge.clock",
-                    iconColor: Color(hex: "FF6B6B"),
+                    iconColor: Color.Exit.warning,
                     title: "은퇴 초반 10년 분석",
                     description: "가장 중요한 처음 10년의 시장 리스크를 분석해요."
                 )
                 
                 featureCard(
                     icon: "hourglass",
-                    iconColor: Color(hex: "FFD700"),
+                    iconColor: Color.Exit.chart7,
                     title: "은퇴 후 40년 예측",
                     description: "장기적인 자산 변화와 소진 가능성을 예측해요."
                 )

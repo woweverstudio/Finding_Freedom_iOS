@@ -15,7 +15,7 @@ struct AssetProgressRow: View {
     let isHidden: Bool
     
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: ExitSpacing.xs) {
             Text(currentAssets)
                 .foregroundStyle(Color.Exit.accent)
                 .blur(radius: isHidden ? 5 : 0)
@@ -29,7 +29,6 @@ struct AssetProgressRow: View {
             
             Text("(\(percent))")
                 .foregroundStyle(Color.Exit.secondaryText)
-//                .blur(radius: isHidden ? 5 : 0)
         }
         .font(.Exit.title3)
         .lineLimit(1)
@@ -44,7 +43,7 @@ struct AssetProgressRow: View {
     ZStack {
         Color.Exit.background.ignoresSafeArea()
         
-        VStack(spacing: 20) {
+        VStack(spacing: ExitSpacing.lg) {
             AssetProgressRow(
                 currentAssets: "7,500만원",
                 targetAssets: "4억 2,750만원",
@@ -59,7 +58,7 @@ struct AssetProgressRow: View {
                 isHidden: true
             )
         }
-        .padding()
+        .padding(ExitSpacing.md)
     }
     .preferredColorScheme(.dark)
 }

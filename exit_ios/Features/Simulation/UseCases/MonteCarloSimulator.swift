@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 /// 자산 변화 경로 (단일 시뮬레이션)
 struct AssetPath {
@@ -368,13 +369,13 @@ extension MonteCarloResult {
         case low = "낮음"
         case veryLow = "매우 낮음"
         
-        var color: String {
+        var color: Color {
             switch self {
-            case .veryHigh: return "00D4AA"  // 액센트 색
-            case .high: return "00D4AA"
-            case .moderate: return "FFD60A"  // 노랑
-            case .low: return "FF9500"       // 주황
-            case .veryLow: return "FF3B30"   // 빨강
+            case .veryHigh: return Color.Exit.positive
+            case .high: return Color.Exit.accent
+            case .moderate: return Color.Exit.chart7
+            case .low: return Color.Exit.caution
+            case .veryLow: return Color.Exit.warning
             }
         }
     }

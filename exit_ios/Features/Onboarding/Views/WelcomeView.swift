@@ -97,7 +97,7 @@ struct WelcomeView: View {
                 .font(.Exit.title)
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [Color.Exit.accent, Color(hex: "00B894")],
+                        colors: [Color.Exit.accent, Color.Exit.accent.opacity(0.7)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )

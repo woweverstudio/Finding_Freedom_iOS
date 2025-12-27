@@ -76,7 +76,7 @@ struct PortfolioScoreCard: View {
                     title: "효율성",
                     score: score.efficiency,
                     maxScore: 30,
-                    color: Color(hex: "5856D6")
+                    color: Color.Exit.chart5
                 )
             }
         }

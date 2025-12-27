@@ -36,6 +36,9 @@ struct MenuView: View {
                     // 문의하기 섹션
                     contactSection
                     
+                    // 테마 설정 섹션
+                    themeSection
+                    
                     // 앱 정보 섹션
                     appInfoSection
                     
@@ -460,6 +463,53 @@ struct MenuView: View {
         } else {
             UIApplication.shared.open(webURL)
         }
+    }
+    
+    // MARK: - Theme Section
+    
+    private var themeSection: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+            sectionHeader(title: "화면 설정")
+            
+            HStack(spacing: ExitSpacing.sm) {
+                ForEach(AppTheme.allCases, id: \.self) { theme in
+                    themeButton(theme)
+                }
+            }
+        }
+    }
+    
+    private func themeButton(_ theme: AppTheme) -> some View {
+        let isSelected = appState.appTheme == theme
+        
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                appState.setTheme(theme)
+            }
+            HapticService.shared.light()
+        } label: {
+            VStack(spacing: ExitSpacing.sm) {
+                Image(systemName: theme.icon)
+                    .font(.system(size: 24))
+                    .foregroundStyle(isSelected ? Color.Exit.accent : Color.Exit.tertiaryText)
+                
+                Text(theme.rawValue)
+                    .font(.Exit.caption)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundStyle(isSelected ? Color.Exit.accent : Color.Exit.secondaryText)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, ExitSpacing.lg)
+            .background(
+                RoundedRectangle(cornerRadius: ExitRadius.md)
+                    .fill(isSelected ? Color.Exit.accent.opacity(0.1) : Color.Exit.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: ExitRadius.md)
+                    .stroke(isSelected ? Color.Exit.accent : Color.Exit.divider, lineWidth: isSelected ? 2 : 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
     
     // MARK: - App Info Section

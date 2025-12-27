@@ -33,9 +33,9 @@ struct ProgressRingView: View {
                 .stroke(
                     AngularGradient(
                         gradient: Gradient(colors: [
-                            Color(hex: "00D4AA"),
-                            Color(hex: "00B894"),
-                            Color(hex: "00D4AA")
+                            Color.Exit.accent,
+                            Color.Exit.accent.opacity(0.7),
+                            Color.Exit.accent
                         ]),
                         center: .center,
                         startAngle: .degrees(0),

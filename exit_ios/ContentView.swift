@@ -44,8 +44,7 @@ struct ContentView: View {
             } else {
                 OnboardingView()
             }
-        }
-        .preferredColorScheme(.dark)
+        }        
         .onAppear {
             appState.configure(with: modelContext)
         }

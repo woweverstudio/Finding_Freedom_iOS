@@ -45,7 +45,7 @@ struct exit_iosApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(appStateManager.appTheme.colorScheme)
                 .environment(\.appState, appStateManager)
                 .environment(\.storeService, storeKitService)
         }
