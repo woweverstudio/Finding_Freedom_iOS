@@ -3,15 +3,39 @@
 //  exit_ios
 //
 //  Created by Exit on 2025.
-//  포트폴리오 분석 소개 및 구매 유도 화면
 //
 
 import SwiftUI
 import StoreKit
 
+// MARK: - Step Enum
+
+private enum PromotionStep: Int, CaseIterable {
+    case whyNeed = 0
+    case howItWorks = 1
+    case whatYouGet = 2
+    case purchase = 3
+    
+    var title: String {
+        switch self {
+        case .whyNeed: return "왜 필요할까요?"
+        case .howItWorks: return "어떻게 작동하나요?"
+        case .whatYouGet: return "무엇을 알 수 있나요?"
+        case .purchase: return "시작할 준비가 되셨나요?"
+        }
+    }
+    
+    var subtitle: String {
+        switch self {
+        case .whyNeed: return "개별 종목만 보면 놓치는 것들이 있어요"
+        case .howItWorks: return "포트폴리오 전체를 하나로 분석해요"
+        case .whatYouGet: return "금융공학 기반의 정밀한 분석 결과"
+        case .purchase: return "지금 바로 포트폴리오를 점검해보세요"
+        }
+    }
+}
+
 /// 포트폴리오 분석 소개 및 구매 유도 화면
-/// - 유료 기능 소개
-/// - 구매자도 다시 볼 수 있는 팝업으로 사용 가능
 struct PortfolioPromotionView: View {
     @Environment(\.appState) private var appState
     @Environment(\.storeService) private var storeService
@@ -19,6 +43,7 @@ struct PortfolioPromotionView: View {
     let onStart: () -> Void
     let isPurchased: Bool
     
+    @State private var currentStep: PromotionStep = .whyNeed
     @State private var isPurchasing: Bool = false
     
     init(
@@ -30,35 +55,216 @@ struct PortfolioPromotionView: View {
     }
     
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: ExitSpacing.xxl) {
-                // Hero 섹션
-                heroSection
-                
-                // 왜 필요한가? 섹션
-                whyNeedSection
-                
-                // 어떻게 작동하나? 섹션
-                howItWorksSection
-                
-                // 무엇을 알 수 있는가? 섹션
-                whatYouGetSection
-                
-                // 가격 및 가치 제안
-                valuePropositionSection
-                
-                Spacer()
-                    .frame(height: 10)
-            }
-            .padding(.top, ExitSpacing.lg)
+        VStack(spacing: 0) {
+            // 상단: 스텝 인디케이터
+            progressIndicator
+                .padding(.horizontal, ExitSpacing.lg)
+                .padding(.top, ExitSpacing.lg)
+            
+            // 컨텐츠 영역
+            stepContent
+                .padding(.horizontal, ExitSpacing.lg)
+                .padding(.top, ExitSpacing.xxl)
+                .animation(.easeInOut(duration: 0.3), value: currentStep)
+            
+            // 하단: 네비게이션 버튼
+            navigationButtons
+                .padding(.horizontal, ExitSpacing.md)
+                .padding(.bottom, ExitSpacing.xl)
         }
     }
     
-    // MARK: - Hero Section
+    // MARK: - Progress Indicator
     
-    private var heroSection: some View {
-        VStack(spacing: ExitSpacing.lg) {
-            // 프리미엄 아이콘
+    private var progressIndicator: some View {
+        HStack(spacing: ExitSpacing.sm) {
+            ForEach(PromotionStep.allCases, id: \.self) { step in
+                Capsule()
+                    .fill(step.rawValue <= currentStep.rawValue ? Color.Exit.accent : Color.Exit.divider)
+                    .frame(height: 4)
+                    .animation(.easeInOut(duration: 0.3), value: currentStep)
+            }
+        }
+    }
+    
+    // MARK: - Step Content
+    
+    @ViewBuilder
+    private var stepContent: some View {
+        VStack(spacing: ExitSpacing.xl) {            
+            // 타이틀
+            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                Text(currentStep.title)
+                    .font(.Exit.title)
+                    .foregroundStyle(Color.Exit.primaryText)
+                    .multilineTextAlignment(.center)
+                
+                Text(currentStep.subtitle)
+                    .font(.Exit.body)
+                    .foregroundStyle(Color.Exit.secondaryText)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // 스텝별 컨텐츠
+            Group {
+                switch currentStep {
+                case .whyNeed:
+                    step1Content
+                case .howItWorks:
+                    step2Content
+                case .whatYouGet:
+                    step3Content
+                case .purchase:
+                    step4Content
+                }
+            }
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing).combined(with: .opacity),
+                removal: .move(edge: .leading).combined(with: .opacity)
+            ))
+            
+            Spacer()
+        }
+    }
+    
+    // MARK: - Step 1: Why Need
+    
+    private var step1Content: some View {
+        HStack(spacing: ExitSpacing.lg) {
+            // 개별 종목
+            VStack(spacing: ExitSpacing.md) {
+                RoundedRectangle(cornerRadius: ExitRadius.md)
+                    .fill(Color.Exit.cardBackground)
+                    .frame(width: 120, height: 80)
+                    .overlay {
+                        HStack(spacing: 8) {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.Exit.secondaryText.opacity(0.5))
+                                .frame(width: 20, height: 40)
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.Exit.secondaryText.opacity(0.7))
+                                .frame(width: 20, height: 50)
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.Exit.secondaryText.opacity(0.6))
+                                .frame(width: 20, height: 35)
+                        }
+                    }
+                
+                Text("개별 종목")
+                    .font(.Exit.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.Exit.secondaryText)
+            }
+            
+            Image(systemName: "arrow.right")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(Color.Exit.accent)
+            
+            // 포트폴리오 전체
+            VStack(spacing: ExitSpacing.md) {
+                RoundedRectangle(cornerRadius: ExitRadius.md)
+                    .fill(Color.Exit.accent.opacity(0.15))
+                    .frame(width: 120, height: 80)
+                    .overlay {
+                        ZStack {
+                            Circle()
+                                .trim(from: 0, to: 0.4)
+                                .stroke(Color.Exit.accent, lineWidth: 12)
+                                .frame(width: 50, height: 50)
+                            Circle()
+                                .trim(from: 0.4, to: 0.7)
+                                .stroke(Color.Exit.positive, lineWidth: 12)
+                                .frame(width: 50, height: 50)
+                            Circle()
+                                .trim(from: 0.7, to: 1.0)
+                                .stroke(Color.Exit.caution, lineWidth: 12)
+                                .frame(width: 50, height: 50)
+                        }
+                        .rotationEffect(.degrees(-90))
+                    }
+                
+                Text("포트폴리오 전체")
+                    .font(.Exit.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.Exit.accent)
+            }
+        }
+    }
+    
+    // MARK: - Step 2: How It Works
+    
+    private var step2Content: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.lg) {
+            stepRow(number: "1", text: "보유 종목과 비중을 입력")
+            stepRow(number: "2", text: "5년간 가격/배당 데이터 자동 수집")
+            stepRow(number: "3", text: "금융공학 지표로 종합 평가")
+        }
+        .padding(ExitSpacing.xl)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Exit.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+    }
+    
+    private func stepRow(number: String, text: String) -> some View {
+        HStack(spacing: ExitSpacing.md) {
+            Text(number)
+                .font(.Exit.body)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(Color.Exit.accent)
+                .clipShape(Circle())
+            
+            Text(text)
+                .font(.Exit.body)
+                .foregroundStyle(Color.Exit.primaryText)
+        }
+    }
+    
+    // MARK: - Step 3: What You Get
+    
+    private var step3Content: some View {
+        VStack(alignment: .leading, spacing: ExitSpacing.lg) {
+            featureItem(number: "1", title: "수익률 분석", description: "CAGR, 총수익률")
+            featureItem(number: "2", title: "위험 분석", description: "변동성, MDD, Sharpe")
+            featureItem(number: "3", title: "종합 점수", description: "100점 만점 평가")
+            featureItem(number: "4", title: "배분 현황", description: "섹터/지역 시각화")
+        }
+        .padding(ExitSpacing.xl)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Exit.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+    }
+    
+    private func featureItem(number: String, title: String, description: String) -> some View {
+        HStack(spacing: ExitSpacing.md) {
+            Text(number)
+                .font(.Exit.body)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(Color.Exit.accent)
+                .clipShape(Circle())
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.Exit.body)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.Exit.primaryText)
+                
+                Text(description)
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.secondaryText)
+            }
+        }
+    }
+    
+    // MARK: - Step 4: Purchase
+    
+    private var step4Content: some View {
+        VStack(spacing: ExitSpacing.xl) {
+            // Hero 아이콘
             ZStack {
                 Circle()
                     .fill(
@@ -82,390 +288,17 @@ struct PortfolioPromotionView: View {
                     .shadow(color: Color.Exit.accent.opacity(0.3), radius: 20, x: 0, y: 10)
             }
             
-            VStack(spacing: ExitSpacing.sm) {
-                HStack(spacing: ExitSpacing.xs) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.Exit.chart7)
-                    
-                    Text("프리미엄 기능")
-                        .font(.Exit.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.chart7)
-                    
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.Exit.chart7)
-                }
-                
-                Text("포트폴리오 분석")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color.Exit.primaryText)
-                
-                Text("보유 종목을 분석해서\n포트폴리오의 강점과 약점을 알려드려요.")
-                    .font(.Exit.body)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(4)
-            }
-        }
-        .padding(.horizontal, ExitSpacing.md)
-    }
-    
-    // MARK: - Why Need Section
-    
-    private var whyNeedSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.lg) {
-            sectionHeader(icon: "lightbulb.fill", title: "왜 포트폴리오 분석이 필요할까요?")
-            
-            // 문제 제기 카드
-            VStack(alignment: .leading, spacing: ExitSpacing.md) {
-                problemCard(
-                    emoji: "🤔",
-                    title: "종목만 보면 안 돼요",
-                    description: "\"삼성전자 좋아요!\" \"애플 사세요!\" 하지만 내 포트폴리오 전체는 어떤가요?"
-                )
-                
-                problemCard(
-                    emoji: "📊",
-                    title: "숨겨진 위험이 있어요",
-                    description: "각 종목은 괜찮아 보여도, 포트폴리오 전체가 한 섹터에 몰려있을 수 있어요. 분산투자가 제대로 되고 있는지 확인이 필요해요."
-                )
-                
-                problemCard(
-                    emoji: "🎯",
-                    title: "정확한 성과 파악이 어려워요",
-                    description: "\"작년에 10% 올랐어요!\" 하지만 변동성은? 위험 대비 수익은? 단순 수익률만으로는 부족해요."
-                )
-                
-                problemCard(
-                    emoji: "💡",
-                    title: "개선 방향을 모르겠어요",
-                    description: "포트폴리오의 강점과 약점, 그리고 구체적인 개선 제안이 필요해요."
-                )
-            }
-            .padding(ExitSpacing.lg)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
-        }
-        .padding(.horizontal, ExitSpacing.md)
-    }
-    
-    private func problemCard(emoji: String, title: String, description: String) -> some View {
-        HStack(alignment: .top, spacing: ExitSpacing.md) {
-            Text(emoji)
-                .font(.system(size: 32))
-            
-            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                Text(title)
-                    .font(.Exit.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.primaryText)
-                
-                Text(description)
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-    
-    // MARK: - How It Works Section
-    
-    private var howItWorksSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.lg) {
-            sectionHeader(icon: "gearshape.2.fill", title: "어떻게 작동하나요?")
-            
-            VStack(alignment: .leading, spacing: ExitSpacing.xl) {
-                // 1. 종목 데이터 수집
-                VStack(alignment: .leading, spacing: ExitSpacing.md) {
-                    stepHeader(number: "1", title: "보유 종목 정보를 입력해요")
-                    
-                    VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                        Text("보유하고 있는 종목과 비중을 입력하면, 앱이 각 종목의 과거 5년간 가격과 배당 데이터를 자동으로 불러와요.")
-                            .font(.Exit.caption)
-                            .foregroundStyle(Color.Exit.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                
-                // 2. 포트폴리오 수익률 계산
-                VStack(alignment: .leading, spacing: ExitSpacing.md) {
-                    stepHeader(number: "2", title: "포트폴리오 전체 수익률을 계산해요")
-                    
-                    VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                        Text("각 종목의 비중을 고려해서 포트폴리오 전체의 일별 수익률을 계산해요. 마치 여러 종목을 하나의 펀드처럼 합쳐서 보는 거예요.")
-                            .font(.Exit.caption)
-                            .foregroundStyle(Color.Exit.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-                        
-                        // 시각화
-                        portfolioCalculationVisualization
-                    }
-                }
-                
-                // 3. 지표 계산
-                VStack(alignment: .leading, spacing: ExitSpacing.md) {
-                    stepHeader(number: "3", title: "금융공학 지표를 계산해요")
-                    
-                    VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                        Text("포트폴리오 수익률 데이터로부터 다양한 지표를 계산해요:")
-                            .font(.Exit.caption)
-                            .foregroundStyle(Color.Exit.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-                        
-                        VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                            bulletPoint(text: "CAGR: 연평균 복리 수익률 (가격 + 배당 포함)")
-                            bulletPoint(text: "변동성: 수익률의 들쭉날쭉함 정도")
-                            bulletPoint(text: "Sharpe Ratio: 위험 대비 수익률")
-                            bulletPoint(text: "MDD: 최대 낙폭 (최악의 하락폭)")
-                        }
-                    }
-                }
-                
-                // 4. 종합 평가
-                VStack(alignment: .leading, spacing: ExitSpacing.md) {
-                    stepHeader(number: "4", title: "종합 점수와 인사이트를 제공해요")
-                    
-                    VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-                        Text("수익성, 안정성, 효율성을 종합해서 점수를 매기고, 포트폴리오의 강점과 개선이 필요한 부분을 알려드려요.")
-                            .font(.Exit.caption)
-                            .foregroundStyle(Color.Exit.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-            .padding(ExitSpacing.lg)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
-        }
-        .padding(.horizontal, ExitSpacing.md)
-    }
-    
-    private func stepHeader(number: String, title: String) -> some View {
-        HStack(spacing: ExitSpacing.sm) {
-            Text(number)
-                .font(.Exit.caption)
-                .fontWeight(.bold)
-                .foregroundStyle(.white)
-                .frame(width: 24, height: 24)
-                .background(Color.Exit.accent)
-                .clipShape(Circle())
-            
-            Text(title)
-                .font(.Exit.subheadline)
-                .fontWeight(.semibold)
+            Text("포트폴리오 분석")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundStyle(Color.Exit.primaryText)
-        }
-    }
-    
-    private var portfolioCalculationVisualization: some View {
-        VStack(spacing: ExitSpacing.sm) {
-            HStack(spacing: ExitSpacing.xs) {
-                // 종목 1
-                VStack(spacing: 4) {
-                    Text("삼성전자")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                    Text("40%")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Color.Exit.accent)
-                }
-                .padding(.horizontal, ExitSpacing.sm)
-                .padding(.vertical, ExitSpacing.xs)
-                .background(Color.Exit.accent.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                
-                Text("+")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                
-                // 종목 2
-                VStack(spacing: 4) {
-                    Text("애플")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                    Text("30%")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Color.Exit.accent)
-                }
-                .padding(.horizontal, ExitSpacing.sm)
-                .padding(.vertical, ExitSpacing.xs)
-                .background(Color.Exit.accent.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                
-                Text("+")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                
-                // 종목 3
-                VStack(spacing: 4) {
-                    Text("...")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                }
-                
-                Image(systemName: "arrow.right")
-                    .foregroundStyle(Color.Exit.accent)
-                
-                // 포트폴리오
-                VStack(spacing: 4) {
-                    Text("포트폴리오")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                    Text("100%")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Color.Exit.positive)
-                }
-                .padding(.horizontal, ExitSpacing.sm)
-                .padding(.vertical, ExitSpacing.xs)
-                .background(Color.Exit.positive.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-            }
             
-            Text("각 종목의 비중을 고려해서 하나의 포트폴리오로 합쳐요")
-                .font(.Exit.caption2)
-                .foregroundStyle(Color.Exit.tertiaryText)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, ExitSpacing.sm)
-    }
-    
-    private func bulletPoint(text: String) -> some View {
-        HStack(alignment: .top, spacing: ExitSpacing.sm) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 14))
-                .foregroundStyle(Color.Exit.accent)
-            
-            Text(text)
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-    
-    // MARK: - What You Get Section
-    
-    private var whatYouGetSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.lg) {
-            sectionHeader(icon: "gift.fill", title: "무엇을 알 수 있나요?")
-            
-            VStack(spacing: ExitSpacing.md) {
-                featureCard(
-                    icon: "chart.line.uptrend.xyaxis",
-                    iconColor: Color.Exit.positive,
-                    title: "수익률 분석",
-                    description: "CAGR, 배당 포함 총수익률, 가격 수익률을 정확히 계산해요."
-                )
-                
-                featureCard(
-                    icon: "shield.lefthalf.filled",
-                    iconColor: Color.Exit.caution,
-                    title: "위험 분석",
-                    description: "변동성, 최대 낙폭(MDD), Sharpe Ratio로 위험을 정량화해요."
-                )
-                
-                featureCard(
-                    icon: "star.fill",
-                    iconColor: Color.Exit.chart7,
-                    title: "종합 점수",
-                    description: "수익성(40점) + 안정성(30점) + 효율성(30점) = 총 100점 만점으로 평가해요."
-                )
-                
-                featureCard(
-                    icon: "chart.pie.fill",
-                    iconColor: Color.Exit.accent,
-                    title: "섹터/지역 배분",
-                    description: "포트폴리오가 어떤 섹터와 지역에 집중되어 있는지 시각화해요."
-                )
-                
-                featureCard(
-                    icon: "lightbulb.fill",
-                    iconColor: Color.Exit.warning,
-                    title: "AI 인사이트",
-                    description: "포트폴리오의 강점과 약점, 구체적인 개선 제안을 제공해요."
-                )
-                
-                featureCard(
-                    icon: "dollarsign.circle.fill",
-                    iconColor: Color.Exit.positive,
-                    title: "배당 분석",
-                    description: "배당률, 배당 성장률, 종목별 배당 기여도를 분석해요."
-                )
-            }
+            // 구매 버튼
+            purchaseSection
         }
         .padding(.horizontal, ExitSpacing.md)
     }
     
-    private func featureCard(icon: String, iconColor: Color, title: String, description: String) -> some View {
-        HStack(alignment: .top, spacing: ExitSpacing.md) {
-            ZStack {
-                RoundedRectangle(cornerRadius: ExitRadius.md)
-                    .fill(iconColor.opacity(0.15))
-                    .frame(width: 48, height: 48)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 22))
-                    .foregroundStyle(iconColor)
-            }
-            
-            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                Text(title)
-                    .font(.Exit.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.Exit.primaryText)
-                
-                Text(description)
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            
-            Spacer()
-        }
-        .padding(ExitSpacing.md)
-        .background(Color.Exit.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
-    }
-    
-    // MARK: - Value Proposition Section
-    
-    private var valuePropositionSection: some View {
-        VStack(spacing: ExitSpacing.lg) {
-            // 신뢰도 섹션
-            VStack(spacing: ExitSpacing.md) {
-                HStack(spacing: ExitSpacing.sm) {
-                    Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(Color.Exit.accent)
-                    
-                    Text("금융공학에서 검증된 지표")
-                        .font(.Exit.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Exit.primaryText)
-                }
-                
-                Text("CAGR, Sharpe Ratio, MDD 등은 월스트리트와 연기금에서 실제로 사용하는 표준 지표예요. 복잡한 금융공학을 누구나 쉽게 이해할 수 있도록 설명과 함께 제공해요.")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.secondaryText)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(ExitSpacing.lg)
-            .frame(maxWidth: .infinity)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
-            
-            // 플로팅 구매 버튼
-            floatingPurchaseButton
-        }
-        .padding(.horizontal, ExitSpacing.md)
-    }
-    
-    // MARK: - Floating Purchase Button
-    
-    private var floatingPurchaseButton: some View {
+    private var purchaseSection: some View {
         VStack(spacing: ExitSpacing.sm) {
             ExitCTAButton(
                 title: purchaseButtonTitle,
@@ -487,19 +320,18 @@ struct PortfolioPromotionView: View {
                 }
             )
             
-            // 복원 버튼 또는 안내 텍스트
             if !isPurchased {
                 HStack(spacing: ExitSpacing.md) {
-                    Text("한 번 구매로 평생 & 무한 사용")
+                    Text("한 번 구매로 평생 사용")
                         .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.primaryText)
+                        .foregroundStyle(Color.Exit.secondaryText)
                     
                     Button {
                         Task {
                             await storeService.restorePurchases()
                         }
                     } label: {
-                        Text("이전 구매 복원")
+                        Text("구매 복원")
                             .font(.Exit.caption2)
                             .foregroundStyle(Color.Exit.accent)
                     }
@@ -510,7 +342,6 @@ struct PortfolioPromotionView: View {
                     .foregroundStyle(Color.Exit.secondaryText)
             }
             
-            // 에러 메시지
             if let error = storeService.errorMessage {
                 Text(error)
                     .font(.Exit.caption2)
@@ -532,18 +363,39 @@ struct PortfolioPromotionView: View {
         }
     }
     
-    // MARK: - Helper Views
+    // MARK: - Navigation Buttons
     
-    private func sectionHeader(icon: String, title: String) -> some View {
-        HStack(spacing: ExitSpacing.sm) {
-            Image(systemName: icon)
-                .font(.system(size: 18))
-                .foregroundStyle(Color.Exit.accent)
+    private var navigationButtons: some View {
+        HStack(spacing: ExitSpacing.md) {
+            if currentStep.rawValue > 0 {
+                ExitButton(
+                    title: "이전",
+                    style: .secondary,
+                    size: .large,
+                    action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            if let prevStep = PromotionStep(rawValue: currentStep.rawValue - 1) {
+                                currentStep = prevStep
+                            }
+                        }
+                    }
+                )
+            }
             
-            Text(title)
-                .font(.Exit.title3)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.Exit.primaryText)
+            if currentStep != .purchase {
+                ExitButton(
+                    title: "다음",
+                    style: .primary,
+                    size: .large,
+                    action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            if let nextStep = PromotionStep(rawValue: currentStep.rawValue + 1) {
+                                currentStep = nextStep
+                            }
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -560,4 +412,3 @@ struct PortfolioPromotionView: View {
         )
     }
 }
-
