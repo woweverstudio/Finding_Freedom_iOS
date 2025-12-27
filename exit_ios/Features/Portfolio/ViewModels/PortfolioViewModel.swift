@@ -105,6 +105,24 @@ final class PortfolioViewModel {
     /// 배당 종목별 분해
     private(set) var dividendBreakdown: [DividendStockBreakdown] = []
     
+    // MARK: - 데이터 품질 정보
+    
+    /// 데이터 품질 경고가 있는 종목들
+    private(set) var stocksWithDataQualityWarning: [DataQualityWarning] = []
+    
+    /// 티커 변경으로 데이터가 병합된 종목들
+    private(set) var stocksWithMergedData: [TickerMergeInfo] = []
+    
+    /// 데이터 품질 경고가 있는지
+    var hasDataQualityWarnings: Bool {
+        !stocksWithDataQualityWarning.isEmpty
+    }
+    
+    /// 티커 변경 이력이 있는 종목이 있는지
+    var hasTickerChanges: Bool {
+        !stocksWithMergedData.isEmpty
+    }
+    
     // MARK: - 차트 데이터
     
     /// 과거 5년 성과 데이터
@@ -338,6 +356,9 @@ final class PortfolioViewModel {
             
             // 종목별 상세 분석 데이터 계산
             calculateStockBreakdowns()
+            
+            // 데이터 품질 정보 수집
+            collectDataQualityInfo()
             
             // 상세 인사이트 생성 (breakdown 데이터 포함)
             if let result = analysisResult {
@@ -726,6 +747,41 @@ final class PortfolioViewModel {
             holdings: holdingsData,
             stocksData: analysisDataCache
         )
+    }
+    
+    // MARK: - Data Quality
+    
+    /// 데이터 품질 정보 수집
+    private func collectDataQualityInfo() {
+        var warnings: [DataQualityWarning] = []
+        var mergeInfos: [TickerMergeInfo] = []
+        
+        for stock in analysisDataCache {
+            // 데이터 품질 경고 수집
+            if stock.dataQuality.needsWarning {
+                warnings.append(DataQualityWarning(
+                    ticker: stock.info.ticker,
+                    name: stock.info.name,
+                    quality: stock.dataQuality,
+                    message: stock.dataQualityMessage ?? "데이터 품질 이슈"
+                ))
+            }
+            
+            // 티커 병합 정보 수집
+            if let history = stock.tickerHistory, history.hasTickerChange {
+                if let previousTicker = history.previousTickers.first {
+                    mergeInfos.append(TickerMergeInfo(
+                        currentTicker: history.currentTicker,
+                        previousTicker: previousTicker,
+                        changeDate: history.tickerChangeDate
+                    ))
+                }
+            }
+        }
+        
+        stocksWithDataQualityWarning = warnings
+        stocksWithMergedData = mergeInfos
+        
     }
     
     // MARK: - Helpers

@@ -286,6 +286,27 @@ struct StockAnalysisData: Identifiable {
     let priceHistory: PriceHistorySummary
     let dividendHistory: DividendHistorySummary
     
+    // 데이터 품질 정보 (티커 변경 추적)
+    let dataQuality: DataQuality
+    let tickerHistory: TickerHistory?
+    
+    /// 기본 이니셜라이저 (기존 호환성)
+    init(
+        info: StockInfo,
+        dailyPrices: [DailyPrice],
+        priceHistory: PriceHistorySummary,
+        dividendHistory: DividendHistorySummary,
+        dataQuality: DataQuality = .reliable,
+        tickerHistory: TickerHistory? = nil
+    ) {
+        self.info = info
+        self.dailyPrices = dailyPrices
+        self.priceHistory = priceHistory
+        self.dividendHistory = dividendHistory
+        self.dataQuality = dataQuality
+        self.tickerHistory = tickerHistory
+    }
+    
     /// 일별 수익률 배열 계산
     var dailyReturns: [Double] {
         guard dailyPrices.count > 1 else { return [] }
@@ -322,6 +343,21 @@ struct StockAnalysisData: Identifiable {
         let years = Double(priceHistory.annualReturns.count)
         guard years > 0 else { return 0 }
         return pow(1 + totalReturnWithDividends, 1.0 / years) - 1
+    }
+    
+    /// 데이터 품질 경고가 필요한지
+    var needsDataQualityWarning: Bool {
+        dataQuality.needsWarning
+    }
+    
+    /// 데이터 품질 표시 메시지
+    var dataQualityMessage: String? {
+        dataQuality.displayMessage
+    }
+    
+    /// 티커 변경 이력 표시 문자열
+    var tickerChangeDisplay: String? {
+        tickerHistory?.displayString
     }
     
     /// StockWithData로 변환 (호환성)

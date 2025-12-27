@@ -21,6 +21,11 @@ struct PortfolioAnalysisView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: ExitSpacing.lg) {
                     if let result = viewModel.analysisResult {
+                        // 🔔 데이터 품질 알림 (있는 경우)
+                        if viewModel.hasTickerChanges || viewModel.hasDataQualityWarnings {
+                            dataQualitySection
+                        }
+                        
                         // 1️⃣ 포트폴리오 비중 차트 (최상단)
                         PortfolioAllocationChart(holdings: viewModel.holdings)
                         
@@ -191,6 +196,58 @@ struct PortfolioAnalysisView: View {
         else if absValue <= 0.30 { return .Exit.positive }
         else if absValue <= 0.40 { return .Exit.caution }
         else { return .Exit.warning }
+    }
+    
+    // MARK: - Data Quality Section
+    
+    private var dataQualitySection: some View {
+        VStack(spacing: ExitSpacing.sm) {
+            // 티커 변경으로 병합된 데이터 (정보성)
+            ForEach(viewModel.stocksWithMergedData) { mergeInfo in
+                HStack(spacing: ExitSpacing.sm) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.Exit.accent)
+                    
+                    Text("\(mergeInfo.currentTicker)")
+                        .font(.Exit.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color.Exit.primaryText)
+                    
+                    Text("(\(mergeInfo.previousTicker)에서 티커 변경)")
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                    
+                    Spacer()
+                }
+                .padding(ExitSpacing.sm)
+                .background(Color.Exit.accent.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+            }
+            
+            // 데이터 품질 경고 (주의)
+            ForEach(viewModel.stocksWithDataQualityWarning) { warning in
+                HStack(spacing: ExitSpacing.sm) {
+                    Image(systemName: warning.icon)
+                        .font(.system(size: 14))
+                        .foregroundStyle(warning.color)
+                    
+                    Text("\(warning.ticker)")
+                        .font(.Exit.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color.Exit.primaryText)
+                    
+                    Text(warning.message)
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                    
+                    Spacer()
+                }
+                .padding(ExitSpacing.sm)
+                .background(warning.color.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+            }
+        }
     }
     
     // MARK: - Insights Section

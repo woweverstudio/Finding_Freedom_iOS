@@ -497,3 +497,58 @@ struct BenchmarkComparison {
     }
 }
 
+// MARK: - Data Quality Warning
+
+/// 데이터 품질 경고 정보
+struct DataQualityWarning: Identifiable {
+    let id = UUID()
+    let ticker: String
+    let name: String
+    let quality: DataQuality
+    let message: String
+    
+    /// 경고 아이콘
+    var icon: String {
+        switch quality {
+        case .reliable, .merged:
+            return "checkmark.circle.fill"
+        case .limited:
+            return "exclamationmark.triangle.fill"
+        case .unreliable:
+            return "xmark.circle.fill"
+        }
+    }
+    
+    /// 경고 색상
+    var color: Color {
+        switch quality {
+        case .reliable:
+            return .Exit.positive
+        case .merged:
+            return .Exit.accent
+        case .limited:
+            return .Exit.caution
+        case .unreliable:
+            return .Exit.warning
+        }
+    }
+}
+
+// MARK: - Ticker Merge Info
+
+/// 티커 변경으로 데이터가 병합된 정보
+struct TickerMergeInfo: Identifiable {
+    let id = UUID()
+    let currentTicker: String
+    let previousTicker: String
+    let changeDate: String?
+    
+    /// 표시용 문자열
+    var displayString: String {
+        if let date = changeDate {
+            return "\(previousTicker) → \(currentTicker) (\(date))"
+        }
+        return "\(previousTicker) → \(currentTicker)"
+    }
+}
+

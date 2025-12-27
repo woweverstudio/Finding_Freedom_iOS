@@ -50,6 +50,51 @@ struct PolygonTicker: Codable {
     }
 }
 
+// MARK: - Ticker Events Response (티커 변경 이벤트)
+
+/// Polygon.io /vX/reference/tickers/{id}/events 응답
+/// 티커 변경(symbol renaming, rebranding) 이력 조회용
+struct PolygonTickerEventsResponse: Codable {
+    let results: PolygonTickerEventsResult?
+    let status: String
+    let requestId: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case results, status
+        case requestId = "request_id"
+    }
+}
+
+/// 티커 이벤트 결과
+struct PolygonTickerEventsResult: Codable {
+    let name: String?
+    let compositeFigi: String?
+    let cik: String?
+    let events: [PolygonTickerEvent]?
+    
+    enum CodingKeys: String, CodingKey {
+        case name, cik, events
+        case compositeFigi = "composite_figi"
+    }
+}
+
+/// 개별 티커 이벤트
+struct PolygonTickerEvent: Codable {
+    let type: String?              // "ticker_change"
+    let date: String?              // 이벤트 발생일 (YYYY-MM-DD)
+    let tickerChange: TickerChangeInfo?
+    
+    enum CodingKeys: String, CodingKey {
+        case type, date
+        case tickerChange = "ticker_change"
+    }
+}
+
+/// 티커 변경 상세 정보
+struct TickerChangeInfo: Codable {
+    let ticker: String?            // 변경 후 티커 (현재 티커)
+}
+
 // MARK: - Ticker Details Response (종목 상세)
 
 /// Polygon.io /v3/reference/tickers/{ticker} 응답
@@ -225,6 +270,114 @@ struct PolygonDividend: Codable {
     }
 }
 
+// MARK: - Data Quality (데이터 품질 검증)
+
+/// 데이터 품질 상태
+/// 티커 변경 등으로 인한 데이터 신뢰성 문제를 추적
+enum DataQuality: Codable, Equatable {
+    case reliable                        // 신뢰할 수 있음 (5년 데이터 완전)
+    case merged(previousTicker: String)  // FIGI로 이전 티커 데이터 병합됨
+    case limited(reason: String)         // 제한적 (이유 포함)
+    case unreliable(reason: String)      // 신뢰 불가
+    
+    /// 사용자에게 표시할 메시지
+    var displayMessage: String? {
+        switch self {
+        case .reliable:
+            return nil
+        case .merged(let previousTicker):
+            return "\(previousTicker)에서 티커가 변경됨"
+        case .limited(let reason):
+            return reason
+        case .unreliable(let reason):
+            return "⚠️ \(reason)"
+        }
+    }
+    
+    /// 데이터가 분석에 사용 가능한지
+    var isUsable: Bool {
+        switch self {
+        case .reliable, .merged, .limited:
+            return true
+        case .unreliable:
+            return false
+        }
+    }
+    
+    /// 경고 표시가 필요한지
+    var needsWarning: Bool {
+        switch self {
+        case .reliable, .merged:
+            return false
+        case .limited, .unreliable:
+            return true
+        }
+    }
+}
+
+/// 티커 이력 정보 (Ticker Events API 기반)
+struct TickerHistory: Codable, Equatable {
+    let currentTicker: String
+    let previousTickers: [String]       // 과거 티커들
+    let tickerChangeDate: String?       // 티커 변경일 (알 수 있는 경우)
+    
+    /// 티커 변경이 있었는지
+    var hasTickerChange: Bool {
+        !previousTickers.isEmpty
+    }
+    
+    /// 표시용 문자열 (예: "FB → META")
+    var displayString: String? {
+        guard let previousTicker = previousTickers.first else { return nil }
+        if let changeDate = tickerChangeDate {
+            return "\(previousTicker) → \(currentTicker) (\(changeDate))"
+        }
+        return "\(previousTicker) → \(currentTicker)"
+    }
+}
+
+/// 데이터 유효성 검사 결과
+struct DataValidationResult {
+    let quality: DataQuality
+    let validStartDate: Date?           // 유효 데이터 시작일
+    let validEndDate: Date?             // 유효 데이터 종료일
+    let issues: [DataValidationIssue]   // 발견된 문제점
+    let tickerHistory: TickerHistory?   // 티커 변경 이력 (있는 경우)
+    
+    /// 유효 데이터 기간 (년 단위)
+    var validDataYears: Double? {
+        guard let start = validStartDate, let end = validEndDate else { return nil }
+        return end.timeIntervalSince(start) / (365.25 * 24 * 60 * 60)
+    }
+}
+
+/// 데이터 검증 중 발견된 문제
+enum DataValidationIssue: Codable, Equatable {
+    case zeroStartPrice                  // 시작 가격이 0
+    case extremeVolatility(Double)       // 비정상적으로 높은 변동성 (100%+)
+    case extremeCAGR(Double)             // 비정상적인 CAGR (100%+ 또는 -80% 미만)
+    case extremeMDD(Double)              // 비정상적인 MDD (-90% 미만)
+    case insufficientData(years: Double) // 데이터 기간 부족 (3년 미만)
+    case tickerChange(from: String)      // 티커 변경 감지
+    
+    var description: String {
+        switch self {
+        case .zeroStartPrice:
+            return "시작 가격이 0입니다"
+        case .extremeVolatility(let vol):
+            return "변동성이 비정상적으로 높습니다 (\(String(format: "%.0f", vol * 100))%)"
+        case .extremeCAGR(let cagr):
+            return "연평균 수익률이 비정상적입니다 (\(String(format: "%.0f", cagr * 100))%)"
+        case .extremeMDD(let mdd):
+            return "MDD가 비정상적으로 큽니다 (\(String(format: "%.0f", mdd * 100))%)"
+        case .insufficientData(let years):
+            return "데이터 기간이 부족합니다 (\(String(format: "%.1f", years))년)"
+        case .tickerChange(let from):
+            return "\(from)에서 티커가 변경되었습니다"
+        }
+    }
+}
+
 // MARK: - Cached Stock Data (로컬 캐싱용)
 
 /// 캐시된 종목 데이터
@@ -234,12 +387,26 @@ struct CachedStockData: Codable {
     let dividendHistory: CachedDividendHistory?
     let cachedAt: Date
     
+    // 데이터 품질 정보
+    let dataQuality: DataQuality?
+    let tickerHistory: TickerHistory?
+    
     /// 캐시 유효 기간 (1주일)
     static let cacheValidityDuration: TimeInterval = 7 * 24 * 60 * 60
     
     /// 캐시가 유효한지 확인
     var isValid: Bool {
         Date().timeIntervalSince(cachedAt) < Self.cacheValidityDuration
+    }
+    
+    /// 기존 캐시와의 호환성을 위한 이니셜라이저
+    init(stockInfo: CachedStockInfo, priceHistory: CachedPriceHistory?, dividendHistory: CachedDividendHistory?, cachedAt: Date, dataQuality: DataQuality? = nil, tickerHistory: TickerHistory? = nil) {
+        self.stockInfo = stockInfo
+        self.priceHistory = priceHistory
+        self.dividendHistory = dividendHistory
+        self.cachedAt = cachedAt
+        self.dataQuality = dataQuality
+        self.tickerHistory = tickerHistory
     }
 }
 
