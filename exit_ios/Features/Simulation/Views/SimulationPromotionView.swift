@@ -14,14 +14,12 @@ private enum PromotionStep: Int, CaseIterable {
     case whyNeed = 0
     case howItWorks = 1
     case whatYouGet = 2
-    case purchase = 3
     
     var title: String {
         switch self {
         case .whyNeed: return "왜 필요할까요?"
         case .howItWorks: return "어떻게 작동하나요?"
         case .whatYouGet: return "무엇을 알 수 있나요?"
-        case .purchase: return "시작할 준비가 되셨나요?"
         }
     }
     
@@ -30,35 +28,18 @@ private enum PromotionStep: Int, CaseIterable {
         case .whyNeed: return "단순 계산으로는 알 수 없는 것들이 있어요"
         case .howItWorks: return "30,000가지 미래를 만들어 분석해요"
         case .whatYouGet: return "확률 기반의 현실적인 분석 결과"
-        case .purchase: return "지금 바로 당신의 은퇴 계획을 분석해보세요"
         }
     }
 }
 
-/// 몬테카를로 시뮬레이션 소개 및 구매 유도 화면
+/// 몬테카를로 시뮬레이션 소개 및 무료 체험 유도 화면
+/// 체험 안함 + 미구매 사용자에게만 표시됨
 struct SimulationPromotionView: View {
     @Environment(\.appState) private var appState
-    @Environment(\.storeService) private var storeService
     
-    let userProfile: UserProfile?
-    let currentAssetAmount: Double
-    let onStart: () -> Void
-    let isPurchased: Bool
+    let onStartTrial: () -> Void
     
     @State private var currentStep: PromotionStep = .whyNeed
-    @State private var isPurchasing: Bool = false
-    
-    init(
-        userProfile: UserProfile?,
-        currentAssetAmount: Double,
-        onStart: @escaping () -> Void,
-        isPurchased: Bool = false
-    ) {
-        self.userProfile = userProfile
-        self.currentAssetAmount = currentAssetAmount
-        self.onStart = onStart
-        self.isPurchased = isPurchased
-    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -119,8 +100,6 @@ struct SimulationPromotionView: View {
                     step2Content
                 case .whatYouGet:
                     step3Content
-                case .purchase:
-                    step4Content
                 }
             }
             .transition(.asymmetric(
@@ -252,109 +231,6 @@ struct SimulationPromotionView: View {
         }
     }
     
-    // MARK: - Step 4: Purchase
-    
-    private var step4Content: some View {
-        VStack(spacing: ExitSpacing.xl) {
-            // Hero 아이콘
-            ZStack {
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [Color.Exit.accent.opacity(0.3), Color.clear],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 80
-                        )
-                    )
-                    .frame(width: 160, height: 160)
-                
-                Circle()
-                    .fill(Color.Exit.cardBackground)
-                    .frame(width: 100, height: 100)
-                    .overlay(
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                            .font(.system(size: 44))
-                            .foregroundStyle(Color.Exit.accent)
-                    )
-                    .shadow(color: Color.Exit.accent.opacity(0.3), radius: 20, x: 0, y: 10)
-            }
-            
-            Text("몬테카를로 시뮬레이션")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
-                .foregroundStyle(Color.Exit.primaryText)
-            
-            // 구매 버튼
-            purchaseSection
-        }
-        .padding(.horizontal, ExitSpacing.md)
-    }
-    
-    private var purchaseSection: some View {
-        VStack(spacing: ExitSpacing.sm) {
-            ExitCTAButton(
-                title: purchaseButtonTitle,
-                icon: isPurchased ? "play.fill" : "sparkles",
-                isLoading: isPurchasing,
-                action: {
-                    if isPurchased {
-                        onStart()
-                    } else {
-                        Task {
-                            isPurchasing = true
-                            let success = await storeService.purchaseMontecarloSimulation()
-                            isPurchasing = false
-                            if success {
-                                // SimulationView의 onChange가 화면 전환 처리
-                            }
-                        }
-                    }
-                }
-            )
-            
-            if !isPurchased {
-                HStack(spacing: ExitSpacing.md) {
-                    Text("한 번 구매로 평생 사용")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.secondaryText)
-                    
-                    Button {
-                        Task {
-                            await storeService.restorePurchases()
-                        }
-                    } label: {
-                        Text("구매 복원")
-                            .font(.Exit.caption2)
-                            .foregroundStyle(Color.Exit.accent)
-                    }
-                }
-            } else {
-                Text("약 3~10초 소요됩니다")
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.secondaryText)
-            }
-            
-            if let error = storeService.errorMessage {
-                Text(error)
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.warning)
-                    .multilineTextAlignment(.center)
-            }
-        }
-    }
-    
-    private var purchaseButtonTitle: String {
-        if isPurchasing {
-            return "구매 중..."
-        } else if isPurchased {
-            return "시뮬레이션 시작"
-        } else if let product = storeService.montecarloProduct {
-            return "프리미엄 구매 • \(product.displayPrice)"
-        } else {
-            return "제품 정보 불러오기 실패"
-        }
-    }
-    
     // MARK: - Navigation Buttons
     
     private var navigationButtons: some View {
@@ -374,7 +250,14 @@ struct SimulationPromotionView: View {
                 )
             }
             
-            if currentStep != .purchase {
+            if currentStep == .whatYouGet {
+                // 마지막 스텝: 무료 체험 시작 버튼
+                ExitCTAButton(
+                    title: "무료 체험 시작",
+                    icon: "play.fill",
+                    action: onStartTrial
+                )
+            } else {
                 ExitButton(
                     title: "다음",
                     style: .primary,
@@ -399,10 +282,7 @@ struct SimulationPromotionView: View {
         Color.Exit.background.ignoresSafeArea()
         
         SimulationPromotionView(
-            userProfile: nil,
-            currentAssetAmount: 50_000_000,
-            onStart: {},
-            isPurchased: false
+            onStartTrial: {}
         )
     }
 }

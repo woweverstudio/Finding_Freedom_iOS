@@ -57,6 +57,7 @@ struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.appState) private var appState
     @Environment(\.storeService) private var storeService
+    @Query private var userProfiles: [UserProfile]
     @State private var simulationViewModel = SimulationViewModel()
     @State private var portfolioViewModel = PortfolioViewModel()
     @State private var menuViewModel = MenuViewModel()
@@ -66,8 +67,16 @@ struct MainTabView: View {
     @State private var showSimulationPurchaseSheet = false
     @State private var showPortfolioPurchaseSheet = false
     
+    // 시뮬레이션 체험 모드
+    @State private var isSimulationTrialMode = false
+    
     // 이전 탭 저장 (탭 변경 감지용)
     @State private var previousTab: MainTab = .dashboard
+    
+    /// 시뮬레이션 무료 체험 사용 여부
+    private var hasUsedSimulationTrial: Bool {
+        userProfiles.first?.hasUsedSimulationTrial ?? false
+    }
     
     // @Observable 객체에서 바인딩을 사용하려면 @Bindable 필요
     private var bindableAppState: Bindable<AppStateManager> {
@@ -83,7 +92,7 @@ struct MainTabView: View {
                 }
                 .tag(MainTab.dashboard)
             
-            SimulationView(viewModel: simulationViewModel)
+            SimulationView(viewModel: simulationViewModel, isTrialMode: isSimulationTrialMode)
                 .tabItem {
                     Image(systemName: MainTab.simulation.icon)
                     Text(MainTab.simulation.rawValue)
@@ -117,11 +126,17 @@ struct MainTabView: View {
             // MainView에서 hasCompletedOnboarding을 확인하므로 자동으로 WelcomeView로 이동
         }
         .onChange(of: appState.selectedTab) { oldValue, newValue in
-            // 시뮬레이션 탭 클릭 시 구매 여부 체크
-            if newValue == .simulation && !storeService.hasMontecarloSimulation {
-                // 미구매 시 홈 탭으로 되돌리고 풀팝업 표시
-                appState.selectedTab = oldValue
-                showSimulationPurchaseSheet = true
+            // 시뮬레이션 탭 클릭 시 체크
+            if newValue == .simulation {
+                if storeService.hasMontecarloSimulation || isSimulationTrialMode {
+                    // 구매 완료 또는 체험 모드: 메인 뷰로 진입
+                } else if hasUsedSimulationTrial {
+                    // 체험 완료 + 미구매: 메인 뷰로 진입 (구매 버튼 표시됨)
+                } else {
+                    // 체험 안함 + 미구매: 프로모션 시트 표시
+                    appState.selectedTab = oldValue
+                    showSimulationPurchaseSheet = true
+                }
             }
             // 포트폴리오 탭 클릭 시 구매 여부 체크
             else if newValue == .portfolio && !storeService.hasPortfolioAnalysis {
@@ -146,10 +161,15 @@ struct MainTabView: View {
         }
         .fullScreenCover(isPresented: $showSimulationPurchaseSheet) {
             SimulationPurchaseSheet(
-                viewModel: simulationViewModel,
                 onClose: {
                     showSimulationPurchaseSheet = false
                     appState.selectedTab = .dashboard
+                },
+                onStartTrial: {
+                    // 체험 시작: 시트 닫고 시뮬레이션 탭으로 이동 (체험 모드)
+                    showSimulationPurchaseSheet = false
+                    isSimulationTrialMode = true
+                    appState.selectedTab = .simulation
                 }
             )
         }

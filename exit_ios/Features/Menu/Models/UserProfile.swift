@@ -31,6 +31,9 @@ final class UserProfile {
     /// 온보딩 완료 여부
     var hasCompletedOnboarding: Bool = false
     
+    /// 시뮬레이션 무료 체험 사용 여부
+    var hasUsedSimulationTrial: Bool = false
+    
     /// 생성일
     var createdAt: Date = Date()
     

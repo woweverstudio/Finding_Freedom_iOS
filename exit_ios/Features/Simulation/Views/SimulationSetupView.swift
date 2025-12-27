@@ -7,12 +7,43 @@
 
 import SwiftUI
 
-/// 시뮬레이션 시작 전 설정 화면
+// MARK: - Setup Step Enum
+
+private enum SetupStep: Int, CaseIterable {
+    case basicSettings = 0
+    case returnRate = 1
+    case spendingRatio = 2
+    case failureThreshold = 3
+    
+    var title: String {
+        switch self {
+        case .basicSettings: return "기본 설정"
+        case .returnRate: return "수익률 설정"
+        case .spendingRatio: return "생활비 사용 비율"
+        case .failureThreshold: return "실패 조건"
+        }
+    }
+    
+    var subtitle: String {
+        switch self {
+        case .basicSettings: return "현재 자산과 투자 계획을 입력하세요"
+        case .returnRate: return "은퇴 전후 목표 수익률을 설정하세요"
+        case .spendingRatio: return "은퇴 후 사용할 생활비 비율을 선택하세요"
+        case .failureThreshold: return "시뮬레이션 실패 조건을 설정하세요"
+        }
+    }
+}
+
+/// 시뮬레이션 시작 전 설정 화면 (4단계 스텝)
 struct SimulationSetupView: View {
     @Environment(\.appState) private var appState
     @Bindable var viewModel: SimulationViewModel
     let onBack: () -> Void
     let onStart: () -> Void
+    
+    // MARK: - Step State
+    
+    @State private var currentStep: SetupStep = .basicSettings
     
     // MARK: - Editing States
     
@@ -35,28 +66,23 @@ struct SimulationSetupView: View {
                 // 헤더
                 header
                 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: ExitSpacing.lg) {
-                        // 기본 설정 섹션
-                        basicSettingsSection
-                        
-                        // 수익률 설정 섹션
-                        returnRateSection
-                        
-                        // 생활비 사용 비율 섹션
-                        spendingRatioSection
-                        
-                        // 실패 조건 섹션
-                        failureThresholdSection
-                        
-                        // 시뮬레이션 요약
-                        simulationSummary
-                    }
-                    .padding(.vertical, ExitSpacing.lg)
-                }
+                // 프로그레스 인디케이터
+                progressIndicator
+                    .padding(.horizontal, ExitSpacing.lg)
+                    .padding(.top, ExitSpacing.md)
                 
-                // 시작 버튼
-                startButton
+                // 컨텐츠 영역
+                stepContent
+                    .padding(.horizontal, ExitSpacing.lg)
+                    .padding(.top, ExitSpacing.xl)
+                    .animation(.easeInOut(duration: 0.3), value: currentStep)
+                
+                Spacer()
+                
+                // 하단: 네비게이션 버튼
+                navigationButtons
+                    .padding(.horizontal, ExitSpacing.md)
+                    .padding(.bottom, ExitSpacing.lg)
             }
         }
         .onAppear {
@@ -74,6 +100,56 @@ struct SimulationSetupView: View {
                     showAmountEditSheet = nil
                 }
             )
+        }
+    }
+    
+    // MARK: - Progress Indicator
+    
+    private var progressIndicator: some View {
+        HStack(spacing: ExitSpacing.sm) {
+            ForEach(SetupStep.allCases, id: \.self) { step in
+                Capsule()
+                    .fill(step.rawValue <= currentStep.rawValue ? Color.Exit.accent : Color.Exit.divider)
+                    .frame(height: 4)
+                    .animation(.easeInOut(duration: 0.3), value: currentStep)
+            }
+        }
+    }
+    
+    // MARK: - Step Content
+    
+    @ViewBuilder
+    private var stepContent: some View {
+        VStack(spacing: ExitSpacing.xl) {
+            // 타이틀
+            VStack(alignment: .leading, spacing: ExitSpacing.sm) {
+                Text(currentStep.title)
+                    .font(.Exit.title2)
+                    .foregroundStyle(Color.Exit.primaryText)
+                
+                Text(currentStep.subtitle)
+                    .font(.Exit.body)
+                    .foregroundStyle(Color.Exit.secondaryText)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // 스텝별 컨텐츠
+            Group {
+                switch currentStep {
+                case .basicSettings:
+                    basicSettingsContent
+                case .returnRate:
+                    returnRateContent
+                case .spendingRatio:
+                    spendingRatioContent
+                case .failureThreshold:
+                    failureThresholdContent
+                }
+            }
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing).combined(with: .opacity),
+                removal: .move(edge: .leading).combined(with: .opacity)
+            ))
         }
     }
     
@@ -106,7 +182,15 @@ struct SimulationSetupView: View {
     private var header: some View {
         HStack {
             Button {
-                onBack()
+                if currentStep.rawValue > 0 {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        if let prevStep = SetupStep(rawValue: currentStep.rawValue - 1) {
+                            currentStep = prevStep
+                        }
+                    }
+                } else {
+                    onBack()
+                }
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .medium))
@@ -130,45 +214,40 @@ struct SimulationSetupView: View {
         .padding(ExitSpacing.md)        
     }
     
-    // MARK: - Basic Settings Section
+    // MARK: - Step 1: Basic Settings Content
     
-    private var basicSettingsSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            sectionHeader("기본 설정")
+    private var basicSettingsContent: some View {
+        VStack(spacing: ExitSpacing.md) {
+            // 현재 자산
+            amountEditRow(
+                label: "현재 자산",
+                value: editingCurrentAsset,
+                formatter: { ExitNumberFormatter.formatToEokManWon($0) },
+                color: Color.Exit.primaryText,
+                editType: .currentAsset
+            )
             
-            VStack(spacing: ExitSpacing.md) {
-                // 현재 자산
-                amountEditRow(
-                    label: "현재 자산",
-                    value: editingCurrentAsset,
-                    formatter: { ExitNumberFormatter.formatToEokManWon($0) },
-                    color: Color.Exit.primaryText,
-                    editType: .currentAsset
-                )
-                
-                // 매월 투자금액
-                amountEditRow(
-                    label: "매월 투자금액",
-                    value: editingMonthlyInvestment,
-                    formatter: { ExitNumberFormatter.formatToManWon($0) },
-                    color: Color.Exit.positive,
-                    editType: .monthlyInvestment
-                )
-                
-                // 은퇴 후 희망 월수입
-                amountEditRow(
-                    label: "은퇴 후 월수입",
-                    value: editingMonthlyIncome,
-                    formatter: { ExitNumberFormatter.formatToManWon($0) },
-                    color: Color.Exit.accent,
-                    editType: .desiredMonthlyIncome
-                )
-            }
-            .padding(ExitSpacing.md)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+            // 매월 투자금액
+            amountEditRow(
+                label: "매월 투자금액",
+                value: editingMonthlyInvestment,
+                formatter: { ExitNumberFormatter.formatToManWon($0) },
+                color: Color.Exit.positive,
+                editType: .monthlyInvestment
+            )
+            
+            // 은퇴 후 희망 월수입
+            amountEditRow(
+                label: "은퇴 후 월수입",
+                value: editingMonthlyIncome,
+                formatter: { ExitNumberFormatter.formatToManWon($0) },
+                color: Color.Exit.accent,
+                editType: .desiredMonthlyIncome
+            )
         }
-        .padding(.horizontal, ExitSpacing.md)
+        .padding(ExitSpacing.lg)
+        .background(Color.Exit.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
     }
     
     // MARK: - Amount Edit Row
@@ -183,7 +262,7 @@ struct SimulationSetupView: View {
         HStack {
             // 라벨
             Text(label)
-                .font(.Exit.caption)
+                .font(.Exit.body)
                 .foregroundStyle(Color.Exit.secondaryText)
             
             Spacer()
@@ -192,11 +271,11 @@ struct SimulationSetupView: View {
             HStack(spacing: ExitSpacing.sm) {
                 // 현재 값
                 Text(formatter(value))
-                    .font(.Exit.caption)
+                    .font(.Exit.body)
                     .fontWeight(.bold)
                     .foregroundStyle(color)
                 
-                // 편집 버튼 (수익률 +/- 버튼과 동일한 스타일)
+                // 편집 버튼
                 Button {
                     HapticService.shared.soft()
                     showAmountEditSheet = editType
@@ -215,40 +294,77 @@ struct SimulationSetupView: View {
                 .buttonStyle(.plain)
             }
         }
+        .padding(.vertical, ExitSpacing.sm)
     }
     
-    // MARK: - Return Rate Section
+    // MARK: - Step 2: Return Rate Content
     
-    private var returnRateSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            sectionHeader("수익률 설정")
+    private var returnRateContent: some View {
+        VStack(spacing: ExitSpacing.lg) {
+            // 은퇴 전 수익률
+            rateSliderWithButtons(
+                label: "은퇴 전 수익률",
+                value: $editingPreReturnRate,
+                minValue: 0.5,
+                maxValue: 30.0,
+                step: 0.5,
+                color: Color.Exit.accent
+            )
             
-            VStack(spacing: ExitSpacing.md) {
-                // 은퇴 전 수익률
-                rateSliderWithButtons(
-                    label: "은퇴 전 수익률",
-                    value: $editingPreReturnRate,
-                    minValue: 0.5,
-                    maxValue: 30.0,
-                    step: 0.5,
-                    color: Color.Exit.accent
-                )
+            // 은퇴 후 수익률
+            rateSliderWithButtons(
+                label: "은퇴 후 수익률",
+                value: $editingPostReturnRate,
+                minValue: 0.5,
+                maxValue: 30.0,
+                step: 0.5,
+                color: Color.Exit.caution
+            )
+            
+            // 시뮬레이션 정보
+            VStack(spacing: ExitSpacing.sm) {
+                let preVolatility = SimulationViewModel.calculateVolatility(for: editingPreReturnRate)
+                let postVolatility = SimulationViewModel.calculateVolatility(for: editingPostReturnRate)
                 
-                // 은퇴 후 수익률
-                rateSliderWithButtons(
-                    label: "은퇴 후 수익률",
-                    value: $editingPostReturnRate,
-                    minValue: 0.5,
-                    maxValue: 30.0,
-                    step: 0.5,
-                    color: Color.Exit.caution
-                )
+                HStack {
+                    Text("은퇴 전 변동성")
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    Spacer()
+                    Text(String(format: "%.0f%%", preVolatility))
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.accent)
+                }
+                
+                HStack {
+                    Text("은퇴 후 변동성")
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    Spacer()
+                    Text(String(format: "%.0f%%", postVolatility))
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.caution)
+                }
+                
+                HStack(spacing: ExitSpacing.xs) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    
+                    Text("변동성은 목표 수익률 기반으로 자동 계산됩니다")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                    
+                    Spacer()
+                }
             }
             .padding(ExitSpacing.md)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+            .background(Color.Exit.secondaryCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
-        .padding(.horizontal, ExitSpacing.md)
+        .padding(ExitSpacing.lg)
+        .background(Color.Exit.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
     }
     
     // MARK: - Rate Slider with Buttons
@@ -261,12 +377,12 @@ struct SimulationSetupView: View {
         step: Double,
         color: Color
     ) -> some View {
-        VStack(spacing: ExitSpacing.xs) {
+        VStack(spacing: ExitSpacing.sm) {
             // 라벨 + 값 + 버튼
             HStack {
                 // 라벨
                 Text(label)
-                    .font(.Exit.caption)
+                    .font(.Exit.body)
                     .foregroundStyle(Color.Exit.secondaryText)
                 
                 Spacer()
@@ -275,7 +391,7 @@ struct SimulationSetupView: View {
                 HStack(spacing: ExitSpacing.sm) {
                     // - 버튼
                     rateButton(
-                        text: "−",
+                        icon: "minus",
                         enabled: value.wrappedValue > minValue,
                         color: color
                     ) {
@@ -284,14 +400,14 @@ struct SimulationSetupView: View {
                     
                     // 현재 값
                     Text(String(format: "%.1f%%", value.wrappedValue))
-                        .font(.Exit.caption)
+                        .font(.Exit.body)
                         .fontWeight(.bold)
                         .foregroundStyle(color)
-                        .frame(width: 52)
+                        .frame(width: 60)
                     
                     // + 버튼
                     rateButton(
-                        text: "+",
+                        icon: "plus",
                         enabled: value.wrappedValue < maxValue,
                         color: color
                     ) {
@@ -309,7 +425,7 @@ struct SimulationSetupView: View {
     // MARK: - Rate Button
     
     private func rateButton(
-        text: String,
+        icon: String,
         enabled: Bool,
         color: Color,
         action: @escaping () -> Void
@@ -318,12 +434,10 @@ struct SimulationSetupView: View {
             HapticService.shared.soft()
             action()
         } label: {
-            Text(text)
-                .font(.Exit.body)
-                .fontWeight(.bold)
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(enabled ? color : Color.Exit.tertiaryText)
-                .padding(.horizontal, ExitSpacing.md)
-                .padding(.vertical, ExitSpacing.xs)
+                .frame(width: 36, height: 36)
                 .background(
                     RoundedRectangle(cornerRadius: ExitRadius.sm)
                         .fill(enabled ? color.opacity(0.15) : Color.Exit.divider.opacity(0.5))
@@ -333,48 +447,55 @@ struct SimulationSetupView: View {
         .disabled(!enabled)
     }
     
-    // MARK: - Spending Ratio Section
+    // MARK: - Step 3: Spending Ratio Content
     
-    private var spendingRatioSection: some View {
+    private var spendingRatioContent: some View {
         let actualSpending = editingMonthlyIncome * spendingRatio
         
-        return VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                sectionHeader("생활비 사용 비율")
-                
-                Text("은퇴 후 희망 월수입 중 실제로 사용할 비율을 설정합니다")
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
-                    .padding(.horizontal, ExitSpacing.sm)
-            }
-            
+        return VStack(spacing: ExitSpacing.lg) {
+            // 생활비 비율 선택 버튼들
             VStack(spacing: ExitSpacing.sm) {
-                // 생활비 비율 선택 버튼들
                 HStack(spacing: ExitSpacing.sm) {
                     spendingRatioOption(0.5, label: "50%")
                     spendingRatioOption(0.7, label: "70%")
+                }
+                HStack(spacing: ExitSpacing.sm) {
                     spendingRatioOption(0.85, label: "85%")
                     spendingRatioOption(1.0, label: "100%")
                 }
-                
-                // 현재 설정 예시
+            }
+            
+            // 현재 설정 예시
+            VStack(spacing: ExitSpacing.sm) {
                 HStack(spacing: ExitSpacing.sm) {
                     Image(systemName: "info.circle")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.Exit.secondaryText)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.Exit.accent)
                     
-                    Text("월 \(ExitNumberFormatter.formatToManWon(editingMonthlyIncome)) × \(String(format: "%.0f", spendingRatio * 100))% = \(ExitNumberFormatter.formatToManWon(actualSpending)) 사용")
-                        .font(.Exit.caption)
+                    Text("예상 월 생활비")
+                        .font(.Exit.body)
                         .foregroundStyle(Color.Exit.secondaryText)
                     
                     Spacer()
+                    
+                    Text(ExitNumberFormatter.formatToManWon(actualSpending))
+                        .font(.Exit.body)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.Exit.positive)
                 }
+                
+                Text("월 \(ExitNumberFormatter.formatToManWon(editingMonthlyIncome)) × \(String(format: "%.0f", spendingRatio * 100))%")
+                    .font(.Exit.caption)
+                    .foregroundStyle(Color.Exit.tertiaryText)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .padding(ExitSpacing.md)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+            .background(Color.Exit.secondaryCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
-        .padding(.horizontal, ExitSpacing.md)
+        .padding(ExitSpacing.lg)
+        .background(Color.Exit.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
     }
     
     private func spendingRatioOption(_ value: Double, label: String) -> some View {
@@ -387,168 +508,139 @@ struct SimulationSetupView: View {
             }
         } label: {
             Text(label)
-                .font(.Exit.caption)
-                .fontWeight(isSelected ? .semibold : .regular)
+                .font(.Exit.title3)
+                .fontWeight(isSelected ? .bold : .medium)
                 .foregroundStyle(isSelected ? .white : Color.Exit.secondaryText)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, ExitSpacing.sm)
+                .frame(height: 60)
                 .background(
                     isSelected
                         ? AnyShapeStyle(Color.Exit.positive)
                         : AnyShapeStyle(Color.Exit.background)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
                 .overlay(
-                    RoundedRectangle(cornerRadius: ExitRadius.sm)
+                    RoundedRectangle(cornerRadius: ExitRadius.md)
                         .stroke(isSelected ? Color.clear : Color.Exit.divider, lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)
     }
     
-    // MARK: - Failure Threshold Section
+    // MARK: - Step 4: Failure Threshold Content
     
-    private var failureThresholdSection: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                sectionHeader("실패 조건")
-                
-                Text("목표 기간의 몇 %를 초과하면 실패로 판정할지 설정합니다")
-                    .font(.Exit.caption2)
-                    .foregroundStyle(Color.Exit.tertiaryText)
-                    .padding(.horizontal, ExitSpacing.sm)
+    private var failureThresholdContent: some View {
+        VStack(spacing: ExitSpacing.lg) {
+            // 실패 조건 선택 버튼들
+            VStack(spacing: ExitSpacing.sm) {
+                HStack(spacing: ExitSpacing.sm) {
+                    failureOption(1.0, label: "100%", description: "엄격")
+                    failureOption(1.1, label: "110%", description: "기본")
+                }
+                HStack(spacing: ExitSpacing.sm) {
+                    failureOption(1.3, label: "130%", description: "여유")
+                    failureOption(1.5, label: "150%", description: "느긋")
+                }
             }
             
-            VStack(spacing: ExitSpacing.sm) {
-                // 실패 조건 선택 버튼들
-                HStack(spacing: ExitSpacing.sm) {
-                    failureOption(1.0, label: "100%")
-                    failureOption(1.1, label: "110%")
-                    failureOption(1.3, label: "130%")
-                    failureOption(1.5, label: "150%")
-                }
-                
-                // 현재 설정 예시
-                let originalMonths = calculateOriginalMonths()
-                let failureMonths = Int(Double(originalMonths) * failureThreshold)
-                
-                if originalMonths > 0 {
-                    HStack(spacing: ExitSpacing.sm) {
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color.Exit.secondaryText)
-                        
-                        Text("목표 \(formatPeriod(originalMonths)) → \(formatPeriod(failureMonths)) 초과 시 실패")
+            // 현재 설정 예시
+            let originalMonths = calculateOriginalMonths()
+            let failureMonths = Int(Double(originalMonths) * failureThreshold)
+            
+            if originalMonths > 0 {
+                VStack(spacing: ExitSpacing.sm) {
+                    HStack {
+                        Text("목표 달성 기간")
                             .font(.Exit.caption)
-                            .foregroundStyle(Color.Exit.secondaryText)
-                        
+                            .foregroundStyle(Color.Exit.tertiaryText)
                         Spacer()
+                        Text(formatPeriod(originalMonths))
+                            .font(.Exit.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.Exit.accent)
+                    }
+                    
+                    HStack {
+                        Text("실패 판정 기준")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.tertiaryText)
+                        Spacer()
+                        Text("\(formatPeriod(failureMonths)) 초과")
+                            .font(.Exit.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.Exit.warning)
                     }
                 }
+                .padding(ExitSpacing.md)
+                .background(Color.Exit.secondaryCardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             }
-            .padding(ExitSpacing.md)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
         }
-        .padding(.horizontal, ExitSpacing.md)
+        .padding(ExitSpacing.lg)
+        .background(Color.Exit.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
     }
     
-    private func failureOption(_ value: Double, label: String) -> some View {
+    private func failureOption(_ value: Double, label: String, description: String) -> some View {
         let isSelected = abs(failureThreshold - value) < 0.01
         
         return Button {
+            HapticService.shared.soft()
             withAnimation(.easeInOut(duration: 0.2)) {
                 failureThreshold = value
             }
         } label: {
-            Text(label)
-                .font(.Exit.caption)
-                .fontWeight(isSelected ? .semibold : .regular)
-                .foregroundStyle(isSelected ? .white : Color.Exit.secondaryText)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, ExitSpacing.sm)
-                .background(
-                    isSelected
-                        ? AnyShapeStyle(Color.Exit.accent)
-                        : AnyShapeStyle(Color.Exit.background)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.sm))
-                .overlay(
-                    RoundedRectangle(cornerRadius: ExitRadius.sm)
-                        .stroke(isSelected ? Color.clear : Color.Exit.divider, lineWidth: 1)
-                )
+            VStack(spacing: ExitSpacing.xs) {
+                Text(label)
+                    .font(.Exit.title3)
+                    .fontWeight(isSelected ? .bold : .medium)
+                    .foregroundStyle(isSelected ? .white : Color.Exit.primaryText)
+                
+                Text(description)
+                    .font(.Exit.caption)
+                    .foregroundStyle(isSelected ? .white.opacity(0.8) : Color.Exit.tertiaryText)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 70)
+            .background(
+                isSelected
+                    ? AnyShapeStyle(Color.Exit.accent)
+                    : AnyShapeStyle(Color.Exit.background)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: ExitRadius.md)
+                    .stroke(isSelected ? Color.clear : Color.Exit.divider, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }
     
-    // MARK: - Simulation Summary
+    // MARK: - Navigation Buttons
     
-    private var simulationSummary: some View {
-        VStack(alignment: .leading, spacing: ExitSpacing.md) {
-            sectionHeader("시뮬레이션 정보")
-            
-            let targetAsset = RetirementCalculator.calculateTargetAssets(
-                desiredMonthlyIncome: editingMonthlyIncome,
-                postRetirementReturnRate: editingPostReturnRate
-            )
-            let preVolatility = SimulationViewModel.calculateVolatility(for: editingPreReturnRate)
-            let postVolatility = SimulationViewModel.calculateVolatility(for: editingPostReturnRate)
-            
-            VStack(spacing: ExitSpacing.sm) {
-                summaryRow("목표 자산", ExitNumberFormatter.formatToEokManWon(targetAsset), valueColor: Color.Exit.accent)
-                summaryRow("은퇴 전 변동성", String(format: "%.0f%%", preVolatility))
-                summaryRow("은퇴 후 변동성", String(format: "%.0f%%", postVolatility))
-                
-                Divider()
-                    .background(Color.Exit.divider)
-                
-                HStack(spacing: ExitSpacing.xs) {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                    
-                    Text("변동성은 목표 수익률 기반으로 자동 계산됩니다")
-                        .font(.Exit.caption2)
-                        .foregroundStyle(Color.Exit.tertiaryText)
-                }
+    private var navigationButtons: some View {
+        HStack(spacing: ExitSpacing.md) {
+            if currentStep == .failureThreshold {
+                // 마지막 스텝: 시뮬레이션 시작 버튼
+                ExitCTAButton(
+                    title: "시뮬레이션 시작",
+                    icon: "play.fill",
+                    action: applySettingsAndStart
+                )
+            } else {
+                ExitButton(
+                    title: "다음",
+                    style: .primary,
+                    size: .large,
+                    action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            if let nextStep = SetupStep(rawValue: currentStep.rawValue + 1) {
+                                currentStep = nextStep
+                            }
+                        }
+                    }
+                )
             }
-            .padding(ExitSpacing.md)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
-        }
-        .padding(.horizontal, ExitSpacing.md)
-    }
-    
-    // MARK: - Start Button
-    
-    private var startButton: some View {
-        ExitCTAButton(
-            title: "시뮬레이션 시작",
-            icon: "play.fill",
-            action: applySettingsAndStart
-        )
-        .padding(.horizontal, ExitSpacing.md)
-        .padding(.bottom, ExitSpacing.md)
-    }
-    
-    // MARK: - Helper Views
-    
-    private func sectionHeader(_ text: String) -> some View {
-        Text(text)
-            .font(.Exit.caption)
-            .foregroundStyle(Color.Exit.secondaryText)
-            .padding(.horizontal, ExitSpacing.sm)
-    }
-    
-    private func summaryRow(_ label: String, _ value: String, valueColor: Color = Color.Exit.primaryText) -> some View {
-        HStack {
-            Text(label)
-                .font(.Exit.caption)
-                .foregroundStyle(Color.Exit.tertiaryText)
-            Spacer()
-            Text(value)
-                .font(.Exit.caption)
-                .foregroundStyle(valueColor)
         }
     }
     
@@ -576,21 +668,21 @@ struct SimulationSetupView: View {
             postRetirementReturnRate: editingPostReturnRate
         )
         
-        // 3. 실패 조건 저장
+        // 실패 조건 저장
         viewModel.updateFailureThreshold(failureThreshold)
         
-        // 4. 생활비 사용 비율 저장
+        // 생활비 사용 비율 저장
         viewModel.updateSpendingRatio(spendingRatio)
         
-        // 5. 변동성 자동 계산 (목표 수익률 기반)
+        // 변동성 자동 계산 (목표 수익률 기반)
         let autoVolatility = SimulationViewModel.calculateVolatility(for: editingPreReturnRate)
         viewModel.updateVolatility(autoVolatility)
         
-        // 6. 데이터 로드 및 시뮬레이션 시작
+        // 데이터 로드 및 시뮬레이션 시작
         viewModel.loadData()
         viewModel.refreshSimulation()
         
-        // 7. 화면 전환
+        // 화면 전환
         onStart()
     }
     

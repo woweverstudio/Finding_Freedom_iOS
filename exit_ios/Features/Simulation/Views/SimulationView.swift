@@ -6,18 +6,26 @@
 //
 
 import SwiftUI
+import SwiftData
+import StoreKit
 
 /// 시뮬레이션 탭 메인 뷰
-/// 구매 완료된 사용자만 이 뷰에 진입 (미구매 시 MainTabView에서 풀팝업으로 처리)
+/// 구매자/체험완료자: 메인 뷰부터 시작
+/// 미구매+체험안함: MainTabView에서 프로모션 시트로 처리
 struct SimulationView: View {
     @Environment(\.appState) private var appState
     @Environment(\.storeService) private var storeService
+    @Environment(\.modelContext) private var modelContext
     @Bindable var viewModel: SimulationViewModel
-    @State private var currentScreen: SimulationScreen = .setup
+    @State private var currentScreen: SimulationScreen = .main
     @State private var scrollOffset: CGFloat = 0
+    
+    /// 체험 모드 여부 (프로모션에서 체험 시작으로 진입한 경우)
+    var isTrialMode: Bool = false
     
     /// 화면 상태
     enum SimulationScreen {
+        case main       // 메인 뷰 (Entry Point)
         case setup      // 설정 화면
         case results    // 결과 화면
     }
@@ -35,17 +43,30 @@ struct SimulationView: View {
             
             // 화면 상태에 따른 뷰 전환
             switch currentScreen {
+            case .main:
+                SimulationMainView(
+                    hasResult: viewModel.displayResult != nil,
+                    isTrialMode: isTrialMode,
+                    onStart: {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            currentScreen = .setup
+                        }
+                    },
+                    onViewResult: {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            currentScreen = .results
+                        }
+                    }
+                )
+                .transition(.opacity)
+                
             case .setup:
                 SimulationSetupView(
                     viewModel: viewModel,
                     onBack: {
-                        // 결과가 있으면 결과로, 없으면 홈으로
-                        if viewModel.displayResult != nil {
-                            withAnimation(.easeInOut(duration: 0.25)) {
-                                currentScreen = .results
-                            }
-                        } else {
-                            appState.selectedTab = .dashboard
+                        // 메인 뷰로 돌아감
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            currentScreen = .main
                         }
                     },
                     onStart: {
@@ -59,6 +80,9 @@ struct SimulationView: View {
             case .results:
                 resultsScreenView
             }
+        }
+        .onAppear {
+            // 메인 뷰부터 시작 (체험 모드여도 메인 뷰에서 시작 버튼 표시)
         }
         .onChange(of: appState.planSettingsChangeTrigger) { _, _ in
             // Plan 설정이 변경되면 결과 화면에서 setup 화면으로 리셋
@@ -217,6 +241,12 @@ struct SimulationView: View {
         } action: { _, newValue in
             scrollOffset = newValue
         }
+        .onAppear {
+            // 시뮬레이션 결과가 표시되면 체험 완료로 기록
+            if !storeService.hasMontecarloSimulation {
+                markTrialAsUsed()
+            }
+        }
     }
     
     // MARK: - Retirement Ready Header
@@ -274,26 +304,26 @@ struct SimulationView: View {
     // MARK: - Action Buttons
     
     private var actionButtons: some View {
-        // 다시 시뮬레이션 버튼만 표시
-        Button {
-            withAnimation(.easeInOut(duration: 0.25)) {
-                currentScreen = .setup
+        // 항상 확인 버튼만 표시 (메인 뷰로 이동)
+        ExitCTAButton(
+            title: "확인",
+            icon: "checkmark",
+            action: {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    currentScreen = .main
+                }
             }
-        } label: {
-            HStack(spacing: ExitSpacing.sm) {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 16, weight: .semibold))
-                Text("다시 시뮬레이션")
-                    .font(.Exit.body)
-                    .fontWeight(.semibold)
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(Color.Exit.accent)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
-        }
-        .buttonStyle(.plain)
+        )
         .padding(.horizontal, ExitSpacing.md)
+    }
+    
+    // MARK: - Trial Completion
+    
+    private func markTrialAsUsed() {
+        let descriptor = FetchDescriptor<UserProfile>()
+        if let profile = try? modelContext.fetch(descriptor).first {
+            profile.hasUsedSimulationTrial = true
+            try? modelContext.save()
+        }
     }
 }

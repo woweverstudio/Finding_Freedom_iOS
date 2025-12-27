@@ -7,11 +7,10 @@
 
 import SwiftUI
 
-/// 시뮬레이션 구매 풀팝업
+/// 시뮬레이션 프로모션 풀팝업 (체험 안함 + 미구매 사용자용)
 struct SimulationPurchaseSheet: View {
-    @Environment(\.storeService) private var storeService
-    let viewModel: SimulationViewModel
     let onClose: () -> Void
+    let onStartTrial: () -> Void
     
     var body: some View {
         NavigationStack {
@@ -19,13 +18,7 @@ struct SimulationPurchaseSheet: View {
                 Color.Exit.background.ignoresSafeArea()
                 
                 SimulationPromotionView(
-                    userProfile: viewModel.userProfile,
-                    currentAssetAmount: viewModel.currentAssetAmount,
-                    onStart: {
-                        // 구매 후 storeService.hasMontecarloSimulation이 true가 되면
-                        // MainTabView의 onChange에서 자동으로 처리됨
-                    },
-                    isPurchased: storeService.hasMontecarloSimulation
+                    onStartTrial: onStartTrial
                 )
             }
             .navigationTitle("몬테카를로 시뮬레이션")
@@ -47,8 +40,8 @@ struct SimulationPurchaseSheet: View {
 
 #Preview {
     SimulationPurchaseSheet(
-        viewModel: SimulationViewModel(),
-        onClose: {}
+        onClose: {},
+        onStartTrial: {}
     )
 }
 
