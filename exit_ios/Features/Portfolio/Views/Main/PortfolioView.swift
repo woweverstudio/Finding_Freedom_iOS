@@ -10,6 +10,7 @@ import SwiftUI
 import SwiftData
 
 /// 포트폴리오 탭 메인 뷰
+/// 구매 완료된 사용자만 이 뷰에 진입 (미구매 시 MainTabView에서 풀팝업으로 처리)
 struct PortfolioView: View {
     @State var viewModel: PortfolioViewModel
     @Environment(\.modelContext) private var modelContext
@@ -22,7 +23,11 @@ struct PortfolioView: View {
             
             switch viewModel.viewState {
             case .empty:
-                emptyScreenView
+                // 구매된 상태에서 empty인 경우 바로 editing으로 전환
+                editingScreenView
+                    .onAppear {
+                        viewModel.startEditing()
+                    }
                 
             case .editing:
                 editingScreenView
@@ -42,31 +47,6 @@ struct PortfolioView: View {
             // configure에서 loadSavedHoldings가 호출되고, 그 안에서 loadInitialData가 호출됨
             // loadSavedHoldings가 완료되면 holdings가 있으면 자동으로 editing 상태로 변경됨
         }
-        .onChange(of: storeService.hasPortfolioAnalysis) { _, hasPurchased in
-            // 구입 완료 시 편집 화면으로 이동 (SimulationView와 동일한 로직)
-            if hasPurchased && viewModel.viewState == .empty {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    viewModel.startEditing()
-                }
-            }
-        }
-    }
-    
-    // MARK: - Empty Screen
-    
-    private var emptyScreenView: some View {
-        PortfolioEmptyView(
-            onStart: {
-                // 이미 구입한 경우 편집 화면으로
-                if storeService.hasPortfolioAnalysis {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        viewModel.startEditing()
-                    }
-                }
-                // 미구입인 경우 EmptyView에서 구입 처리
-            },
-            isPurchased: storeService.hasPortfolioAnalysis
-        )
     }
     
     // MARK: - Editing Screen
@@ -75,13 +55,13 @@ struct PortfolioView: View {
         PortfolioEditView(
             viewModel: viewModel,
             onBack: {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    // 분석 결과가 있으면 analyzed로, 없으면 empty로 (SimulationView와 동일한 로직)
-                    if viewModel.analysisResult != nil {
+                // 분석 결과가 있으면 analyzed로, 없으면 홈으로
+                if viewModel.analysisResult != nil {
+                    withAnimation(.easeInOut(duration: 0.25)) {
                         viewModel.backToAnalyzed()
-                    } else {
-                        viewModel.backToEmpty()
                     }
+                } else {
+                    appState.selectedTab = .dashboard
                 }
             },
             isPurchased: storeService.hasPortfolioAnalysis

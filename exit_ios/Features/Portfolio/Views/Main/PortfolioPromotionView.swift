@@ -1,5 +1,5 @@
 //
-//  PortfolioEmptyView.swift
+//  PortfolioPromotionView.swift
 //  exit_ios
 //
 //  Created by Exit on 2025.
@@ -12,7 +12,7 @@ import StoreKit
 /// 포트폴리오 분석 소개 및 구매 유도 화면
 /// - 유료 기능 소개
 /// - 구매자도 다시 볼 수 있는 팝업으로 사용 가능
-struct PortfolioEmptyView: View {
+struct PortfolioPromotionView: View {
     @Environment(\.appState) private var appState
     @Environment(\.storeService) private var storeService
     
@@ -554,9 +554,10 @@ struct PortfolioEmptyView: View {
     ZStack {
         Color.Exit.background.ignoresSafeArea()
         
-        PortfolioEmptyView(
+        PortfolioPromotionView(
             onStart: {},
             isPurchased: false
         )
     }
 }
+

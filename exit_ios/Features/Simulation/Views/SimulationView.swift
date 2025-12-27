@@ -8,16 +8,16 @@
 import SwiftUI
 
 /// 시뮬레이션 탭 메인 뷰
+/// 구매 완료된 사용자만 이 뷰에 진입 (미구매 시 MainTabView에서 풀팝업으로 처리)
 struct SimulationView: View {
     @Environment(\.appState) private var appState
     @Environment(\.storeService) private var storeService
     @Bindable var viewModel: SimulationViewModel
-    @State private var currentScreen: SimulationScreen = .empty
+    @State private var currentScreen: SimulationScreen = .setup
     @State private var scrollOffset: CGFloat = 0
     
     /// 화면 상태
     enum SimulationScreen {
-        case empty      // 미구입 또는 초기 화면
         case setup      // 설정 화면
         case results    // 결과 화면
     }
@@ -35,16 +35,17 @@ struct SimulationView: View {
             
             // 화면 상태에 따른 뷰 전환
             switch currentScreen {
-            case .empty:
-                emptyScreenView
-                
             case .setup:
                 SimulationSetupView(
                     viewModel: viewModel,
                     onBack: {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            // 결과가 있으면 결과로, 없으면 empty로
-                            currentScreen = viewModel.displayResult != nil ? .results : .empty
+                        // 결과가 있으면 결과로, 없으면 홈으로
+                        if viewModel.displayResult != nil {
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                currentScreen = .results
+                            }
+                        } else {
+                            appState.selectedTab = .dashboard
                         }
                     },
                     onStart: {
@@ -59,14 +60,6 @@ struct SimulationView: View {
                 resultsScreenView
             }
         }
-        .onChange(of: storeService.hasMontecarloSimulation) { _, hasPurchased in
-            // 구입 완료 시 설정 화면으로 이동
-            if hasPurchased && currentScreen == .empty {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    currentScreen = .setup
-                }
-            }
-        }
         .onChange(of: appState.planSettingsChangeTrigger) { _, _ in
             // Plan 설정이 변경되면 결과 화면에서 setup 화면으로 리셋
             // 단, 시뮬레이션 결과가 있고 시뮬레이션 중이 아닐 때만 리셋
@@ -78,25 +71,6 @@ struct SimulationView: View {
                 }
             }
         }
-    }
-    
-    // MARK: - Empty Screen
-    
-    private var emptyScreenView: some View {
-        SimulationEmptyView(
-            userProfile: viewModel.userProfile,
-            currentAssetAmount: viewModel.currentAssetAmount,
-            onStart: {
-                // 이미 구입한 경우 설정 화면으로
-                if storeService.hasMontecarloSimulation {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        currentScreen = .setup
-                    }
-                }
-                // 미구입인 경우 EmptyView에서 구입 처리
-            },
-            isPurchased: storeService.hasMontecarloSimulation
-        )
     }
     
     // MARK: - Results Screen
