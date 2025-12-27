@@ -86,21 +86,18 @@ struct WelcomeView: View {
     
     private var titleSection: some View {
         VStack(spacing: ExitSpacing.lg) {
-            // Exit 로고 텍스트
+            // Exit 로고 이미지
             Image("logo")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 100, height: 100)
+                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.xl))
                 .shadow(color: Color.Exit.accent.opacity(0.5), radius: 20, x: 0, y: 10)
             
             Text("자유를 찾아서")
                 .font(.Exit.title)
                 .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color.Exit.accent, Color.Exit.accent.opacity(0.7)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                    LinearGradient.exitAccent
                 )
                 .shadow(color: Color.Exit.accent.opacity(0.5), radius: 20, x: 0, y: 10)
             
@@ -113,38 +110,46 @@ struct WelcomeView: View {
     // MARK: - Messages Section
     
     private var messagesSection: some View {
-        VStack(spacing: ExitSpacing.xl) {
-            // 메시지 1
-            Text("회사생활 지긋지긋 하시죠?")
-                .font(.Exit.title3)
-                .foregroundStyle(Color.Exit.primaryText)
-            
-            // 메시지 2
-            VStack(spacing: ExitSpacing.xs) {
-                Text("꿈만같던 은퇴,")
-                    .font(.Exit.body)
-                    .foregroundStyle(Color.Exit.secondaryText)
+        ExitCard(style: .filled, padding: ExitSpacing.lg, radius: ExitRadius.xl) {
+            VStack(spacing: ExitSpacing.lg) {
+                // 메시지 1
+                Text("회사생활 지긋지긋 하시죠?")
+                    .font(.Exit.title3)
+                    .foregroundStyle(Color.Exit.primaryText)
                 
-                HStack(spacing: ExitSpacing.xs) {
-                    Text("자유를 찾아서")
-                        .font(.Exit.body)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.Exit.accent)
-                    
-                    Text("와 함께라면 가능합니다.")
+                ExitDivider()
+                
+                // 메시지 2
+                VStack(spacing: ExitSpacing.xs) {
+                    Text("꿈만같던 은퇴,")
                         .font(.Exit.body)
                         .foregroundStyle(Color.Exit.secondaryText)
+                    
+                    HStack(spacing: ExitSpacing.xs) {
+                        Text("자유를 찾아서")
+                            .font(.Exit.body)
+                            .fontWeight(.bold)
+                            .foregroundStyle(Color.Exit.accent)
+                        
+                        Text("와 함께라면 가능합니다.")
+                            .font(.Exit.body)
+                            .foregroundStyle(Color.Exit.secondaryText)
+                    }
                 }
             }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
         }
-        .multilineTextAlignment(.center)
     }
     
     // MARK: - Start Button
     
     private var startButton: some View {
-        ExitCTAButton(
+        ExitButton(
             title: "회사 탈출 계획 시작하기",
+            icon: "arrow.right",
+            style: .primary,
+            size: .large,
             action: onStart
         )
         .exitButtonShadow()
@@ -160,5 +165,3 @@ struct WelcomeView: View {
     }
     .preferredColorScheme(.dark)
 }
-
-

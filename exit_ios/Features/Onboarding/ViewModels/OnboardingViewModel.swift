@@ -9,20 +9,70 @@ import Foundation
 import SwiftData
 import Observation
 
+/// 투자 상태
+enum InvestmentStatus: Int, CaseIterable {
+    case none = 0           // 투자안함 - 0%
+    case savings = 1        // 예적금 - 2%
+    case stockBeginner = 2  // 주식을 하지만 잘 모름 - 5%
+    case ownPortfolio = 3   // 나만의 포트폴리오 - 10%
+    
+    var returnRate: Double {
+        switch self {
+        case .none:
+            return 0.0
+        case .savings:
+            return 2.0
+        case .stockBeginner:
+            return 5.0
+        case .ownPortfolio:
+            return 10.0
+        }
+    }
+    
+    var title: String {
+        switch self {
+        case .none:
+            return "투자 안 함"
+        case .savings:
+            return "예적금"
+        case .stockBeginner:
+            return "주식을 하지만 잘 모름"
+        case .ownPortfolio:
+            return "나만의 주식 포트폴리오가 있음"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .none:
+            return "현금으로만 보유"
+        case .savings:
+            return "은행 예금, 적금 위주"
+        case .stockBeginner:
+            return "주식 투자 경험은 있지만 확신이 없음"
+        case .ownPortfolio:
+            return "나만의 투자 전략이 있음"
+        }
+    }
+}
+
 /// 온보딩 단계
 enum OnboardingStep: Int, CaseIterable {
     case desiredIncome = 0      // 희망 월 수입
     case currentAssets = 1      // 현재 순자산
     case monthlyInvestment = 2  // 월 투자 금액
+    case investmentStatus = 3   // 현재 투자 상태
     
     var title: String {
         switch self {
         case .desiredIncome:
-            return "은퇴 후 희망 월 현금흐름"
+            return "은퇴 후 희망 수입"
         case .currentAssets:
             return "현재 순자산"
         case .monthlyInvestment:
             return "월 평균 저축·투자 금액"
+        case .investmentStatus:
+            return "현재 투자 상태"
         }
     }
     
@@ -33,7 +83,9 @@ enum OnboardingStep: Int, CaseIterable {
         case .currentAssets:
             return "투자 가능한 자산만 입력해주세요"
         case .monthlyInvestment:
-            return "월급 등 근로 소득만 포함 (배당/이자 재투자 제외)"
+            return "월급 등 근로 소득만 포함"
+        case .investmentStatus:
+            return "현재 투자 방식을 선택해주세요"
         }
     }
     
@@ -44,7 +96,9 @@ enum OnboardingStep: Int, CaseIterable {
         case .currentAssets:
             return 0
         case .monthlyInvestment:
-            return 500_000   // 50만원
+            return 0
+        case .investmentStatus:
+            return 0
         }
     }
 }
@@ -66,7 +120,10 @@ final class OnboardingViewModel {
     var currentNetAssets: Double = 0
     
     /// 월 투자 금액 (원 단위)
-    var monthlyInvestment: Double = 500_000
+    var monthlyInvestment: Double = 0
+    
+    /// 선택된 투자 상태
+    var selectedInvestmentStatus: InvestmentStatus? = nil
     
     /// 온보딩 완료 여부
     var isCompleted: Bool = false
@@ -81,6 +138,8 @@ final class OnboardingViewModel {
                 return currentNetAssets
             case .monthlyInvestment:
                 return monthlyInvestment
+            case .investmentStatus:
+                return 0
             }
         }
         set {
@@ -91,6 +150,8 @@ final class OnboardingViewModel {
                 currentNetAssets = newValue
             case .monthlyInvestment:
                 monthlyInvestment = newValue
+            case .investmentStatus:
+                break
             }
         }
     }
@@ -102,7 +163,7 @@ final class OnboardingViewModel {
     
     /// 숫자 키보드 표시 여부
     var showsNumberKeyboard: Bool {
-        true
+        currentStep != .investmentStatus
     }
     
     // MARK: - Computed
@@ -116,12 +177,14 @@ final class OnboardingViewModel {
             return true  // 0원도 허용
         case .monthlyInvestment:
             return monthlyInvestment >= 0
+        case .investmentStatus:
+            return selectedInvestmentStatus != nil
         }
     }
     
     /// 마지막 단계 여부
     var isLastStep: Bool {
-        currentStep == .monthlyInvestment
+        currentStep == .investmentStatus
     }
     
     /// 진행률 (0~1)
@@ -130,6 +193,13 @@ final class OnboardingViewModel {
     }
     
     // MARK: - Actions
+    
+    /// 투자 상태 선택
+    func selectInvestmentStatus(_ status: InvestmentStatus) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            selectedInvestmentStatus = status
+        }
+    }
     
     /// 다음 단계로 이동
     func goToNextStep() {
@@ -153,11 +223,15 @@ final class OnboardingViewModel {
     
     /// 온보딩 완료 및 데이터 저장
     func completeOnboarding(context: ModelContext) {
+        // 선택된 투자 상태에 따른 수익률 설정
+        let returnRate = selectedInvestmentStatus?.returnRate ?? 6.5
+        
         // UserProfile 저장
         let profile = UserProfile(
             desiredMonthlyIncome: desiredMonthlyIncome,
             currentNetAssets: currentNetAssets,
-            monthlyInvestment: monthlyInvestment
+            monthlyInvestment: monthlyInvestment,
+            preRetirementReturnRate: returnRate
         )
         context.insert(profile)
         
@@ -170,7 +244,11 @@ final class OnboardingViewModel {
     
     /// 값 초기화 (현재 단계)
     func resetCurrentValue() {
-        currentInputValue = currentStep.defaultValue
+        if currentStep == .investmentStatus {
+            selectedInvestmentStatus = nil
+        } else {
+            currentInputValue = currentStep.defaultValue
+        }
     }
     
     // MARK: - Number Input

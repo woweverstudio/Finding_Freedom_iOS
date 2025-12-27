@@ -82,7 +82,11 @@ struct OnboardingView: View {
             .padding(.horizontal, ExitSpacing.lg)
             
             // 입력 영역
-            amountDisplay(for: step)
+            if step == .investmentStatus {
+                investmentStatusSelection
+            } else {
+                amountDisplay(for: step)
+            }
             
             Spacer()
             
@@ -107,6 +111,8 @@ struct OnboardingView: View {
                 return viewModel.currentNetAssets
             case .monthlyInvestment:
                 return viewModel.monthlyInvestment
+            case .investmentStatus:
+                return 0
             }
         }()
         
@@ -123,36 +129,113 @@ struct OnboardingView: View {
         }
     }
     
+    // MARK: - Investment Status Selection
+    
+    private var investmentStatusSelection: some View {
+        ScrollView {
+            VStack(spacing: ExitSpacing.md) {
+                ForEach(InvestmentStatus.allCases, id: \.self) { status in
+                    InvestmentStatusCard(
+                        status: status,
+                        isSelected: viewModel.selectedInvestmentStatus == status,
+                        action: {
+                            viewModel.selectInvestmentStatus(status)
+                        }
+                    )
+                }
+            }
+            .padding(.horizontal, ExitSpacing.lg)
+        }
+        .scrollIndicators(.hidden)
+    }
+    
     // MARK: - Bottom Buttons
     
     private var bottomButton: some View {
         HStack(spacing: ExitSpacing.md) {
             // 이전 버튼 (1스텝에서는 숨김)
             if viewModel.currentStep.rawValue > 0 {
-                Button {
-                    viewModel.goToPreviousStep()
-                } label: {
-                    Text("이전")
-                        .exitSecondaryButton()
-                }
+                ExitButton(
+                    title: "이전",
+                    style: .secondary,
+                    size: .large,
+                    action: {
+                        viewModel.goToPreviousStep()
+                    }
+                )
             }
             
             // 다음/완료 버튼
-            Button {
-                if viewModel.isLastStep {
-                    appState.resetToHomeTab() // 탭을 홈으로 초기화
-                    viewModel.completeOnboarding(context: modelContext)
-                } else {
-                    viewModel.goToNextStep()
+            ExitButton(
+                title: viewModel.isLastStep ? "시작하기" : "다음",
+                style: .primary,
+                size: .large,
+                isEnabled: viewModel.canProceed,
+                action: {
+                    if viewModel.isLastStep {
+                        appState.resetToHomeTab() // 탭을 홈으로 초기화
+                        viewModel.completeOnboarding(context: modelContext)
+                    } else {
+                        viewModel.goToNextStep()
+                    }
                 }
-            } label: {
-                Text(viewModel.isLastStep ? "시작하기" : "다음")
-                    .exitPrimaryButton(isEnabled: viewModel.canProceed)
-            }
-            .disabled(!viewModel.canProceed)
+            )
         }
         .padding(.horizontal, ExitSpacing.md)
         .padding(.bottom, ExitSpacing.xl)
+    }
+}
+
+// MARK: - Investment Status Card
+
+private struct InvestmentStatusCard: View {
+    let status: InvestmentStatus
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: ExitSpacing.md) {
+                // 텍스트
+                VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                    Text(status.title)
+                        .font(.Exit.body)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.Exit.primaryText)
+                    
+                    Text(status.description)
+                        .font(.Exit.caption)
+                        .foregroundStyle(Color.Exit.secondaryText)
+                }
+                
+                Spacer()
+                
+                // 수익률 표시
+                VStack(alignment: .trailing, spacing: ExitSpacing.xs) {
+                    Text("연 \(String(format: "%.0f", status.returnRate))%")
+                        .font(.Exit.body)
+                        .fontWeight(.bold)
+                        .foregroundStyle(isSelected ? Color.Exit.accent : Color.Exit.secondaryText)
+                    
+                    Text("기대 수익률")
+                        .font(.Exit.caption2)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                }
+                
+                // 선택 표시
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 24))
+                    .foregroundStyle(isSelected ? Color.Exit.accent : Color.Exit.divider)
+            }
+            .padding(ExitSpacing.md)
+            .background(Color.Exit.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.lg))
+            .overlay(
+                RoundedRectangle(cornerRadius: ExitRadius.lg)
+                    .stroke(isSelected ? Color.Exit.accent : Color.Exit.divider, lineWidth: isSelected ? 2 : 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
