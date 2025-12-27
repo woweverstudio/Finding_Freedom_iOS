@@ -60,13 +60,31 @@ struct MenuView: View {
         .alert("데이터 삭제", isPresented: $viewModel.showDeleteConfirm) {
             Button("취소", role: .cancel) { }
             Button("삭제", role: .destructive) {
-                appState.resetToHomeTab() // 탭을 홈으로 초기화
+                appState.resetToHomeTab()
                 viewModel.deleteAllData()
                 shouldNavigateToWelcome = true
             }
         } message: {
             Text("모든 입금 기록, 자산 정보, 시나리오가 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.")
         }
+    }
+    
+    // MARK: - Section Header
+    
+    private func sectionHeader(title: String, trailing: AnyView? = nil) -> some View {
+        HStack {
+            Text(title)
+                .font(.Exit.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Exit.secondaryText)
+            
+            Spacer()
+            
+            if let trailing = trailing {
+                trailing
+            }
+        }
+        .padding(.leading, ExitSpacing.xs)
     }
     
     // MARK: - Announcement Section
@@ -78,42 +96,41 @@ struct MenuView: View {
             Button {
                 viewModel.showAnnouncementList = true
             } label: {
-                HStack {
-                    if let latestAnnouncement = viewModel.announcements.first {
-                        VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                            Text(latestAnnouncement.title)
-                                .font(.Exit.body)
-                                .fontWeight(latestAnnouncement.isRead ? .regular : .medium)
-                                .foregroundStyle(Color.Exit.primaryText)
-                                .lineLimit(1)
+                ExitCard(style: .filled, padding: ExitSpacing.md, radius: ExitRadius.md) {
+                    HStack {
+                        if let latestAnnouncement = viewModel.announcements.first {
+                            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                                Text(latestAnnouncement.title)
+                                    .font(.Exit.body)
+                                    .fontWeight(latestAnnouncement.isRead ? .regular : .medium)
+                                    .foregroundStyle(Color.Exit.primaryText)
+                                    .lineLimit(1)
+                                
+                                Text(latestAnnouncement.relativeTimeText)
+                                    .font(.Exit.caption)
+                                    .foregroundStyle(Color.Exit.tertiaryText)
+                            }
                             
-                            Text(latestAnnouncement.relativeTimeText)
-                                .font(.Exit.caption)
+                            Spacer()
+                            
+                            if !latestAnnouncement.isRead {
+                                Circle()
+                                    .fill(Color.Exit.accent)
+                                    .frame(width: 6, height: 6)
+                            }
+                        } else {
+                            Text("공지사항이 없습니다")
+                                .font(.Exit.body)
                                 .foregroundStyle(Color.Exit.tertiaryText)
+                            
+                            Spacer()
                         }
                         
-                        Spacer()
-                        
-                        if !latestAnnouncement.isRead {
-                            Circle()
-                                .fill(Color.Exit.accent)
-                                .frame(width: 6, height: 6)
-                        }
-                    } else {
-                        Text("공지사항이 없습니다")
-                            .font(.Exit.body)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(Color.Exit.tertiaryText)
-                        
-                        Spacer()
                     }
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color.Exit.tertiaryText)
                 }
-                .padding(ExitSpacing.md)
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             }
             .buttonStyle(.plain)
         }
@@ -123,44 +140,42 @@ struct MenuView: View {
     
     private var purchaseSection: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            HStack {
-                sectionHeader(title: "구매 항목")
-                
-                Spacer()
-                
-                Button {
-                    Task {
-                        await storeService.restorePurchases()
+            sectionHeader(
+                title: "구매 항목",
+                trailing: AnyView(
+                    Button {
+                        Task {
+                            await storeService.restorePurchases()
+                        }
+                    } label: {
+                        Text("구매 복원")
+                            .font(.Exit.caption)
+                            .foregroundStyle(Color.Exit.accent)
                     }
-                } label: {
-                    Text("구매 복원")
-                        .font(.Exit.caption)
-                        .foregroundStyle(Color.Exit.accent)
-                }
-                .buttonStyle(.plain)
-            }
+                    .buttonStyle(.plain)
+                )
+            )
             
-            VStack(spacing: 0) {
-                // 몬테카를로 시뮬레이션
-                purchaseRow(
-                    title: "몬테카를로 시뮬레이션",
-                    description: "은퇴 시뮬레이션 기능",
-                    isPurchased: storeService.hasMontecarloSimulation
-                )
-                
-                Divider()
-                    .background(Color.Exit.divider)
-                    .padding(.leading, ExitSpacing.md)
-                
-                // 포트폴리오 분석
-                purchaseRow(
-                    title: "포트폴리오 분석",
-                    description: "상세 포트폴리오 분석 기능",
-                    isPurchased: storeService.hasPortfolioAnalysis
-                )
+            ExitCard(style: .filled, padding: 0, radius: ExitRadius.md) {
+                VStack(spacing: 0) {
+                    // 몬테카를로 시뮬레이션
+                    purchaseRow(
+                        title: "몬테카를로 시뮬레이션",
+                        description: "은퇴 시뮬레이션 기능",
+                        isPurchased: storeService.hasMontecarloSimulation
+                    )
+                    
+                    ExitDivider()
+                        .padding(.leading, ExitSpacing.md)
+                    
+                    // 포트폴리오 분석
+                    purchaseRow(
+                        title: "포트폴리오 분석",
+                        description: "상세 포트폴리오 분석 기능",
+                        isPurchased: storeService.hasPortfolioAnalysis
+                    )
+                }
             }
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
     }
     
@@ -180,17 +195,9 @@ struct MenuView: View {
             
             // 구매 상태 표시
             if isPurchased {
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 14))
-                    Text("구매완료")
-                        .font(.Exit.caption)
-                }
-                .foregroundStyle(Color.Exit.accent)
+                ExitBadge(text: "구매완료", icon: "checkmark.circle.fill", color: Color.Exit.accent, style: .subtle)
             } else {
-                Text("미구매")
-                    .font(.Exit.caption)
-                    .foregroundStyle(Color.Exit.tertiaryText)
+                ExitBadge(text: "미구매", color: Color.Exit.tertiaryText, style: .subtle)
             }
         }
         .padding(ExitSpacing.md)
@@ -200,55 +207,52 @@ struct MenuView: View {
     
     private var reminderSection: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
-            HStack {
-                sectionHeader(title: "알람")
-                
-                Spacer()
-                
-                Button {
-                    viewModel.openAddReminderSheet()
-                } label: {
-                    Text("추가")
-                        .font(.Exit.caption)
-                        .foregroundStyle(viewModel.isNotificationEnabled ? Color.Exit.accent : Color.Exit.tertiaryText)
-                }
-                .buttonStyle(.plain)
-                .disabled(!viewModel.isNotificationEnabled)
-            }
-            
-            VStack(spacing: 0) {
-                // 알림 권한 토글 (항상 최상단)
-                notificationPermissionRow
-                
-                Divider()
-                    .background(Color.Exit.divider)
-                    .padding(.leading, ExitSpacing.md)
-                
-                if viewModel.depositReminders.isEmpty {
-                    // 빈 상태
-                    HStack {
-                        Text("등록된 알람이 없습니다")
-                            .font(.Exit.body)
-                            .foregroundStyle(Color.Exit.tertiaryText)
-                        
-                        Spacer()
+            sectionHeader(
+                title: "알람",
+                trailing: AnyView(
+                    Button {
+                        viewModel.openAddReminderSheet()
+                    } label: {
+                        Text("추가")
+                            .font(.Exit.caption)
+                            .foregroundStyle(viewModel.isNotificationEnabled ? Color.Exit.accent : Color.Exit.tertiaryText)
                     }
-                    .padding(ExitSpacing.md)
-                } else {
-                    // 알람 리스트
-                    ForEach(viewModel.depositReminders, id: \.id) { reminder in
-                        reminderRow(reminder)
-                        
-                        if reminder.id != viewModel.depositReminders.last?.id {
-                            Divider()
-                                .background(Color.Exit.divider)
-                                .padding(.leading, ExitSpacing.md)
+                    .buttonStyle(.plain)
+                    .disabled(!viewModel.isNotificationEnabled)
+                )
+            )
+            
+            ExitCard(style: .filled, padding: 0, radius: ExitRadius.md) {
+                VStack(spacing: 0) {
+                    // 알림 권한 토글 (항상 최상단)
+                    notificationPermissionRow
+                    
+                    ExitDivider()
+                        .padding(.leading, ExitSpacing.md)
+                    
+                    if viewModel.depositReminders.isEmpty {
+                        // 빈 상태
+                        HStack {
+                            Text("등록된 알람이 없습니다")
+                                .font(.Exit.body)
+                                .foregroundStyle(Color.Exit.tertiaryText)
+                            
+                            Spacer()
+                        }
+                        .padding(ExitSpacing.md)
+                    } else {
+                        // 알람 리스트
+                        ForEach(viewModel.depositReminders, id: \.id) { reminder in
+                            reminderRow(reminder)
+                            
+                            if reminder.id != viewModel.depositReminders.last?.id {
+                                ExitDivider()
+                                    .padding(.leading, ExitSpacing.md)
+                            }
                         }
                     }
                 }
             }
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             
             // 알림 권한 안내 (권한이 꺼져있을 때만)
             if !viewModel.isNotificationEnabled {
@@ -259,7 +263,6 @@ struct MenuView: View {
             viewModel.checkNotificationPermissionStatus()
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
-            // 앱이 포그라운드로 돌아올 때 권한 상태 재확인
             if newPhase == .active {
                 viewModel.checkNotificationPermissionStatus()
             }
@@ -355,20 +358,19 @@ struct MenuView: View {
             Button {
                 viewModel.showDeleteConfirm = true
             } label: {
-                HStack {
-                    Text("모든 데이터 삭제")
-                        .font(.Exit.body)
-                        .foregroundStyle(Color.Exit.warning.opacity(0.8))
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color.Exit.tertiaryText)
+                ExitCard(style: .filled, padding: ExitSpacing.md, radius: ExitRadius.md) {
+                    HStack {
+                        Text("모든 데이터 삭제")
+                            .font(.Exit.body)
+                            .foregroundStyle(Color.Exit.warning.opacity(0.8))
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.Exit.tertiaryText)
+                    }
                 }
-                .padding(ExitSpacing.md)
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
             }
             .buttonStyle(.plain)
         }
@@ -384,73 +386,70 @@ struct MenuView: View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
             sectionHeader(title: "문의하기")
             
-            VStack(spacing: 0) {
-                // 이메일 복사
-                Button {
-                    UIPasteboard.general.string = contactEmail
-                    showCopiedToast = true
-                    
-                    let generator = UIImpactFeedbackGenerator(style: .light)
-                    generator.impactOccurred()
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        showCopiedToast = false
-                    }
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                            Text("이메일")
-                                .font(.Exit.body)
-                                .foregroundStyle(Color.Exit.primaryText)
+            ExitCard(style: .filled, padding: 0, radius: ExitRadius.md) {
+                VStack(spacing: 0) {
+                    // 이메일 복사
+                    Button {
+                        UIPasteboard.general.string = contactEmail
+                        showCopiedToast = true
+                        HapticService.shared.light()
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            showCopiedToast = false
+                        }
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                                Text("이메일")
+                                    .font(.Exit.body)
+                                    .foregroundStyle(Color.Exit.primaryText)
+                                
+                                Text(contactEmail)
+                                    .font(.Exit.caption)
+                                    .foregroundStyle(Color.Exit.tertiaryText)
+                            }
                             
-                            Text(contactEmail)
+                            Spacer()
+                            
+                            Text(showCopiedToast ? "복사됨" : "복사")
                                 .font(.Exit.caption)
+                                .foregroundStyle(showCopiedToast ? Color.Exit.accent : Color.Exit.tertiaryText)
+                        }
+                        .padding(ExitSpacing.md)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    
+                    ExitDivider()
+                        .padding(.leading, ExitSpacing.md)
+                    
+                    // 인스타그램
+                    Button {
+                        openInstagram()
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: ExitSpacing.xs) {
+                                Text("인스타그램")
+                                    .font(.Exit.body)
+                                    .foregroundStyle(Color.Exit.primaryText)
+                                
+                                Text("@woweverstudio")
+                                    .font(.Exit.caption)
+                                    .foregroundStyle(Color.Exit.tertiaryText)
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(Color.Exit.tertiaryText)
                         }
-                        
-                        Spacer()
-                        
-                        Text(showCopiedToast ? "복사됨" : "복사")
-                            .font(.Exit.caption)
-                            .foregroundStyle(showCopiedToast ? Color.Exit.accent : Color.Exit.tertiaryText)
+                        .padding(ExitSpacing.md)
+                        .contentShape(Rectangle())
                     }
-                    .padding(ExitSpacing.md)
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                
-                Divider()
-                    .background(Color.Exit.divider)
-                    .padding(.leading, ExitSpacing.md)
-                
-                // 인스타그램
-                Button {
-                    openInstagram()
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: ExitSpacing.xs) {
-                            Text("인스타그램")
-                                .font(.Exit.body)
-                                .foregroundStyle(Color.Exit.primaryText)
-                            
-                            Text("@woweverstudio")
-                                .font(.Exit.caption)
-                                .foregroundStyle(Color.Exit.tertiaryText)
-                        }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color.Exit.tertiaryText)
-                    }
-                    .padding(ExitSpacing.md)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
             }
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
     }
     
@@ -488,9 +487,9 @@ struct MenuView: View {
             }
             HapticService.shared.light()
         } label: {
-            VStack(spacing: ExitSpacing.sm) {
+            HStack(spacing: ExitSpacing.sm) {
                 Image(systemName: theme.icon)
-                    .font(.system(size: 24))
+                    .font(.system(size: 16))
                     .foregroundStyle(isSelected ? Color.Exit.accent : Color.Exit.tertiaryText)
                 
                 Text(theme.rawValue)
@@ -499,7 +498,7 @@ struct MenuView: View {
                     .foregroundStyle(isSelected ? Color.Exit.accent : Color.Exit.secondaryText)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, ExitSpacing.lg)
+            .padding(.vertical, ExitSpacing.md)
             .background(
                 RoundedRectangle(cornerRadius: ExitRadius.md)
                     .fill(isSelected ? Color.Exit.accent.opacity(0.1) : Color.Exit.cardBackground)
@@ -514,35 +513,34 @@ struct MenuView: View {
     
     // MARK: - App Info Section
     
+    /// 앱 버전 (Bundle에서 로드)
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"
+    }
+    
+    /// 앱 빌드 번호 (Bundle에서 로드)
+    private var appBuild: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "-"
+    }
+    
     private var appInfoSection: some View {
         VStack(alignment: .leading, spacing: ExitSpacing.sm) {
             sectionHeader(title: "앱 정보")
             
-            HStack {
-                Text("버전")
-                    .font(.Exit.body)
-                    .foregroundStyle(Color.Exit.primaryText)
-                
-                Spacer()
-                
-                Text("1.1.0")
-                    .font(.Exit.body)
-                    .foregroundStyle(Color.Exit.tertiaryText)
+            ExitCard(style: .filled, padding: ExitSpacing.md, radius: ExitRadius.md) {
+                HStack {
+                    Text("버전")
+                        .font(.Exit.body)
+                        .foregroundStyle(Color.Exit.primaryText)
+                    
+                    Spacer()
+                    
+                    Text("\(appVersion) (\(appBuild))")
+                        .font(.Exit.body)
+                        .foregroundStyle(Color.Exit.tertiaryText)
+                }
             }
-            .padding(ExitSpacing.md)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
-    }
-    
-    // MARK: - Section Header
-    
-    private func sectionHeader(title: String) -> some View {
-        Text(title)
-            .font(.Exit.caption)
-            .fontWeight(.medium)
-            .foregroundStyle(Color.Exit.secondaryText)
-            .padding(.leading, ExitSpacing.xs)
     }
 }
 
@@ -609,7 +607,6 @@ struct ReminderEditSheet: View {
                 }
             }
         }
-//        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
     
@@ -619,12 +616,10 @@ struct ReminderEditSheet: View {
                 .font(.Exit.caption)
                 .foregroundStyle(Color.Exit.secondaryText)
             
-            TextField("예: 월급, 배당금", text: $viewModel.reminderName)
-                .font(.Exit.body)
-                .foregroundStyle(Color.Exit.primaryText)
-                .padding(ExitSpacing.md)
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            ExitTextField(
+                placeholder: "예: 월급, 배당금",
+                text: $viewModel.reminderName
+            )
         }
     }
     
@@ -636,27 +631,12 @@ struct ReminderEditSheet: View {
             
             HStack(spacing: ExitSpacing.sm) {
                 ForEach(RepeatType.allCases, id: \.self) { type in
-                    Button {
+                    ExitChip(
+                        text: type.rawValue,
+                        isSelected: viewModel.reminderRepeatType == type
+                    ) {
                         viewModel.reminderRepeatType = type
-                    } label: {
-                        Text(type.rawValue)
-                            .font(.Exit.caption)
-                            .fontWeight(viewModel.reminderRepeatType == type ? .semibold : .regular)
-                            .foregroundStyle(
-                                viewModel.reminderRepeatType == type
-                                ? Color.Exit.accent
-                                : Color.Exit.secondaryText
-                            )
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, ExitSpacing.md)
-                            .background(
-                                viewModel.reminderRepeatType == type
-                                ? Color.Exit.accent.opacity(0.1)
-                                : Color.Exit.cardBackground
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -668,34 +648,33 @@ struct ReminderEditSheet: View {
                 .font(.Exit.caption)
                 .foregroundStyle(Color.Exit.secondaryText)
             
-            // 날짜 그리드
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: ExitSpacing.sm) {
-                ForEach(1...31, id: \.self) { day in
-                    Button {
-                        viewModel.reminderDayOfMonth = day
-                    } label: {
-                        Text("\(day)")
-                            .font(.Exit.caption)
-                            .fontWeight(viewModel.reminderDayOfMonth == day ? .bold : .regular)
-                            .foregroundStyle(
-                                viewModel.reminderDayOfMonth == day
-                                ? .white
-                                : Color.Exit.primaryText
-                            )
-                            .frame(width: 36, height: 36)
-                            .background(
-                                viewModel.reminderDayOfMonth == day
-                                ? Color.Exit.accent
-                                : Color.Exit.cardBackground
-                            )
-                            .clipShape(Circle())
+            ExitCard(style: .filled, padding: ExitSpacing.md, radius: ExitRadius.md) {
+                // 날짜 그리드
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: ExitSpacing.sm) {
+                    ForEach(1...31, id: \.self) { day in
+                        Button {
+                            viewModel.reminderDayOfMonth = day
+                        } label: {
+                            Text("\(day)")
+                                .font(.Exit.caption)
+                                .fontWeight(viewModel.reminderDayOfMonth == day ? .bold : .regular)
+                                .foregroundStyle(
+                                    viewModel.reminderDayOfMonth == day
+                                    ? .white
+                                    : Color.Exit.primaryText
+                                )
+                                .frame(width: 36, height: 36)
+                                .background(
+                                    viewModel.reminderDayOfMonth == day
+                                    ? Color.Exit.accent
+                                    : Color.Exit.secondaryCardBackground
+                                )
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
-            .padding(ExitSpacing.md)
-            .background(Color.Exit.secondaryCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
     }
     
@@ -707,27 +686,12 @@ struct ReminderEditSheet: View {
             
             HStack(spacing: ExitSpacing.sm) {
                 ForEach(Weekday.allCases, id: \.self) { day in
-                    Button {
+                    ExitChip(
+                        text: day.name,
+                        isSelected: viewModel.reminderDayOfWeek == day
+                    ) {
                         viewModel.reminderDayOfWeek = day
-                    } label: {
-                        Text(day.name)
-                            .font(.Exit.caption)
-                            .fontWeight(viewModel.reminderDayOfWeek == day ? .bold : .regular)
-                            .foregroundStyle(
-                                viewModel.reminderDayOfWeek == day
-                                ? .white
-                                : Color.Exit.primaryText
-                            )
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, ExitSpacing.md)
-                            .background(
-                                viewModel.reminderDayOfWeek == day
-                                ? Color.Exit.accent
-                                : Color.Exit.cardBackground
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -739,33 +703,28 @@ struct ReminderEditSheet: View {
                 .font(.Exit.caption)
                 .foregroundStyle(Color.Exit.secondaryText)
             
-            DatePicker(
-                "",
-                selection: $viewModel.reminderTime,
-                displayedComponents: .hourAndMinute
-            )
-            .datePickerStyle(.wheel)
-            .labelsHidden()
-            .frame(maxWidth: .infinity)
-            .background(Color.Exit.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
+            ExitCard(style: .filled, padding: 0, radius: ExitRadius.md) {
+                DatePicker(
+                    "",
+                    selection: $viewModel.reminderTime,
+                    displayedComponents: .hourAndMinute
+                )
+                .datePickerStyle(.wheel)
+                .labelsHidden()
+                .frame(maxWidth: .infinity)
+            }
         }
     }
     
     private func deleteButton(_ reminder: DepositReminder) -> some View {
-        Button {
+        ExitButton(
+            title: "알람 삭제",
+            style: .destructive,
+            size: .medium
+        ) {
             viewModel.deleteReminder(reminder)
             dismiss()
-        } label: {
-            Text("알람 삭제")
-                .font(.Exit.body)
-                .foregroundStyle(Color.Exit.warning.opacity(0.8))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, ExitSpacing.md)
-                .background(Color.Exit.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: ExitRadius.md))
         }
-        .buttonStyle(.plain)
     }
 }
 
@@ -778,4 +737,3 @@ struct ReminderEditSheet: View {
     .environment(\.appState, AppStateManager())
     .environment(\.storeService, StoreKitService())
 }
-

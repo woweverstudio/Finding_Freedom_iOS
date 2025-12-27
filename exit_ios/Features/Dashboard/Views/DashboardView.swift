@@ -19,12 +19,18 @@ struct DashboardView: View {
     private let closeThreshold: CGFloat = 80
     
     var body: some View {
-        VStack(spacing: 0) {
-            // 상단 헤더 (탭하면 인라인 편집 패널 펼쳐짐)
-            PlanHeaderView(hideAmounts: appState.hideAmounts, isExpanded: $isHeaderExpanded)
+        ZStack {
+            // 배경
+            Color.Exit.background
+                .ignoresSafeArea()
             
-            // 스크롤 컨텐츠
-            scrollContent
+            VStack(spacing: 0) {
+                // 상단 헤더 (탭하면 인라인 편집 패널 펼쳐짐)
+                PlanHeaderView(hideAmounts: appState.hideAmounts, isExpanded: $isHeaderExpanded)
+                
+                // 스크롤 컨텐츠
+                scrollContent
+            }
         }
     }
     

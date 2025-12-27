@@ -29,6 +29,10 @@ struct SimulationView: View {
     
     var body: some View {
         ZStack {
+            // 배경
+            Color.Exit.background
+                .ignoresSafeArea()
+            
             // 화면 상태에 따른 뷰 전환
             switch currentScreen {
             case .empty:
